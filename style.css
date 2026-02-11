@@ -855,6 +855,108 @@ body {
   background: var(--gb-lightest);
 }
 
+/* ===== Bubble Action / Edit / Delete Dialogs ===== */
+#bubble-action-overlay,
+#bubble-edit-overlay,
+#bubble-delete-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#bubble-action-dialog,
+#bubble-edit-dialog,
+#bubble-delete-dialog {
+  background: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  text-align: center;
+}
+
+#bubble-action-dialog p,
+#bubble-delete-dialog p {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: var(--gb-darkest);
+}
+
+#bubble-action-buttons,
+#bubble-edit-buttons,
+#bubble-delete-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+#bubble-action-buttons button,
+#bubble-edit-buttons button,
+#bubble-delete-buttons button {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px;
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-bubble-resend,
+#btn-bubble-edit,
+#btn-bubble-delete-ok,
+#btn-bubble-edit-send {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
+#btn-bubble-resend:hover,
+#btn-bubble-edit:hover,
+#btn-bubble-delete-ok:hover,
+#btn-bubble-edit-send:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-bubble-action-cancel,
+#btn-bubble-edit-cancel,
+#btn-bubble-delete-cancel {
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+}
+
+#btn-bubble-action-cancel:hover,
+#btn-bubble-edit-cancel:hover,
+#btn-bubble-delete-cancel:hover {
+  background: var(--gb-lightest);
+}
+
+#bubble-edit-dialog h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: var(--gb-darkest);
+}
+
+#bubble-edit-text {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-lightest);
+  color: var(--gb-darkest);
+  resize: vertical;
+  margin-bottom: 12px;
+  min-height: 80px;
+}
+
+.msg {
+  cursor: pointer;
+}
+
 /* ===== Utility ===== */
 .hidden {
   display: none !important;

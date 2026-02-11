@@ -13,10 +13,26 @@ const Lang = (() => {
         ja: {
             defaultSystemPrompt: 'あなたは親切なアシスタントです。',
             continueButton: '続きを読む ▼',
+            bubbleUserAction: 'この発言を編集または再送信しますか？',
+            bubbleResend: '再送信',
+            bubbleEdit: '編集',
+            bubbleEditTitle: 'メッセージ編集',
+            bubbleEditSend: '送信',
+            bubbleDeleteConfirm: 'この発言とそれ以降を削除しますか？',
+            bubbleDelete: '削除',
+            cancel: 'キャンセル',
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
             continueButton: 'Continue ▼',
+            bubbleUserAction: 'Edit or resend this message?',
+            bubbleResend: 'Resend',
+            bubbleEdit: 'Edit',
+            bubbleEditTitle: 'Edit Message',
+            bubbleEditSend: 'Send',
+            bubbleDeleteConfirm: 'Delete this message and all subsequent messages?',
+            bubbleDelete: 'Delete',
+            cancel: 'Cancel',
         },
     };
 
@@ -261,6 +277,20 @@ const ChatHistory = (() => {
         save();
     }
 
+    /** 指定インデックス以降のメッセージをすべて削除 */
+    function truncateFrom(index) {
+        if (index < 0 || index >= _messages.length) return;
+        _messages = _messages.slice(0, index);
+        save();
+    }
+
+    /** 指定インデックスのメッセージの content を更新 */
+    function updateAt(index, content) {
+        if (index < 0 || index >= _messages.length) return;
+        _messages[index].content = content;
+        save();
+    }
+
     /** コンテキストサイズに収まるようにトリム */
     function _trimToContext() {
         const maxLen = Settings.get().contextSize;
@@ -298,7 +328,7 @@ const ChatHistory = (() => {
         save();
     }
 
-    return { load, save, push, updateLast, popLast, peekLast, getAll, clear, buildApiMessages, exportJSON, importJSON };
+    return { load, save, push, updateLast, updateAt, popLast, peekLast, getAll, clear, truncateFrom, buildApiMessages, exportJSON, importJSON };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -627,11 +657,31 @@ const UIController = (() => {
     const introOverlay = document.getElementById('intro-overlay');
     const btnIntroNext = document.getElementById('btn-intro-next');
 
+    // Bubble action dialog refs
+    const bubbleActionOverlay = document.getElementById('bubble-action-overlay');
+    const bubbleActionText = document.getElementById('bubble-action-text');
+    const btnBubbleResend = document.getElementById('btn-bubble-resend');
+    const btnBubbleEdit = document.getElementById('btn-bubble-edit');
+    const btnBubbleActionCancel = document.getElementById('btn-bubble-action-cancel');
+    // Bubble edit dialog refs
+    const bubbleEditOverlay = document.getElementById('bubble-edit-overlay');
+    const bubbleEditTitle = document.getElementById('bubble-edit-title');
+    const bubbleEditText = document.getElementById('bubble-edit-text');
+    const btnBubbleEditSend = document.getElementById('btn-bubble-edit-send');
+    const btnBubbleEditCancel = document.getElementById('btn-bubble-edit-cancel');
+    // Bubble delete dialog refs
+    const bubbleDeleteOverlay = document.getElementById('bubble-delete-overlay');
+    const bubbleDeleteText = document.getElementById('bubble-delete-text');
+    const btnBubbleDeleteOk = document.getElementById('btn-bubble-delete-ok');
+    const btnBubbleDeleteCancel = document.getElementById('btn-bubble-delete-cancel');
+
     // State
     let _isStreaming = false;
     let _typingIndicator = null;
     let _assistantBubblesInTurn = []; // 現在のターンで追加された assistant バブル
     let _lastRetryMessages = null;
+    let _bubbleTapIndex = null; // バブルタップ対象の履歴インデックス
+    let _bubbleTapChunkIndex = null; // バブルタップ対象のチャンクインデックス
 
     function init() {
         Settings.load();
@@ -685,6 +735,29 @@ const UIController = (() => {
         });
         btnRetry.addEventListener('click', _handleRetry);
 
+        // Bubble tap (delegated)
+        chatMessages.addEventListener('click', _handleBubbleTap);
+
+        // Bubble action dialog
+        btnBubbleResend.addEventListener('click', _handleBubbleResend);
+        btnBubbleEdit.addEventListener('click', _handleBubbleEditOpen);
+        btnBubbleActionCancel.addEventListener('click', _closeBubbleActionDialog);
+        bubbleActionOverlay.addEventListener('click', (e) => {
+            if (e.target === bubbleActionOverlay) _closeBubbleActionDialog();
+        });
+        // Bubble edit dialog
+        btnBubbleEditSend.addEventListener('click', _handleBubbleEditSend);
+        btnBubbleEditCancel.addEventListener('click', _closeBubbleEditDialog);
+        bubbleEditOverlay.addEventListener('click', (e) => {
+            if (e.target === bubbleEditOverlay) _closeBubbleEditDialog();
+        });
+        // Bubble delete dialog
+        btnBubbleDeleteOk.addEventListener('click', _handleBubbleDelete);
+        btnBubbleDeleteCancel.addEventListener('click', _closeBubbleDeleteDialog);
+        bubbleDeleteOverlay.addEventListener('click', (e) => {
+            if (e.target === bubbleDeleteOverlay) _closeBubbleDeleteDialog();
+        });
+
         btnIntroNext.addEventListener('click', () => {
             introOverlay.classList.add('hidden');
             localStorage.setItem('slowdialog_intro_seen', '1');
@@ -718,7 +791,8 @@ const UIController = (() => {
 
     function _sendNewMessage(text) {
         ChatHistory.push('user', text);
-        _appendBubble('user', text);
+        const idx = ChatHistory.getAll().length - 1;
+        _appendBubble('user', text, idx);
         SoundManager.play('user');
         _startStreaming();
     }
@@ -753,7 +827,8 @@ const UIController = (() => {
             _updateLastBubbleText(combined);
         } else {
             ChatHistory.push('user', newText);
-            _appendBubble('user', newText);
+            const idx = ChatHistory.getAll().length - 1;
+            _appendBubble('user', newText, idx);
         }
 
         _isStreaming = false;
@@ -768,15 +843,17 @@ const UIController = (() => {
         const apiMessages = ChatHistory.buildApiMessages();
         _lastRetryMessages = apiMessages;
         ChatHistory.push('assistant', '');
+        const assistantHistIdx = ChatHistory.getAll().length - 1;
 
         _assistantBubblesInTurn = [];
+        let _streamChunkCounter = 0;
 
         TypingSimulator.start(
             // onDisplayChunk
             (chunk, fullText) => {
                 _removeTypingIndicator();
                 _removeContinueButton();
-                const bubble = _appendBubble('assistant', chunk.trim());
+                const bubble = _appendBubble('assistant', chunk.trim(), assistantHistIdx, _streamChunkCounter++);
                 _assistantBubblesInTurn.push(bubble);
                 SoundManager.play('assistant');
                 ChatHistory.updateLast(fullText);
@@ -933,9 +1010,15 @@ const UIController = (() => {
     }
 
     // ─── DOM Helpers ───
-    function _appendBubble(role, text) {
+    function _appendBubble(role, text, historyIndex, chunkIndex) {
         const div = document.createElement('div');
         div.className = `msg ${role}`;
+        if (typeof historyIndex === 'number') {
+            div.dataset.historyIndex = historyIndex;
+        }
+        if (typeof chunkIndex === 'number') {
+            div.dataset.chunkIndex = chunkIndex;
+        }
         if (role === 'assistant') {
             div.innerHTML = SimpleMarkdown.render(text);
         } else {
@@ -1025,16 +1108,19 @@ const UIController = (() => {
     /** 履歴からメッセージを復元表示。assistant メッセージはチャンク分割して複数バブルで表示 */
     function _renderAllMessages() {
         chatMessages.innerHTML = '';
-        for (const msg of ChatHistory.getAll()) {
+        const messages = ChatHistory.getAll();
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
             if (!msg.content.trim()) continue;
             if (msg.role === 'assistant') {
                 // チャンク分割して個別バブルとして表示
                 const chunks = _splitIntoChunks(msg.content);
+                let ci = 0;
                 for (const chunk of chunks) {
-                    if (chunk.trim()) _appendBubble('assistant', chunk.trim());
+                    if (chunk.trim()) _appendBubble('assistant', chunk.trim(), i, ci++);
                 }
             } else {
-                _appendBubble(msg.role, msg.content);
+                _appendBubble(msg.role, msg.content, i);
             }
         }
         _scrollToBottom();
@@ -1061,6 +1147,165 @@ const UIController = (() => {
         }
         if (current.trim()) chunks.push(current);
         return chunks;
+    }
+
+    // ─── Bubble Tap ───
+    function _handleBubbleTap(e) {
+        // ストリーミング中はタップ無効
+        if (_isStreaming) return;
+
+        const bubble = e.target.closest('.msg');
+        if (!bubble) return;
+        if (bubble.dataset.historyIndex === undefined) return;
+
+        const idx = parseInt(bubble.dataset.historyIndex, 10);
+        const messages = ChatHistory.getAll();
+        if (idx < 0 || idx >= messages.length) return;
+
+        _bubbleTapIndex = idx;
+        _bubbleTapChunkIndex = bubble.dataset.chunkIndex !== undefined
+            ? parseInt(bubble.dataset.chunkIndex, 10) : null;
+        const msg = messages[idx];
+
+        if (msg.role === 'user') {
+            // ユーザーバブル → アクションダイアログ
+            bubbleActionText.textContent = Lang.t('bubbleUserAction');
+            btnBubbleResend.textContent = Lang.t('bubbleResend');
+            btnBubbleEdit.textContent = Lang.t('bubbleEdit');
+            btnBubbleActionCancel.textContent = Lang.t('cancel');
+            bubbleActionOverlay.classList.remove('hidden');
+        } else if (msg.role === 'assistant') {
+            // アシスタントバブル → 削除確認ダイアログ
+            bubbleDeleteText.textContent = Lang.t('bubbleDeleteConfirm');
+            btnBubbleDeleteOk.textContent = Lang.t('bubbleDelete');
+            btnBubbleDeleteCancel.textContent = Lang.t('cancel');
+            bubbleDeleteOverlay.classList.remove('hidden');
+        }
+    }
+
+    function _closeBubbleActionDialog() {
+        bubbleActionOverlay.classList.add('hidden');
+        _bubbleTapIndex = null;
+        _bubbleTapChunkIndex = null;
+    }
+
+    function _closeBubbleEditDialog() {
+        bubbleEditOverlay.classList.add('hidden');
+        _bubbleTapIndex = null;
+        _bubbleTapChunkIndex = null;
+    }
+
+    function _closeBubbleDeleteDialog() {
+        bubbleDeleteOverlay.classList.add('hidden');
+        _bubbleTapIndex = null;
+        _bubbleTapChunkIndex = null;
+    }
+
+    /** ユーザーバブル: 再送信 */
+    function _handleBubbleResend() {
+        if (_bubbleTapIndex === null) return;
+        const idx = _bubbleTapIndex;
+        const messages = ChatHistory.getAll();
+        const text = messages[idx].content;
+
+        // idx+1 以降を削除
+        ChatHistory.truncateFrom(idx + 1);
+        // DOM を再描画
+        _renderAllMessages();
+        _assistantBubblesInTurn = [];
+        _typingIndicator = null;
+        _continueBtn = null;
+        _hideRetryBar();
+
+        _closeBubbleActionDialog();
+
+        // 再送信（同じテキストをそのまま送信）
+        if (!Settings.isConfigured()) {
+            openSettings();
+            return;
+        }
+        _startStreaming();
+    }
+
+    /** ユーザーバブル: 編集ダイアログを開く */
+    function _handleBubbleEditOpen() {
+        bubbleActionOverlay.classList.add('hidden');
+        if (_bubbleTapIndex === null) return;
+        const messages = ChatHistory.getAll();
+        const text = messages[_bubbleTapIndex].content;
+
+        bubbleEditTitle.textContent = Lang.t('bubbleEditTitle');
+        btnBubbleEditSend.textContent = Lang.t('bubbleEditSend');
+        btnBubbleEditCancel.textContent = Lang.t('cancel');
+        bubbleEditText.value = text;
+        bubbleEditOverlay.classList.remove('hidden');
+        bubbleEditText.focus();
+    }
+
+    /** ユーザーバブル: 編集したテキストを送信 */
+    function _handleBubbleEditSend() {
+        if (_bubbleTapIndex === null) return;
+        const idx = _bubbleTapIndex;
+        const newText = bubbleEditText.value.trim();
+        if (!newText) return;
+
+        // idx 以降を削除（そのユーザーメッセージ自体も含む）
+        ChatHistory.truncateFrom(idx);
+        // 編集テキストを新しいユーザーメッセージとして追加
+        ChatHistory.push('user', newText);
+
+        // DOM を再描画
+        _renderAllMessages();
+        _assistantBubblesInTurn = [];
+        _typingIndicator = null;
+        _continueBtn = null;
+        _hideRetryBar();
+
+        _closeBubbleEditDialog();
+
+        // 送信
+        if (!Settings.isConfigured()) {
+            openSettings();
+            return;
+        }
+        SoundManager.play('user');
+        _startStreaming();
+    }
+
+    /** アシスタントバブル: そこ以降を削除 */
+    function _handleBubbleDelete() {
+        if (_bubbleTapIndex === null) return;
+        const idx = _bubbleTapIndex;
+        const chunkIdx = _bubbleTapChunkIndex;
+
+        const messages = ChatHistory.getAll();
+        const msg = messages[idx];
+
+        if (chunkIdx !== null && chunkIdx > 0 && msg) {
+            // チャンク途中 → タップされたチャンクより前の部分だけ残す
+            const chunks = _splitIntoChunks(msg.content);
+            const kept = chunks.slice(0, chunkIdx).join('');
+            if (kept.trim()) {
+                ChatHistory.updateAt(idx, kept);
+                // idx+1 以降を削除
+                ChatHistory.truncateFrom(idx + 1);
+            } else {
+                // 残る内容がなければメッセージごと削除
+                ChatHistory.truncateFrom(idx);
+            }
+        } else {
+            // チャンク先頭 or チャンク情報なし → メッセージごと削除
+            ChatHistory.truncateFrom(idx);
+        }
+
+        // DOM を再描画
+        _renderAllMessages();
+        _assistantBubblesInTurn = [];
+        _typingIndicator = null;
+        _continueBtn = null;
+        _hideRetryBar();
+
+        _closeBubbleDeleteDialog();
     }
 
     // ─── Settings Dialog ───

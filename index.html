@@ -179,6 +179,41 @@
     <button id="btn-retry">リトライ</button>
   </div>
 
+  <!-- ===== バブルアクションダイアログ（ユーザー） ===== -->
+  <div id="bubble-action-overlay" class="hidden">
+    <div id="bubble-action-dialog">
+      <p id="bubble-action-text"></p>
+      <div id="bubble-action-buttons">
+        <button id="btn-bubble-resend"></button>
+        <button id="btn-bubble-edit"></button>
+        <button id="btn-bubble-action-cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== バブル編集ダイアログ ===== -->
+  <div id="bubble-edit-overlay" class="hidden">
+    <div id="bubble-edit-dialog">
+      <h2 id="bubble-edit-title"></h2>
+      <textarea id="bubble-edit-text" rows="4"></textarea>
+      <div id="bubble-edit-buttons">
+        <button id="btn-bubble-edit-send"></button>
+        <button id="btn-bubble-edit-cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== バブル削除ダイアログ（アシスタント） ===== -->
+  <div id="bubble-delete-overlay" class="hidden">
+    <div id="bubble-delete-dialog">
+      <p id="bubble-delete-text"></p>
+      <div id="bubble-delete-buttons">
+        <button id="btn-bubble-delete-ok"></button>
+        <button id="btn-bubble-delete-cancel"></button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 
