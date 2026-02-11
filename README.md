@@ -49,8 +49,7 @@ OpenAI互換のAPIを提供するサービスをご利用ください。
 OpenRouterが推奨ですが、ローカルLLMなどでも動きます。  
 OpenRouterの`perplexity/sonar-pro`などを使えば、ネット上の情報を探すのに使えたりもします。
 
-無料でGemini 3 Flashが使える[Ollama Cloud](https://docs.ollama.com/cloud)もおすすめです。  
-その場合は、Base URLには `https://ollama.com/v1/` を、モデル名には `gemini-3-flash-preview` を指定してください。
+※Ollama Cloudへの直接接続はプリフライト時に認証エラーになるので使えません。PC上にOllamaをインストールし、Cloudにログインすれば使用できます。
 
 ### 初回設定
 
