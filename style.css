@@ -60,8 +60,8 @@
   z-index: 9999;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.02) 0px,
-    rgba(0, 0, 0, 0.02) 4px,
+    rgba(0, 0, 0, var(--scanline-strength, 0.02)) 0px,
+    rgba(0, 0, 0, var(--scanline-strength, 0.02)) 4px,
     transparent 4px,
     transparent 8px
   );
@@ -454,6 +454,28 @@ body {
   height: 18px;
   accent-color: var(--gb-dark);
   cursor: pointer;
+}
+
+/* ===== Slider Row ===== */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  padding-left: 26px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--gb-dark);
+  cursor: pointer;
+}
+
+.slider-row .slider-value {
+  font-size: 13px;
+  min-width: 32px;
+  text-align: right;
+  color: var(--gb-darkest);
 }
 
 @keyframes dot-bounce {

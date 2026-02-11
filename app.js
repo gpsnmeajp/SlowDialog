@@ -62,6 +62,7 @@ const Settings = (() => {
         autoAdvance: true,
         soundEnabled: true,
         scanlineEffect: false,
+        scanlineStrength: 2,
         quickResponses: Lang.t('defaultQuickResponses'),
     };
 
@@ -114,6 +115,8 @@ const Settings = (() => {
         } else {
             document.body.classList.remove('scanline-on');
         }
+        const strength = (_settings.scanlineStrength ?? 2) / 100;
+        document.documentElement.style.setProperty('--scanline-strength', strength);
     }
 
     return { load, save, get, isConfigured, applyFont, applyTheme, applyScanline };
@@ -704,6 +707,8 @@ const UIController = (() => {
     let _bubbleTapIndex = null; // バブルタップ対象の履歴インデックス
     let _bubbleTapChunkIndex = null; // バブルタップ対象のチャンクインデックス
     let _originalTheme = null; // 設定ダイアログを開いた時のテーマ
+    let _originalScanline = null; // 設定ダイアログを開いた時のスキャンライン状態
+    let _originalScanlineStrength = null;
 
     function init() {
         Settings.load();
@@ -740,6 +745,8 @@ const UIController = (() => {
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
         document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
+        document.getElementById('setting-scanline').addEventListener('change', _handleScanlinePreview);
+        document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
         settingsOverlay.addEventListener('click', (e) => {
             if (e.target === settingsOverlay) {
                 const dialog = document.getElementById('settings-dialog');
@@ -1373,6 +1380,8 @@ const UIController = (() => {
     function openSettings() {
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
+        _originalScanline = s.scanlineEffect;
+        _originalScanlineStrength = s.scanlineStrength ?? 2;
         document.getElementById('setting-baseurl').value = s.baseUrl;
         document.getElementById('setting-apikey').value = s.apiKey;
         document.getElementById('setting-model').value = s.model;
@@ -1382,6 +1391,8 @@ const UIController = (() => {
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-sound').checked = s.soundEnabled;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
+        document.getElementById('setting-scanline-strength').value = s.scanlineStrength ?? 2;
+        document.getElementById('scanline-strength-value').textContent = (s.scanlineStrength ?? 2) + '%';
         document.getElementById('setting-chardelay').value = s.charDelayMs;
         document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
@@ -1400,6 +1411,18 @@ const UIController = (() => {
             }
             _originalTheme = null;
         }
+        // スキャンラインを元に戻す
+        if (_originalScanline !== null) {
+            if (_originalScanline) {
+                document.body.classList.add('scanline-on');
+            } else {
+                document.body.classList.remove('scanline-on');
+            }
+            const str = (_originalScanlineStrength ?? 2) / 100;
+            document.documentElement.style.setProperty('--scanline-strength', str);
+            _originalScanline = null;
+            _originalScanlineStrength = null;
+        }
         settingsOverlay.classList.add('hidden');
     }
 
@@ -1410,6 +1433,21 @@ const UIController = (() => {
         } else {
             document.documentElement.setAttribute('data-theme', theme);
         }
+    }
+
+    function _handleScanlinePreview() {
+        const checked = document.getElementById('setting-scanline').checked;
+        if (checked) {
+            document.body.classList.add('scanline-on');
+        } else {
+            document.body.classList.remove('scanline-on');
+        }
+    }
+
+    function _handleScanlineStrengthPreview() {
+        const val = document.getElementById('setting-scanline-strength').value;
+        document.getElementById('scanline-strength-value').textContent = val + '%';
+        document.documentElement.style.setProperty('--scanline-strength', val / 100);
     }
 
     function _handleSaveSettings(e) {
@@ -1424,6 +1462,7 @@ const UIController = (() => {
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,
+            scanlineStrength: parseInt(document.getElementById('setting-scanline-strength').value, 10) || 2,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
@@ -1434,6 +1473,8 @@ const UIController = (() => {
         Settings.applyScanline();
         _renderQuickResponses();
         _originalTheme = null;
+        _originalScanline = null;
+        _originalScanlineStrength = null;
 
         // ストリーミング中に autoAdvance が変更された場合の即時反映
         if (_isStreaming) {
