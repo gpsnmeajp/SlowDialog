@@ -37,6 +37,7 @@ const Settings = (() => {
         model: 'google/gemini-3-flash-preview',
         systemPrompt: Lang.t('defaultSystemPrompt'),
         charDelayMs: 150,
+        minDelaySec: 2,
         contextSize: 20,
         font: 'k8x12S',
         autoAdvance: true,
@@ -484,7 +485,9 @@ const TypingSimulator = (() => {
         _isFirstChunk = false;
         _displayedText += chunk;
         if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
-        const delay = chunk.length * s.charDelayMs;
+        const typingDelay = chunk.length * s.charDelayMs;
+        const minDelay = (s.minDelaySec || 0) * 1000;
+        const delay = Math.max(typingDelay, minDelay);
         _timer = setTimeout(() => {
             _timer = null;
             _tryFlush();
@@ -893,6 +896,7 @@ const UIController = (() => {
         document.getElementById('setting-font').value = s.font;
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-chardelay').value = s.charDelayMs;
+        document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
         settingsOverlay.classList.remove('hidden');
     }
@@ -911,6 +915,7 @@ const UIController = (() => {
             font: document.getElementById('setting-font').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
+            minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
         });
         Settings.applyFont();
