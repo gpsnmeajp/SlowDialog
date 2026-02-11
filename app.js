@@ -762,9 +762,7 @@ const UIController = (() => {
 
     function _startStreaming() {
         _isStreaming = true;
-        if (Settings.get().autoAdvance) {
-            _showTypingIndicator();
-        }
+        _showTypingIndicator();
 
         // API に送るメッセージを構築したら、空の assistant エントリを履歴に仮追加
         const apiMessages = ChatHistory.buildApiMessages();
