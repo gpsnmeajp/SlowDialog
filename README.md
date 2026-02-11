@@ -1,4 +1,7 @@
 # SlowDialog
+[デモを利用するにはこちら](https://gpsnmeajp.github.io/SlowDialog)
+
+<img width="610" height="54" alt="image" src="https://github.com/user-attachments/assets/b93e43dd-6380-4b42-a2a6-73d31e0a4ae7" />
 
 AIとの会話の主体を、人間に取り戻すためのチャットアプリケーションです。
 
@@ -11,6 +14,8 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 「ん？」と思ったら、AIが話し終わるのを待つこと無く割り込むことができます。
 こうすることで、ゲームの台詞を読むような感じで、考える時間が生まれ、会話がより自然なものになります。
+
+<img width="300" src="https://github.com/user-attachments/assets/f746882f-b05f-48d2-bcf0-092c7221625b" />　<img width="300" src="https://github.com/user-attachments/assets/161de563-0cc9-49f1-9260-191eef71854b" />
 
 本ソフトウェアは、Google Antigravity, Github Copilotでバイブコーディングしたものです。
 
@@ -33,6 +38,11 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 `index.html` をブラウザで開くだけで動作します。ビルドやサーバーの構築は不要です。
 
+OpenAI互換のAPIを提供するサービスをご利用ください。
+
+OpenRouterが推奨ですが、ローカルLLMなどでも動きます。  
+OpenRouterの`perplexity/sonar-pro`などを使えば、ネット上の情報を探すのに使えたりもします。
+
 ### 初回設定
 
 初回起動時にイントロダイアログが表示されたあと、設定ダイアログが開きます。以下の項目を入力してください。
@@ -44,11 +54,13 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 | モデル名 | 使用するモデルの識別子 | `google/gemini-3-flash-preview` |
 | システムプロンプト | AIへの指示 | `あなたは親切なアシスタントです。` |
 | フォント | 表示フォント | k8x12S |
-| 自動進行 | チャンクを自動で表示するか | オン |
+| 自動進行 | 自動で進行するか | オン |
 | 1文字あたりの待ち時間 | 遅延表示の速度（ミリ秒） | 150 |
 | コンテキストサイズ | APIに送る履歴メッセージ数 | 20 |
 
 設定はブラウザの localStorage に保存され、次回以降は自動的に読み込まれます。
+
+<img width="300" src="https://github.com/user-attachments/assets/9e87c32c-bd49-4e83-81c4-8f3a6a7886d6" />
 
 ### 割り込みの仕組み
 
