@@ -604,6 +604,71 @@ body {
   background: var(--gb-lightest);
 }
 
+/* ===== Confirm Dialog ===== */
+#confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 56, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#confirm-dialog {
+  background: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  text-align: center;
+}
+
+#confirm-dialog p {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--gb-darkest);
+}
+
+#confirm-dialog .confirm-sub {
+  font-size: 13px;
+  color: var(--gb-dark);
+  margin-bottom: 16px;
+}
+
+#confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+#confirm-buttons button {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px;
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-confirm-ok {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
+#btn-confirm-ok:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-confirm-cancel {
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+}
+
+#btn-confirm-cancel:hover {
+  background: var(--gb-lightest);
+}
+
 /* ===== Retry Bar ===== */
 #retry-bar {
   position: fixed;

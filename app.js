@@ -557,6 +557,9 @@ const UIController = (() => {
     const importError = document.getElementById('import-error');
     const btnImportExec = document.getElementById('btn-import-exec');
     const btnImportCancel = document.getElementById('btn-import-cancel');
+    const confirmOverlay = document.getElementById('confirm-overlay');
+    const btnConfirmOk = document.getElementById('btn-confirm-ok');
+    const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
     const settingsOverlay = document.getElementById('settings-overlay');
     const settingsForm = document.getElementById('settings-form');
     const btnCancel = document.getElementById('btn-cancel-settings');
@@ -615,6 +618,11 @@ const UIController = (() => {
         });
         importFileInput.addEventListener('change', _handleImportFile);
         btnClear.addEventListener('click', _handleClear);
+        btnConfirmOk.addEventListener('click', _executeClear);
+        btnConfirmCancel.addEventListener('click', _closeConfirmDialog);
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) _closeConfirmDialog();
+        });
         btnRetry.addEventListener('click', _handleRetry);
 
         btnIntroNext.addEventListener('click', () => {
@@ -766,6 +774,15 @@ const UIController = (() => {
 
     // ─── Clear ───
     function _handleClear() {
+        confirmOverlay.classList.remove('hidden');
+    }
+
+    function _closeConfirmDialog() {
+        confirmOverlay.classList.add('hidden');
+    }
+
+    function _executeClear() {
+        _closeConfirmDialog();
         if (_isStreaming) {
             ApiClient.abort();
             TypingSimulator.interrupt();
