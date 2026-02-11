@@ -17,7 +17,8 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 <img width="300" src="https://github.com/user-attachments/assets/f746882f-b05f-48d2-bcf0-092c7221625b" />　<img width="300" src="https://github.com/user-attachments/assets/161de563-0cc9-49f1-9260-191eef71854b" />
 
-チャチャや合いの手を入れられます。
+好きなだけチャチャや合いの手を入れられます。
+
 <img width="300" src="https://github.com/user-attachments/assets/aa103612-261d-40ec-99ae-412a3153b6d0" />　<img width="300" src="https://github.com/user-attachments/assets/6a88728e-6468-410e-abc3-fe19a72137b3" />
 
 
@@ -105,4 +106,5 @@ slowdialog/
 ## ライセンス
 
 フォントファイルを除くソースコードのライセンスは、MIT LICENSEです。
+
 
