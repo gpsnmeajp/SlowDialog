@@ -42,6 +42,7 @@ const Settings = (() => {
         font: 'k8x12S',
         theme: 'gb',
         autoAdvance: true,
+        soundEnabled: true,
     };
 
     const FONT_MAP = {
@@ -562,6 +563,7 @@ const SoundManager = (() => {
     }
 
     function play(name) {
+        if (!Settings.get().soundEnabled) return;
         try {
             const audio = _getAudio(name);
             audio.currentTime = 0;
@@ -1050,6 +1052,7 @@ const UIController = (() => {
         document.getElementById('setting-font').value = s.font;
         document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
+        document.getElementById('setting-sound').checked = s.soundEnabled;
         document.getElementById('setting-chardelay').value = s.charDelayMs;
         document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
@@ -1070,6 +1073,7 @@ const UIController = (() => {
             font: document.getElementById('setting-font').value,
             theme: document.getElementById('setting-theme').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
+            soundEnabled: document.getElementById('setting-sound').checked,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
