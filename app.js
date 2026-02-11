@@ -4,6 +4,29 @@
 'use strict';
 
 // ────────────────────────────────────────────────────────────
+// Lang — HTMLのlang属性から言語を判定し、UIテキストを提供
+// ────────────────────────────────────────────────────────────
+const Lang = (() => {
+    const _lang = document.documentElement.lang === 'en' ? 'en' : 'ja';
+
+    const _strings = {
+        ja: {
+            defaultSystemPrompt: 'あなたは親切なアシスタントです。',
+            continueButton: '続きを読む ▼',
+        },
+        en: {
+            defaultSystemPrompt: 'You are a helpful assistant.',
+            continueButton: 'Continue ▼',
+        },
+    };
+
+    function current() { return _lang; }
+    function t(key) { return _strings[_lang][key] || _strings['ja'][key] || key; }
+
+    return { current, t };
+})();
+
+// ────────────────────────────────────────────────────────────
 // Settings
 // ────────────────────────────────────────────────────────────
 const Settings = (() => {
@@ -12,7 +35,7 @@ const Settings = (() => {
         baseUrl: 'https://openrouter.ai/api/v1',
         apiKey: '',
         model: 'google/gemini-3-flash-preview',
-        systemPrompt: 'あなたは親切なアシスタントです。',
+        systemPrompt: Lang.t('defaultSystemPrompt'),
         charDelayMs: 150,
         contextSize: 20,
         font: 'k8x12S',
@@ -780,7 +803,7 @@ const UIController = (() => {
         if (_continueBtn) return;
         _continueBtn = document.createElement('button');
         _continueBtn.className = 'continue-btn';
-        _continueBtn.textContent = '続きを読む ▼';
+        _continueBtn.textContent = Lang.t('continueButton');
         _continueBtn.addEventListener('click', () => {
             _removeContinueButton();
             TypingSimulator.resumeManual();

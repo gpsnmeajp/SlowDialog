@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlowDialog</title>
+  <meta name="description" content="Game Boy-style AI chat app — giving humans back control of the conversation">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- ===== Toolbar ===== -->
+  <header id="toolbar">
+    <h1 id="app-title">SlowDialog</h1>
+    <div id="toolbar-buttons">
+      <button id="btn-settings" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      </button>
+      <button id="btn-export" title="Export History">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 3v10M10 13l-3-3M10 13l3-3M4 15h12" stroke="currentColor" stroke-width="2"
+            stroke-linecap="square" />
+        </svg>
+      </button>
+      <button id="btn-clear" title="Clear Chat">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M5 5h10M8 5V4h4v1M6 5v11h8V5" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Chat Area ===== -->
+  <main id="chat-area">
+    <div id="chat-messages"></div>
+  </main>
+
+  <!-- ===== Input Area ===== -->
+  <footer id="input-area">
+    <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+    <button id="btn-send" title="Send">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
+      </svg>
+    </button>
+  </footer>
+
+  <!-- ===== Settings Dialog ===== -->
+  <div id="settings-overlay" class="hidden">
+    <div id="settings-dialog">
+      <h2>Settings</h2>
+      <form id="settings-form">
+        <label for="setting-baseurl">Base URL</label>
+        <input type="url" id="setting-baseurl" placeholder="https://api.openai.com/v1">
+
+        <label for="setting-apikey">API Key</label>
+        <input type="password" id="setting-apikey" placeholder="sk-...">
+
+        <label for="setting-model">Model Name</label>
+        <input type="text" id="setting-model" placeholder="gpt-4o-mini">
+
+        <label for="setting-systemprompt">System Prompt</label>
+        <textarea id="setting-systemprompt" rows="3" placeholder="You are a helpful assistant."></textarea>
+
+        <label for="setting-font">Font</label>
+        <select id="setting-font">
+          <option value="k8x12S">k8x12S</option>
+          <option value="k8x12">k8x12</option>
+          <option value="k8x12L">k8x12L</option>
+          <option value="MisakiGothic">Misaki Gothic</option>
+          <option value="NotoSansJP">Noto Sans JP</option>
+        </select>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="setting-autoadvance" checked>
+          Auto Advance
+        </label>
+
+        <label for="setting-chardelay">Delay per Character (ms)</label>
+        <input type="number" id="setting-chardelay" min="0" max="1000" value="50">
+
+        <label for="setting-contextsize">Context Size (messages)</label>
+        <input type="number" id="setting-contextsize" min="2" max="200" value="20">
+
+        <div id="settings-buttons">
+          <button type="submit" id="btn-save-settings">Save</button>
+          <button type="button" id="btn-cancel-settings">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== Intro Dialog ===== -->
+  <div id="intro-overlay" class="hidden">
+    <div id="intro-dialog">
+      <h2>SlowDialog</h2>
+      <p>Welcome.</p>
+      <p>SlowDialog is a chat app designed to give <strong>you</strong> back control of the conversation with AI.</p>
+      <p>AI responses are delivered slowly, little by little — as if a real person were typing. This gives you time to think and makes conversations feel more natural.</p>
+      <p>You can "interrupt" at any time. Even while the AI is still talking, just send a message — the AI will swallow its words and listen to you.</p>
+      <p>Take it slow. At your own pace.</p>
+      <button id="btn-intro-next">Get Started</button>
+    </div>
+  </div>
+
+  <!-- ===== Retry Bar ===== -->
+  <div id="retry-bar" class="hidden">
+    <span>Communication failed</span>
+    <button id="btn-retry">Retry</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
