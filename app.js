@@ -63,6 +63,7 @@ const Settings = (() => {
         soundEnabled: true,
         scanlineEffect: false,
         scanlineStrength: 2,
+        sendTimestamp: false,
         quickResponses: Lang.t('defaultQuickResponses'),
     };
 
@@ -316,10 +317,21 @@ const ChatHistory = (() => {
 
     /** API に送るメッセージ配列を構築 */
     function buildApiMessages() {
-        const sys = Settings.get().systemPrompt;
+        const s = Settings.get();
         const msgs = [];
-        if (sys) msgs.push({ role: 'system', content: sys });
-        msgs.push(..._messages);
+        if (s.systemPrompt) msgs.push({ role: 'system', content: s.systemPrompt });
+        for (const m of _messages) {
+            if (s.sendTimestamp && m.role === 'user' && m.timestamp) {
+                const d = new Date(m.timestamp);
+                const dowJa = ['日','月','火','水','木','金','土'];
+                const dowEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const dow = (Lang.current() === 'en' ? dowEn : dowJa)[d.getDay()];
+                const ts = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}(${dow}) ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+                msgs.push({ role: m.role, content: m.content + `<timestamp>${ts}</timestamp>` });
+            } else {
+                msgs.push({ role: m.role, content: m.content });
+            }
+        }
         return msgs;
     }
 
@@ -1420,6 +1432,7 @@ const UIController = (() => {
         document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-sound').checked = s.soundEnabled;
+        document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
         document.getElementById('setting-scanline-strength').value = s.scanlineStrength ?? 2;
         document.getElementById('scanline-strength-value').textContent = (s.scanlineStrength ?? 2) + '%';
@@ -1491,6 +1504,7 @@ const UIController = (() => {
             theme: document.getElementById('setting-theme').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
+            sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,
             scanlineStrength: parseInt(document.getElementById('setting-scanline-strength').value, 10) || 2,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
