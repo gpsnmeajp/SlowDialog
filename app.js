@@ -554,6 +554,8 @@ const TypingSimulator = (() => {
                 break;
             }
             if (ch === '.' && i + 1 < _buffer.length && _buffer[i + 1] === ' ') {
+                // 「数字. 」(番号リスト)の場合は区切らない
+                if (i > 0 && /\d/.test(_buffer[i - 1])) continue;
                 idx = i + 1; // '. ' の場合はスペースも含める
                 break;
             }
@@ -1280,6 +1282,8 @@ const UIController = (() => {
                 chunks.push(current);
                 current = '';
             } else if (ch === '.' && i + 1 < text.length && text[i + 1] === ' ') {
+                // 「数字. 」(番号リスト)の場合は区切らない
+                if (i > 0 && /\d/.test(text[i - 1])) continue;
                 current += text[++i]; // スペースも含める
                 chunks.push(current);
                 current = '';
