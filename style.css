@@ -955,7 +955,7 @@ body {
   border: var(--border-w) solid var(--gb-darkest);
   padding: 24px;
   width: 90%;
-  max-width: 360px;
+  max-width: 480px;
   text-align: center;
 }
 
