@@ -146,6 +146,20 @@ const SimpleMarkdown = (() => {
             return '\x00CB' + (codeBlocks.length - 1) + '\x00';
         });
 
+        // 未閉じのコードブロックマーカーを除去
+        text = text.replace(/```\w*/g, '');
+
+        // ペアになれなかった ** を除去
+        // 偶数個の ** はペアとして残し、奇数個の場合は余った1つを除去
+        text = text.replace(/\*\*/g, '\xBB');
+        const bbCount = (text.match(/\xBB/g) || []).length;
+        if (bbCount % 2 !== 0) {
+            // 最後の1つを除去
+            const lastIdx = text.lastIndexOf('\xBB');
+            text = text.slice(0, lastIdx) + text.slice(lastIdx + 2);
+        }
+        text = text.replace(/\xBB/g, '**');
+
         // インラインコードを保護
         const inlineCodes = [];
         text = text.replace(/`([^`]+)`/g, (_, code) => {
@@ -530,8 +544,17 @@ const TypingSimulator = (() => {
         let idx = -1;
         for (let i = 0; i < _buffer.length; i++) {
             const ch = _buffer[i];
-            if (ch === '。' || (ch === '.' && i + 1 < _buffer.length && _buffer[i + 1] === ' ')) {
-                idx = (ch === '.') ? i + 1 : i; // '. ' の場合はスペースも含める
+            if (ch === '。') {
+                // 次の文字が「」」なら「」」で区切る
+                if (i + 1 < _buffer.length && _buffer[i + 1] === '」') {
+                    idx = i + 1;
+                } else {
+                    idx = i;
+                }
+                break;
+            }
+            if (ch === '.' && i + 1 < _buffer.length && _buffer[i + 1] === ' ') {
+                idx = i + 1; // '. ' の場合はスペースも含める
                 break;
             }
             if (ch === '\n') {
@@ -1094,6 +1117,12 @@ const UIController = (() => {
         }
         if (role === 'assistant') {
             div.innerHTML = SimpleMarkdown.render(text);
+            // レンダリング結果が空なら非表示
+            if (!div.textContent.trim()) {
+                div.style.display = 'none';
+                chatMessages.appendChild(div);
+                return div;
+            }
         } else {
             div.textContent = text;
         }
@@ -1244,6 +1273,10 @@ const UIController = (() => {
             const ch = text[i];
             current += ch;
             if (ch === '。') {
+                // 次の文字が「」」なら「」」まで含めて区切る
+                if (i + 1 < text.length && text[i + 1] === '」') {
+                    current += text[++i];
+                }
                 chunks.push(current);
                 current = '';
             } else if (ch === '.' && i + 1 < text.length && text[i + 1] === ' ') {
