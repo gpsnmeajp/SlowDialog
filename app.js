@@ -61,6 +61,7 @@ const Settings = (() => {
         theme: 'gb',
         autoAdvance: true,
         soundEnabled: true,
+        scanlineEffect: false,
         quickResponses: Lang.t('defaultQuickResponses'),
     };
 
@@ -107,7 +108,15 @@ const Settings = (() => {
         }
     }
 
-    return { load, save, get, isConfigured, applyFont, applyTheme };
+    function applyScanline() {
+        if (_settings.scanlineEffect) {
+            document.body.classList.add('scanline-on');
+        } else {
+            document.body.classList.remove('scanline-on');
+        }
+    }
+
+    return { load, save, get, isConfigured, applyFont, applyTheme, applyScanline };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -700,6 +709,7 @@ const UIController = (() => {
         Settings.load();
         Settings.applyFont();
         Settings.applyTheme();
+        Settings.applyScanline();
         ChatHistory.load();
 
         _renderAllMessages();
@@ -1203,7 +1213,7 @@ const UIController = (() => {
     // ─── Bubble Tap ───
     function _handleBubbleTap(e) {
         // ストリーミング中はタップ無効
-        if (_isStreaming) return;
+        // if (_isStreaming) return;
 
         const bubble = e.target.closest('.msg');
         if (!bubble) return;
@@ -1371,6 +1381,7 @@ const UIController = (() => {
         document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-sound').checked = s.soundEnabled;
+        document.getElementById('setting-scanline').checked = s.scanlineEffect;
         document.getElementById('setting-chardelay').value = s.charDelayMs;
         document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
@@ -1412,6 +1423,7 @@ const UIController = (() => {
             theme: document.getElementById('setting-theme').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
+            scanlineEffect: document.getElementById('setting-scanline').checked,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
@@ -1419,6 +1431,7 @@ const UIController = (() => {
         });
         Settings.applyFont();
         Settings.applyTheme();
+        Settings.applyScanline();
         _renderQuickResponses();
         _originalTheme = null;
 

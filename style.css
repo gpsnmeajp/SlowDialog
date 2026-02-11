@@ -51,6 +51,33 @@
   --app-font: 'k8x12S', monospace;
 }
 
+/* ===== Scanline Effect ===== */
+.scanline-on::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+  animation: scanline-scroll 8s linear infinite;
+  background-size: 100% 6px;
+}
+
+@keyframes scanline-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 60px;
+  }
+}
+
 /* ── Theme: GB Classic (default, already in :root) ── */
 
 /* ── Theme: Red ── */
