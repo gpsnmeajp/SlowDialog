@@ -694,6 +694,7 @@ const UIController = (() => {
     let _lastRetryMessages = null;
     let _bubbleTapIndex = null; // バブルタップ対象の履歴インデックス
     let _bubbleTapChunkIndex = null; // バブルタップ対象のチャンクインデックス
+    let _originalTheme = null; // 設定ダイアログを開いた時のテーマ
 
     function init() {
         Settings.load();
@@ -728,6 +729,7 @@ const UIController = (() => {
         btnSettings.addEventListener('click', openSettings);
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
+        document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
         settingsOverlay.addEventListener('click', (e) => {
             if (e.target === settingsOverlay) {
                 const dialog = document.getElementById('settings-dialog');
@@ -1360,6 +1362,7 @@ const UIController = (() => {
     // ─── Settings Dialog ───
     function openSettings() {
         const s = Settings.get();
+        _originalTheme = s.theme || 'gb';
         document.getElementById('setting-baseurl').value = s.baseUrl;
         document.getElementById('setting-apikey').value = s.apiKey;
         document.getElementById('setting-model').value = s.model;
@@ -1376,7 +1379,26 @@ const UIController = (() => {
     }
 
     function closeSettings() {
+        // テーマを元に戻す
+        if (_originalTheme !== null) {
+            const theme = _originalTheme;
+            if (theme === 'gb') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            _originalTheme = null;
+        }
         settingsOverlay.classList.add('hidden');
+    }
+
+    function _handleThemePreview() {
+        const theme = document.getElementById('setting-theme').value;
+        if (theme === 'gb') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
     }
 
     function _handleSaveSettings(e) {
@@ -1398,6 +1420,7 @@ const UIController = (() => {
         Settings.applyFont();
         Settings.applyTheme();
         _renderQuickResponses();
+        _originalTheme = null;
 
         // ストリーミング中に autoAdvance が変更された場合の即時反映
         if (_isStreaming) {
