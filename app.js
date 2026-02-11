@@ -549,6 +549,30 @@ const TypingSimulator = (() => {
 })();
 
 // ────────────────────────────────────────────────────────────
+// SoundManager — 効果音の再生
+// ────────────────────────────────────────────────────────────
+const SoundManager = (() => {
+    const _cache = {};
+
+    function _getAudio(name) {
+        if (!_cache[name]) {
+            _cache[name] = new Audio(`sound/${name}.wav`);
+        }
+        return _cache[name];
+    }
+
+    function play(name) {
+        try {
+            const audio = _getAudio(name);
+            audio.currentTime = 0;
+            audio.play().catch(() => { /* autoplay blocked */ });
+        } catch { /* ignore */ }
+    }
+
+    return { play };
+})();
+
+// ────────────────────────────────────────────────────────────
 // UIController
 // ────────────────────────────────────────────────────────────
 const UIController = (() => {
@@ -670,6 +694,7 @@ const UIController = (() => {
     function _sendNewMessage(text) {
         ChatHistory.push('user', text);
         _appendBubble('user', text);
+        SoundManager.play('user');
         _startStreaming();
     }
 
@@ -730,6 +755,7 @@ const UIController = (() => {
                 _removeContinueButton();
                 const bubble = _appendBubble('assistant', chunk.trim());
                 _assistantBubblesInTurn.push(bubble);
+                SoundManager.play('assistant');
                 ChatHistory.updateLast(fullText);
                 if (_isStreaming) {
                     if (Settings.get().autoAdvance) {
@@ -746,6 +772,8 @@ const UIController = (() => {
                 const last = ChatHistory.peekLast();
                 if (last && last.role === 'assistant' && !last.content.trim()) {
                     ChatHistory.popLast();
+                } else {
+                    SoundManager.play('assistant_end');
                 }
             },
             // onWaitManual — 手動モードでチャンク待機時
