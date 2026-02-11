@@ -44,6 +44,8 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 `index.html` をブラウザで開くだけで動作します。ビルドやサーバーの構築は不要です。
 
+[デモを利用するにはこちら](https://gpsnmeajp.github.io/SlowDialog)
+
 OpenAI互換のAPIを提供するサービスをご利用ください。
 
 OpenRouterが推奨ですが、ローカルLLMなどでも動きます。  
