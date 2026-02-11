@@ -250,7 +250,7 @@ const ChatHistory = (() => {
         a.href = url;
         a.download = `slowdialog_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     return { load, save, push, updateLast, popLast, peekLast, getAll, clear, buildApiMessages, exportJSON };
@@ -420,8 +420,8 @@ const TypingSimulator = (() => {
         let idx = -1;
         for (let i = 0; i < _buffer.length; i++) {
             const ch = _buffer[i];
-            if (ch === '。' || ch === '. ') {
-                idx = i;
+            if (ch === '。' || (ch === '.' && i + 1 < _buffer.length && _buffer[i + 1] === ' ')) {
+                idx = (ch === '.') ? i + 1 : i; // '. ' の場合はスペースも含める
                 break;
             }
             if (ch === '\n') {
@@ -725,6 +725,7 @@ const UIController = (() => {
         chatMessages.innerHTML = '';
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
+        _continueBtn = null;
         _hideRetryBar();
     }
 
@@ -836,14 +837,18 @@ const UIController = (() => {
         _scrollToBottom();
     }
 
-    /** テキストを「。」「！」「？」改行で分割（空行は区切りとしない） */
+    /** テキストを「。」「. 」改行で分割（空行は区切りとしない） */
     function _splitIntoChunks(text) {
         const chunks = [];
         let current = '';
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
             current += ch;
-            if (ch === '。' || ch === '！' || ch === '？') {
+            if (ch === '。') {
+                chunks.push(current);
+                current = '';
+            } else if (ch === '.' && i + 1 < text.length && text[i + 1] === ' ') {
+                current += text[++i]; // スペースも含める
                 chunks.push(current);
                 current = '';
             } else if (ch === '\n' && current.trim().length > 1) {
