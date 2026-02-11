@@ -312,9 +312,10 @@ const ChatHistory = (() => {
     }
 
     function exportJSON() {
-        const sys = Settings.get().systemPrompt;
+        const s = Settings.get();
         const exportData = [];
-        if (sys) exportData.push({ role: 'system', content: sys });
+        if (s.quickResponses) exportData.push({ role: '_quickresponse', content: s.quickResponses });
+        if (s.systemPrompt) exportData.push({ role: 'system', content: s.systemPrompt });
         exportData.push(..._messages);
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -326,8 +327,15 @@ const ChatHistory = (() => {
     }
 
     function importJSON(data) {
-        // system メッセージは除外して会話メッセージのみ取り込む
-        _messages = data.filter(m => m.role !== 'system');
+        // _quickresponse エントリがあれば設定に反映
+        const qrMsg = data.find(m => m.role === '_quickresponse');
+        if (qrMsg) {
+            const s = Settings.get();
+            s.quickResponses = qrMsg.content;
+            Settings.save(s);
+        }
+        // system / _quickresponse メッセージは除外して会話メッセージのみ取り込む
+        _messages = data.filter(m => m.role !== 'system' && m.role !== '_quickresponse');
         save();
     }
 
@@ -1006,6 +1014,7 @@ const UIController = (() => {
         _continueBtn = null;
         _hideRetryBar();
         _renderAllMessages();
+        _renderQuickResponses();
         _closeImportDialog();
     }
 
