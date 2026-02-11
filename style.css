@@ -60,13 +60,13 @@
   z-index: 9999;
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.15) 0px,
-    rgba(0, 0, 0, 0.15) 1px,
-    transparent 1px,
+    rgba(0, 0, 0, 0.02) 0px,
+    rgba(0, 0, 0, 0.02) 4px,
+    transparent 4px,
     transparent 8px
   );
-  animation: scanline-scroll 8s linear infinite;
-  background-size: 100% 6px;
+  animation: scanline-scroll 1s linear infinite;
+  background-size: 100% 32px;
 }
 
 @keyframes scanline-scroll {
@@ -74,7 +74,7 @@
     background-position: 0 0;
   }
   100% {
-    background-position: 0 60px;
+    background-position: 0 -32px;
   }
 }
 
