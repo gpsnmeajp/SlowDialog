@@ -1,0 +1,582 @@
+/* ===== Fonts ===== */
+@font-face {
+  font-family: 'MisakiGothic';
+  src: url('fonts/misaki_gothic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'k8x12';
+  src: url('fonts/k8x12.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'k8x12L';
+  src: url('fonts/k8x12L.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'k8x12S';
+  src: url('fonts/k8x12S.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== Design Tokens (Game Boy Color Palette) ===== */
+:root {
+  --gb-darkest: #0f380f;
+  --gb-dark: #306230;
+  --gb-light: #8bac0f;
+  --gb-lightest: #9bbc0f;
+  --font-size: 16px;
+  --border-w: 3px;
+  --app-font: 'k8x12S', monospace;
+}
+
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  background: #0a2a0a;
+}
+
+body {
+  max-width: 800px;
+  height: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  background: var(--gb-lightest);
+  color: var(--gb-darkest);
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Pixelated Border Utility ===== */
+.px-border {
+  border: var(--border-w) solid var(--gb-darkest);
+}
+
+/* ===== Toolbar ===== */
+#toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  border-bottom: var(--border-w) solid var(--gb-darkest);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+#app-title {
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#toolbar-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+#toolbar-buttons button {
+  background: transparent;
+  border: 2px solid var(--gb-lightest);
+  color: var(--gb-lightest);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+
+#toolbar-buttons button:hover {
+  background: var(--gb-darkest);
+}
+
+#toolbar-buttons button:active {
+  transform: scale(0.93);
+}
+
+/* ===== Chat Area ===== */
+#chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gb-dark) var(--gb-light);
+}
+
+#chat-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+#chat-area::-webkit-scrollbar-track {
+  background: var(--gb-light);
+}
+
+#chat-area::-webkit-scrollbar-thumb {
+  background: var(--gb-dark);
+}
+
+#chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* ===== Chat Bubbles ===== */
+.msg {
+  max-width: 80%;
+  padding: 8px 12px;
+  border: var(--border-w) solid var(--gb-darkest);
+  word-break: break-word;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  animation: msg-appear 0.15s ease-out;
+}
+
+/* ===== Markdown in Bubbles ===== */
+.msg.assistant {
+  white-space: normal;
+}
+
+.msg h3,
+.msg h4,
+.msg h5 {
+  margin: 4px 0 2px;
+  line-height: 1.4;
+}
+
+.msg h3 {
+  font-size: 1.15em;
+}
+
+.msg h4 {
+  font-size: 1.05em;
+}
+
+.msg h5 {
+  font-size: 1em;
+}
+
+.msg strong {
+  font-weight: bold;
+}
+
+.msg em {
+  font-style: italic;
+}
+
+.msg code {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  padding: 1px 4px;
+  font-family: var(--app-font);
+  font-size: 0.95em;
+}
+
+.msg pre {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  padding: 6px 8px;
+  margin: 4px 0;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.4;
+}
+
+.msg pre code {
+  background: none;
+  padding: 0;
+}
+
+.msg ul {
+  margin: 2px 0;
+  padding-left: 1.2em;
+  list-style: disc;
+}
+
+.msg li {
+  margin: 1px 0;
+}
+
+@keyframes msg-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  border-color: var(--gb-darkest);
+}
+
+.msg.assistant {
+  align-self: flex-start;
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  border-color: var(--gb-darkest);
+}
+
+/* ===== Typing Indicator ===== */
+.typing-indicator {
+  align-self: flex-start;
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--gb-light);
+  border: var(--border-w) solid var(--gb-darkest);
+  animation: msg-appear 0.15s ease-out;
+}
+
+.typing-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background: var(--gb-darkest);
+  animation: dot-bounce 1s infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.30s;
+}
+
+/* ===== Continue Button (Manual Mode) ===== */
+.continue-btn {
+  align-self: flex-start;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px 16px;
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  cursor: pointer;
+  animation: msg-appear 0.15s ease-out;
+  transition: background 0.1s;
+}
+
+.continue-btn:hover {
+  background: var(--gb-darkest);
+}
+
+.continue-btn:active {
+  transform: scale(0.96);
+}
+
+/* ===== Checkbox Row ===== */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gb-dark);
+  cursor: pointer;
+}
+
+@keyframes dot-bounce {
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+/* ===== Input Area ===== */
+#input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--gb-dark);
+  border-top: var(--border-w) solid var(--gb-darkest);
+  flex-shrink: 0;
+}
+
+#user-input {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px 10px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-lightest);
+  color: var(--gb-darkest);
+  resize: none;
+  outline: none;
+  max-height: 120px;
+  line-height: 1.5;
+}
+
+#user-input::placeholder {
+  color: var(--gb-dark);
+  opacity: 0.7;
+}
+
+#btn-send {
+  width: 40px;
+  height: 40px;
+  background: var(--gb-light);
+  border: 2px solid var(--gb-darkest);
+  color: var(--gb-darkest);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+#btn-send:hover {
+  background: var(--gb-lightest);
+}
+
+#btn-send:active {
+  transform: scale(0.93);
+}
+
+/* ===== Settings Dialog ===== */
+#settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 56, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#settings-dialog {
+  background: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  padding: 20px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+#settings-dialog h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+  letter-spacing: 2px;
+  border-bottom: 2px solid var(--gb-darkest);
+  padding-bottom: 8px;
+}
+
+#settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#settings-form label {
+  font-size: 14px;
+  margin-top: 4px;
+  color: var(--gb-dark);
+}
+
+#settings-form input,
+#settings-form textarea,
+#settings-form select {
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 6px 8px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  outline: none;
+}
+
+#settings-form textarea {
+  resize: vertical;
+}
+
+#settings-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#settings-buttons button {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px;
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-save-settings {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
+#btn-save-settings:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-cancel-settings {
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+}
+
+#btn-cancel-settings:hover {
+  background: var(--gb-lightest);
+}
+
+/* ===== Retry Bar ===== */
+#retry-bar {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  border: 2px solid var(--gb-light);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 50;
+  animation: msg-appear 0.2s ease-out;
+}
+
+/* ===== Intro Dialog ===== */
+#intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 56, 15, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+#intro-dialog {
+  background: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  padding: 24px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+#intro-dialog h2 {
+  font-size: 22px;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--gb-darkest);
+  padding-bottom: 8px;
+}
+
+#intro-dialog p {
+  text-align: left;
+  margin: 10px 0;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+#btn-intro-next {
+  margin-top: 16px;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 10px 32px;
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-intro-next:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-retry {
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 4px 12px;
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  border: 2px solid var(--gb-light);
+  cursor: pointer;
+}
+
+#btn-retry:hover {
+  background: var(--gb-lightest);
+}
+
+/* ===== Utility ===== */
+.hidden {
+  display: none !important;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  :root {
+    --font-size: 14px;
+  }
+
+  .msg {
+    max-width: 90%;
+  }
+
+  #settings-dialog {
+    width: 95%;
+    padding: 14px;
+  }
+}
