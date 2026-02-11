@@ -482,11 +482,11 @@ const TypingSimulator = (() => {
             return;
         }
         _isFirstChunk = false;
+        _displayedText += chunk;
+        if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
         const delay = chunk.length * s.charDelayMs;
         _timer = setTimeout(() => {
             _timer = null;
-            _displayedText += chunk;
-            if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
             _tryFlush();
         }, delay);
     }
