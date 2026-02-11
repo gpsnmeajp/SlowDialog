@@ -49,6 +49,9 @@ OpenAI互換のAPIを提供するサービスをご利用ください。
 OpenRouterが推奨ですが、ローカルLLMなどでも動きます。  
 OpenRouterの`perplexity/sonar-pro`などを使えば、ネット上の情報を探すのに使えたりもします。
 
+無料でGemini 3 Flashが使える[Ollama Cloud](https://docs.ollama.com/cloud)もおすすめです。  
+その場合は、Base URLには `https://ollama.com/v1/` を、モデル名には `gemini-3-flash-preview` を指定してください。
+
 ### 初回設定
 
 初回起動時にイントロダイアログが表示されたあと、設定ダイアログが開きます。以下の項目を入力してください。
@@ -107,5 +110,6 @@ slowdialog/
 ## ライセンス
 
 フォントファイルを除くソースコードのライセンスは、MIT LICENSEです。
+
 
 
