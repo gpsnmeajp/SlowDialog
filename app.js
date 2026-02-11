@@ -546,7 +546,30 @@ const TypingSimulator = (() => {
         return _manualQueue.length > 0 || (!_streamDone && _buffer.length > 0);
     }
 
-    return { start, feed, finish, interrupt, getDisplayedText, resumeManual, hasMoreChunks };
+    /** autoAdvance=true に切り替え時: 手動キューをバッファに戻して自動進行を再開 */
+    function switchToAutoAdvance() {
+        _manualWaiting = false;
+        if (_manualQueue.length > 0) {
+            const queuedText = _manualQueue.join('');
+            _manualQueue = [];
+            _buffer = queuedText + _buffer;
+        }
+        if (!_timer) {
+            _tryFlush();
+        }
+    }
+
+    /** autoAdvance=false に切り替え時: 自動進行タイマーを停止し手動モードへ遷移 */
+    function switchToManualAdvance() {
+        if (_timer) {
+            clearTimeout(_timer);
+            _timer = null;
+        }
+        _isFirstChunk = false; // 途中切替なので最初のチャンク扱いしない
+        _tryFlush();
+    }
+
+    return { start, feed, finish, interrupt, getDisplayedText, resumeManual, hasMoreChunks, switchToAutoAdvance, switchToManualAdvance };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -1080,6 +1103,20 @@ const UIController = (() => {
         });
         Settings.applyFont();
         Settings.applyTheme();
+
+        // ストリーミング中に autoAdvance が変更された場合の即時反映
+        if (_isStreaming) {
+            const s = Settings.get();
+            if (s.autoAdvance) {
+                _removeContinueButton();
+                TypingSimulator.switchToAutoAdvance();
+                _showTypingIndicator();
+            } else {
+                _removeTypingIndicator();
+                TypingSimulator.switchToManualAdvance();
+            }
+        }
+
         closeSettings();
     }
 
