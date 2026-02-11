@@ -1,5 +1,5 @@
 # SlowDialog
-[デモを利用するにはこちら](https://gpsnmeajp.github.io/SlowDialog)
+[デモを利用するにはこちら](https://gpsnmeajp.github.io/SlowDialog)  
 [English README](README_EN.md)
 
 <img width="610" height="54" alt="image" src="https://github.com/user-attachments/assets/b93e43dd-6380-4b42-a2a6-73d31e0a4ae7" />
