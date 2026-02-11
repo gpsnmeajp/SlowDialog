@@ -729,7 +729,10 @@ const UIController = (() => {
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
         settingsOverlay.addEventListener('click', (e) => {
-            if (e.target === settingsOverlay) closeSettings();
+            if (e.target === settingsOverlay) {
+                const dialog = document.getElementById('settings-dialog');
+                dialog.scrollTo({ top: dialog.scrollHeight, behavior: 'smooth' });
+            }
         });
 
         btnExport.addEventListener('click', () => ChatHistory.exportJSON());

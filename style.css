@@ -554,11 +554,19 @@ body {
 
 #settings-dialog h2 {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   font-size: 18px;
   letter-spacing: 2px;
   border-bottom: 2px solid var(--gb-darkest);
   padding-bottom: 8px;
+}
+
+.settings-hint {
+  text-align: center;
+  font-size: 11px;
+  color: var(--gb-darkest);
+  opacity: 0.5;
+  margin: 0 0 12px 0;
 }
 
 #settings-form {
