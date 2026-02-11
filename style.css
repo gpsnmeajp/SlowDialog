@@ -283,7 +283,7 @@ body {
 
 /* ===== Continue Button (Manual Mode) ===== */
 .continue-btn {
-  align-self: flex-start;
+  align-self: center;
   font-family: var(--app-font);
   font-size: var(--font-size);
   padding: 8px 16px;
