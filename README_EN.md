@@ -47,6 +47,9 @@ Please use a service that provides an OpenAI-compatible API.
 OpenRouter is recommended, but local LLMs also work.  
 Using OpenRouter's `perplexity/sonar-pro` and similar models, you can even search for information on the web.
 
+[Ollama Cloud](https://docs.ollama.com/cloud) is also recommended, where you can use Gemini 3 Flash for free.   
+In that case, set the Base URL to `https://ollama.com/v1/` and the model name to `gemini-3-flash-preview`.
+
 ### Initial Setup
 
 On first launch, an intro dialog will appear, followed by a settings dialog. Please fill in the following:
@@ -107,3 +110,4 @@ Please refer to each font's distribution page for licensing details.
 ## License
 
 The source code, excluding font files, is licensed under the MIT License.
+
