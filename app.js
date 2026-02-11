@@ -151,14 +151,14 @@ const SimpleMarkdown = (() => {
 
         // ペアになれなかった ** を除去
         // 偶数個の ** はペアとして残し、奇数個の場合は余った1つを除去
-        text = text.replace(/\*\*/g, '\xBB');
-        const bbCount = (text.match(/\xBB/g) || []).length;
+        text = text.replace(/\*\*/g, '\x00BB');
+        const bbCount = (text.match(/\x00BB/g) || []).length;
         if (bbCount % 2 !== 0) {
             // 最後の1つを除去
-            const lastIdx = text.lastIndexOf('\xBB');
-            text = text.slice(0, lastIdx) + text.slice(lastIdx + 2);
+            const lastIdx = text.lastIndexOf('\x00BB');
+            text = text.slice(0, lastIdx) + text.slice(lastIdx + 3);
         }
-        text = text.replace(/\xBB/g, '**');
+        text = text.replace(/\x00BB/g, '**');
 
         // インラインコードを保護
         const inlineCodes = [];
