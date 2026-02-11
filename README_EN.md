@@ -28,6 +28,11 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Delayed Display** — AI responses are split at punctuation marks and line breaks, with pauses proportional to the character count. A typing indicator is shown during the waiting time.
 - **Interruption** — You can send a message even while the AI is still "speaking." The AI output is interrupted, the displayed content is finalized, and the conversation continues from there.
 - **Manual Advance Mode** — Turn off auto-advance and use the "Continue" button to read at your own pace.
+- **Quick Responses** — Register frequently used replies as buttons and send them with one click.
+- **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
+- **Multi-language Support** — Provides Japanese and English interfaces.
+- **Customizable Themes** — Choose from multiple retro-style color themes and scanline effects.
+- **Sound Effects** — Retro sound effects play when sending and receiving messages.
 - **Game Boy–style Design** — A nostalgic, calm aesthetic powered by pixel fonts and a 4-color palette.
 - **No Frameworks** — A simple single-page application built with HTML, CSS, and JavaScript only.
 
@@ -60,9 +65,14 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Model Name | Model identifier to use | `google/gemini-3-flash-preview` |
 | System Prompt | Instructions for the AI | `You are a helpful assistant.` |
 | Font | Display font | k8x12S |
+| Theme | Color theme | GB Classic |
 | Auto Advance | Whether to advance automatically | On |
+| Sound Effects | Whether to enable sound effects | On |
+| Scanline Effect | Retro-style scanline effect | Off |
 | Delay per Character | Delay display speed (ms) | 150 |
+| Minimum Delay | Minimum delay between chunks (seconds) | 2 |
 | Context Size | Number of history messages sent to API | 20 |
+| Quick Responses | One-click replies (newline-separated) | I see… |
 
 Settings are saved in the browser's localStorage and automatically loaded on subsequent visits.
 
@@ -70,9 +80,11 @@ Settings are saved in the browser's localStorage and automatically loaded on sub
 
 ### How Interruption Works
 
-You can type and send a message even while the AI's response is still being displayed. In that case:
+You can type /Importing History
 
-- The AI output is interrupted, and the text displayed so far is finalized in the history. (It is not simply hidden — the history is modified.)
+You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, system prompt, and conversation history.
+
+From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text is not simply hidden — the history is modified.)
 - If nothing has been displayed yet, the previous user message and the new message are concatenated.
 
 ### Exporting History
@@ -89,11 +101,20 @@ slowdialog/
 ├── app.js              # Application logic
 ├── README.md           # Documentation (Japanese)
 ├── README_EN.md        # Documentation (English)
-├── DIRECTION.md        # Project plan
-├── ARCHITECTURE.md     # Internal design document
-└── fonts/
-    ├── k8x12.ttf       # k8x12 (pixel font)
-    ├── k8x12L.ttf      # k8x12L (tall kana variant)
+├── fonts/
+│   ├── littlelimit/
+│   │   ├── k8x12.ttf       # k8x12 (pixel font)
+│   │   ├── k8x12L.ttf      # k8x12L (tall kana variant)
+│   │   ├── k8x12S.ttf      # k8x12S (8-dot non-kanji)
+│   │   ├── misaki_gothic.ttf  # Misaki Gothic
+│   │   └── LICENSE
+│   └── notosansjp/
+│       ├── NotoSansJP-VariableFont_wght.ttf
+│       └── OFL.txt
+└── sound/
+    ├── user.wav            # User send sound
+    ├── assistant.wav       # AI response sound
+    └── assistant_end.wav   # AI response complete sounda variant)
     ├── k8x12S.ttf      # k8x12S (8-dot non-kanji)
     └── misaki_gothic.ttf  # Misaki Gothic
 ```
