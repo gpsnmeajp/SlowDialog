@@ -47,6 +47,9 @@
     <div id="chat-messages"></div>
   </main>
 
+  <!-- ===== Quick Responses ===== -->
+  <div id="quick-responses"></div>
+
   <!-- ===== Input Area ===== -->
   <footer id="input-area">
     <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
@@ -117,6 +120,9 @@
 
         <label for="setting-contextsize">Context Size (messages)</label>
         <input type="number" id="setting-contextsize" min="2" max="200" value="20">
+
+        <label for="setting-quickresponses">Quick Responses (one per line)</label>
+        <textarea id="setting-quickresponses" rows="3" placeholder="I see&#10;Hold on&#10;That's not right"></textarea>
 
         <div id="settings-buttons">
           <button type="submit" id="btn-save-settings">Save</button>

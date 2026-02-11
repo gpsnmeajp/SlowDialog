@@ -47,6 +47,9 @@
     <div id="chat-messages"></div>
   </main>
 
+  <!-- ===== クイックレスポンスエリア ===== -->
+  <div id="quick-responses"></div>
+
   <!-- ===== 入力エリア ===== -->
   <footer id="input-area">
     <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
@@ -117,6 +120,9 @@
 
         <label for="setting-contextsize">コンテキストサイズ (メッセージ数)</label>
         <input type="number" id="setting-contextsize" min="2" max="200" value="20">
+
+        <label for="setting-quickresponses">クイックレスポンス (改行区切り)</label>
+        <textarea id="setting-quickresponses" rows="3" placeholder="なるほど&#10;ちょっと待って&#10;そうじゃない"></textarea>
 
         <div id="settings-buttons">
           <button type="submit" id="btn-save-settings">保存</button>

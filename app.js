@@ -12,6 +12,7 @@ const Lang = (() => {
     const _strings = {
         ja: {
             defaultSystemPrompt: 'あなたは親切なアシスタントです。',
+            defaultQuickResponses: 'なるほど\nちょっと待って\nそうじゃない',
             continueButton: '続きを読む ▼',
             bubbleUserAction: 'この発言を編集または再送信しますか？',
             bubbleResend: '再送信',
@@ -24,6 +25,7 @@ const Lang = (() => {
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
+            defaultQuickResponses: 'I see\nHold on\nThat\'s not right',
             continueButton: 'Continue ▼',
             bubbleUserAction: 'Edit or resend this message?',
             bubbleResend: 'Resend',
@@ -59,6 +61,7 @@ const Settings = (() => {
         theme: 'gb',
         autoAdvance: true,
         soundEnabled: true,
+        quickResponses: Lang.t('defaultQuickResponses'),
     };
 
     const FONT_MAP = {
@@ -636,6 +639,7 @@ const UIController = (() => {
     const chatArea = document.getElementById('chat-area');
     const userInput = document.getElementById('user-input');
     const btnSend = document.getElementById('btn-send');
+    const quickResponsesContainer = document.getElementById('quick-responses');
     const btnSettings = document.getElementById('btn-settings');
     const btnExport = document.getElementById('btn-export');
     const btnClear = document.getElementById('btn-clear');
@@ -691,6 +695,7 @@ const UIController = (() => {
 
         _renderAllMessages();
         _bindEvents();
+        _renderQuickResponses();
 
         const introSeen = localStorage.getItem('slowdialog_intro_seen');
         if (!introSeen) {
@@ -1105,6 +1110,38 @@ const UIController = (() => {
         userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
     }
 
+    // ─── Quick Responses ───
+    function _renderQuickResponses() {
+        quickResponsesContainer.innerHTML = '';
+        const raw = Settings.get().quickResponses || '';
+        const items = raw.split('\n').map(s => s.trim()).filter(Boolean);
+        if (items.length === 0) {
+            quickResponsesContainer.classList.add('hidden');
+            return;
+        }
+        quickResponsesContainer.classList.remove('hidden');
+        for (const text of items) {
+            const btn = document.createElement('button');
+            btn.className = 'quick-response-btn';
+            btn.textContent = text;
+            btn.addEventListener('click', () => _handleQuickResponse(text));
+            quickResponsesContainer.appendChild(btn);
+        }
+    }
+
+    function _handleQuickResponse(text) {
+        if (!Settings.isConfigured()) {
+            openSettings();
+            return;
+        }
+        _hideRetryBar();
+        if (_isStreaming) {
+            _performInterrupt(text);
+        } else {
+            _sendNewMessage(text);
+        }
+    }
+
     /** 履歴からメッセージを復元表示。assistant メッセージはチャンク分割して複数バブルで表示 */
     function _renderAllMessages() {
         chatMessages.innerHTML = '';
@@ -1322,6 +1359,7 @@ const UIController = (() => {
         document.getElementById('setting-chardelay').value = s.charDelayMs;
         document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
+        document.getElementById('setting-quickresponses').value = s.quickResponses || '';
         settingsOverlay.classList.remove('hidden');
     }
 
@@ -1343,9 +1381,11 @@ const UIController = (() => {
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
+            quickResponses: document.getElementById('setting-quickresponses').value,
         });
         Settings.applyFont();
         Settings.applyTheme();
+        _renderQuickResponses();
 
         // ストリーミング中に autoAdvance が変更された場合の即時反映
         if (_isStreaming) {

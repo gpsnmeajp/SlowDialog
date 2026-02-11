@@ -442,6 +442,43 @@ body {
   }
 }
 
+/* ===== Quick Responses ===== */
+#quick-responses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px;
+  background: none;
+  flex-shrink: 0;
+  justify-content: space-evenly;
+}
+
+#quick-responses.hidden {
+  display: none;
+}
+
+.quick-response-btn {
+  font-family: var(--app-font);
+  font-size: calc(var(--font-size) * 0.85);
+  padding: 4px 10px;
+  background: var(--gb-dark);
+  border: 2px solid var(--gb-darkest);
+  color: var(--gb-lightest);
+  cursor: pointer;
+  transition: background 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0px var(--gb-darkest);
+}
+
+.quick-response-btn:hover {
+  background: var(--gb-darkest);
+}
+
+.quick-response-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
 /* ===== Input Area ===== */
 #input-area {
   display: flex;
