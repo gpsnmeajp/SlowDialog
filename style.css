@@ -37,9 +37,111 @@
   --gb-dark: #306230;
   --gb-light: #8bac0f;
   --gb-lightest: #9bbc0f;
+  --overlay-bg: rgba(15, 56, 15, 0.7);
   --font-size: 16px;
   --border-w: 3px;
   --app-font: 'k8x12S', monospace;
+}
+
+/* ── Theme: GB Classic (default, already in :root) ── */
+
+/* ── Theme: Red ── */
+[data-theme="red"] {
+  --gb-darkest: #3b0a0a;
+  --gb-dark: #7a1a1a;
+  --gb-light: #e86c6c;
+  --gb-lightest: #f2a0a0;
+  --overlay-bg: rgba(59, 10, 10, 0.7);
+}
+
+/* ── Theme: Red Inverted ── */
+[data-theme="red-inv"] {
+  --gb-darkest: #f2a0a0;
+  --gb-dark: #e86c6c;
+  --gb-light: #5a1010;
+  --gb-lightest: #200505;
+  --overlay-bg: rgba(32, 5, 5, 0.8);
+}
+
+/* ── Theme: Amber ── */
+[data-theme="amber"] {
+  --gb-darkest: #3a2400;
+  --gb-dark: #7a5000;
+  --gb-light: #e0a820;
+  --gb-lightest: #f0cc60;
+  --overlay-bg: rgba(58, 36, 0, 0.7);
+}
+
+/* ── Theme: Amber Inverted ── */
+[data-theme="amber-inv"] {
+  --gb-darkest: #f0cc60;
+  --gb-dark: #e0a820;
+  --gb-light: #5a3800;
+  --gb-lightest: #1e1200;
+  --overlay-bg: rgba(30, 18, 0, 0.8);
+}
+
+/* ── Theme: Green ── */
+[data-theme="green"] {
+  --gb-darkest: #0a2e0a;
+  --gb-dark: #1a6a1a;
+  --gb-light: #50c850;
+  --gb-lightest: #90e890;
+  --overlay-bg: rgba(10, 46, 10, 0.7);
+}
+
+/* ── Theme: Green Inverted ── */
+[data-theme="green-inv"] {
+  --gb-darkest: #90e890;
+  --gb-dark: #50c850;
+  --gb-light: #0e4a0e;
+  --gb-lightest: #041804;
+  --overlay-bg: rgba(4, 24, 4, 0.8);
+}
+
+/* ── Theme: Blue ── */
+[data-theme="blue"] {
+  --gb-darkest: #0a1a3b;
+  --gb-dark: #1a3a7a;
+  --gb-light: #6090e0;
+  --gb-lightest: #a0c0f0;
+  --overlay-bg: rgba(10, 26, 59, 0.7);
+}
+
+/* ── Theme: Blue Inverted ── */
+[data-theme="blue-inv"] {
+  --gb-darkest: #a0c0f0;
+  --gb-dark: #6090e0;
+  --gb-light: #0e2058;
+  --gb-lightest: #050e28;
+  --overlay-bg: rgba(5, 14, 40, 0.8);
+}
+
+/* ── Theme: Mono ── */
+[data-theme="mono"] {
+  --gb-darkest: #111111;
+  --gb-dark: #555555;
+  --gb-light: #bbbbbb;
+  --gb-lightest: #eeeeee;
+  --overlay-bg: rgba(17, 17, 17, 0.7);
+}
+
+/* ── Theme: Mono Inverted ── */
+[data-theme="mono-inv"] {
+  --gb-darkest: #eeeeee;
+  --gb-dark: #bbbbbb;
+  --gb-light: #333333;
+  --gb-lightest: #0a0a0a;
+  --overlay-bg: rgba(10, 10, 10, 0.8);
+}
+
+/* ── Theme: GB Classic Inverted ── */
+[data-theme="gb-inv"] {
+  --gb-darkest: #9bbc0f;
+  --gb-dark: #8bac0f;
+  --gb-light: #1a3a10;
+  --gb-lightest: #071a04;
+  --overlay-bg: rgba(7, 26, 4, 0.8);
 }
 
 /* ===== Reset & Base ===== */
@@ -388,7 +490,7 @@ body {
 #settings-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 56, 15, 0.7);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -477,7 +579,7 @@ body {
 #import-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 56, 15, 0.7);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -608,7 +710,7 @@ body {
 #confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 56, 15, 0.7);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -690,7 +792,7 @@ body {
 #intro-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 56, 15, 0.85);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -40,6 +40,7 @@ const Settings = (() => {
         minDelaySec: 2,
         contextSize: 20,
         font: 'k8x12S',
+        theme: 'gb',
         autoAdvance: true,
     };
 
@@ -77,7 +78,16 @@ const Settings = (() => {
         document.documentElement.style.setProperty('--app-font', cssFont);
     }
 
-    return { load, save, get, isConfigured, applyFont };
+    function applyTheme() {
+        const theme = _settings.theme || 'gb';
+        if (theme === 'gb') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+    }
+
+    return { load, save, get, isConfigured, applyFont, applyTheme };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -577,6 +587,7 @@ const UIController = (() => {
     function init() {
         Settings.load();
         Settings.applyFont();
+        Settings.applyTheme();
         ChatHistory.load();
 
         _renderAllMessages();
@@ -1009,6 +1020,7 @@ const UIController = (() => {
         document.getElementById('setting-model').value = s.model;
         document.getElementById('setting-systemprompt').value = s.systemPrompt;
         document.getElementById('setting-font').value = s.font;
+        document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-chardelay').value = s.charDelayMs;
         document.getElementById('setting-mindelay').value = s.minDelaySec;
@@ -1028,12 +1040,14 @@ const UIController = (() => {
             model: document.getElementById('setting-model').value.trim(),
             systemPrompt: document.getElementById('setting-systemprompt').value.trim(),
             font: document.getElementById('setting-font').value,
+            theme: document.getElementById('setting-theme').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             charDelayMs: parseInt(document.getElementById('setting-chardelay').value, 10) || 50,
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
         });
         Settings.applyFont();
+        Settings.applyTheme();
         closeSettings();
     }
 
