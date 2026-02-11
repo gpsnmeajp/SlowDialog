@@ -261,7 +261,7 @@ const ChatHistory = (() => {
     }
 
     function push(role, content) {
-        _messages.push({ role, content });
+        _messages.push({ role, content, timestamp: new Date().toISOString() });
         _trimToContext();
         save();
     }
@@ -826,8 +826,9 @@ const UIController = (() => {
 
     function _sendNewMessage(text) {
         ChatHistory.push('user', text);
-        const idx = ChatHistory.getAll().length - 1;
-        _appendBubble('user', text, idx);
+        const messages = ChatHistory.getAll();
+        const idx = messages.length - 1;
+        _appendBubble('user', text, idx, undefined, messages[idx].timestamp);
         SoundManager.play('user');
         _startStreaming();
     }
@@ -845,6 +846,10 @@ const UIController = (() => {
             // AI が何か出力していた → 表示済みテキストで確定
             if (displayedText.trim()) {
                 ChatHistory.updateLast(displayedText);
+                // 中断された assistant の最後のバブルにタイムスタンプを表示
+                if (lastMsg.timestamp) {
+                    _appendTimestamp('assistant', lastMsg.timestamp);
+                }
             } else {
                 // まだ何も表示されていなかった → assistant メッセージ自体を削除
                 ChatHistory.popLast();
@@ -862,8 +867,9 @@ const UIController = (() => {
             _updateLastBubbleText(combined);
         } else {
             ChatHistory.push('user', newText);
-            const idx = ChatHistory.getAll().length - 1;
-            _appendBubble('user', newText, idx);
+            const messages = ChatHistory.getAll();
+            const idx = messages.length - 1;
+            _appendBubble('user', newText, idx, undefined, messages[idx].timestamp);
         }
 
         _isStreaming = false;
@@ -909,6 +915,11 @@ const UIController = (() => {
                     ChatHistory.popLast();
                 } else {
                     SoundManager.play('assistant_end');
+                    // 最後の assistant バブルにタイムスタンプを表示
+                    if (last && last.timestamp) {
+                        _appendTimestamp('assistant', last.timestamp);
+                        _scrollToBottom();
+                    }
                 }
             },
             // onWaitManual — 手動モードでチャンク待機時
@@ -1045,8 +1056,22 @@ const UIController = (() => {
         importError.classList.remove('hidden');
     }
 
+    // ─── Time Format Helper ───
+    function _formatTime(isoString) {
+        const d = new Date(isoString);
+        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    }
+
+    function _appendTimestamp(role, timestamp) {
+        if (!timestamp) return;
+        const timeDiv = document.createElement('div');
+        timeDiv.className = `msg-timestamp ${role}`;
+        timeDiv.textContent = _formatTime(timestamp);
+        chatMessages.appendChild(timeDiv);
+    }
+
     // ─── DOM Helpers ───
-    function _appendBubble(role, text, historyIndex, chunkIndex) {
+    function _appendBubble(role, text, historyIndex, chunkIndex, timestamp) {
         const div = document.createElement('div');
         div.className = `msg ${role}`;
         if (typeof historyIndex === 'number') {
@@ -1061,6 +1086,9 @@ const UIController = (() => {
             div.textContent = text;
         }
         chatMessages.appendChild(div);
+        if (timestamp) {
+            _appendTimestamp(role, timestamp);
+        }
         _scrollToBottom();
         return div;
     }
@@ -1183,12 +1211,14 @@ const UIController = (() => {
             if (msg.role === 'assistant') {
                 // チャンク分割して個別バブルとして表示
                 const chunks = _splitIntoChunks(msg.content);
+                const validChunks = chunks.filter(c => c.trim());
                 let ci = 0;
-                for (const chunk of chunks) {
-                    if (chunk.trim()) _appendBubble('assistant', chunk.trim(), i, ci++);
+                for (let j = 0; j < validChunks.length; j++) {
+                    const isLast = (j === validChunks.length - 1);
+                    _appendBubble('assistant', validChunks[j].trim(), i, ci++, isLast ? msg.timestamp : null);
                 }
             } else {
-                _appendBubble(msg.role, msg.content, i);
+                _appendBubble(msg.role, msg.content, i, undefined, msg.timestamp);
             }
         }
         _scrollToBottom();

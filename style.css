@@ -378,6 +378,24 @@ body {
   }
 }
 
+/* ===== Message Timestamps ===== */
+.msg-timestamp {
+  font-size: 0.7em;
+  opacity: 0.5;
+  margin: 1px 4px 6px;
+  color: var(--gb-darkest);
+}
+
+.msg-timestamp.user {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.msg-timestamp.assistant {
+  align-self: flex-start;
+  text-align: left;
+}
+
 .msg.user {
   align-self: flex-end;
   background: var(--gb-dark);
