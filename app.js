@@ -268,7 +268,11 @@ const ChatHistory = (() => {
     }
 
     function exportJSON() {
-        const blob = new Blob([JSON.stringify(_messages, null, 2)], { type: 'application/json' });
+        const sys = Settings.get().systemPrompt;
+        const exportData = [];
+        if (sys) exportData.push({ role: 'system', content: sys });
+        exportData.push(..._messages);
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -277,7 +281,13 @@ const ChatHistory = (() => {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    return { load, save, push, updateLast, popLast, peekLast, getAll, clear, buildApiMessages, exportJSON };
+    function importJSON(data) {
+        // system メッセージは除外して会話メッセージのみ取り込む
+        _messages = data.filter(m => m.role !== 'system');
+        save();
+    }
+
+    return { load, save, push, updateLast, popLast, peekLast, getAll, clear, buildApiMessages, exportJSON, importJSON };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -540,6 +550,13 @@ const UIController = (() => {
     const btnSettings = document.getElementById('btn-settings');
     const btnExport = document.getElementById('btn-export');
     const btnClear = document.getElementById('btn-clear');
+    const btnImport = document.getElementById('btn-import');
+    const importOverlay = document.getElementById('import-overlay');
+    const importFileInput = document.getElementById('import-file');
+    const importJsonArea = document.getElementById('import-json');
+    const importError = document.getElementById('import-error');
+    const btnImportExec = document.getElementById('btn-import-exec');
+    const btnImportCancel = document.getElementById('btn-import-cancel');
     const settingsOverlay = document.getElementById('settings-overlay');
     const settingsForm = document.getElementById('settings-form');
     const btnCancel = document.getElementById('btn-cancel-settings');
@@ -590,6 +607,13 @@ const UIController = (() => {
         });
 
         btnExport.addEventListener('click', () => ChatHistory.exportJSON());
+        btnImport.addEventListener('click', _openImportDialog);
+        btnImportExec.addEventListener('click', _handleImport);
+        btnImportCancel.addEventListener('click', _closeImportDialog);
+        importOverlay.addEventListener('click', (e) => {
+            if (e.target === importOverlay) _closeImportDialog();
+        });
+        importFileInput.addEventListener('change', _handleImportFile);
         btnClear.addEventListener('click', _handleClear);
         btnRetry.addEventListener('click', _handleRetry);
 
@@ -753,6 +777,80 @@ const UIController = (() => {
         _typingIndicator = null;
         _continueBtn = null;
         _hideRetryBar();
+    }
+
+    // ─── Import ───
+    function _openImportDialog() {
+        importFileInput.value = '';
+        importJsonArea.value = '';
+        importError.classList.add('hidden');
+        importError.textContent = '';
+        importOverlay.classList.remove('hidden');
+    }
+
+    function _closeImportDialog() {
+        importOverlay.classList.add('hidden');
+    }
+
+    function _handleImportFile() {
+        const file = importFileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            importJsonArea.value = e.target.result;
+        };
+        reader.readAsText(file);
+    }
+
+    function _handleImport() {
+        importError.classList.add('hidden');
+        const raw = importJsonArea.value.trim();
+        if (!raw) {
+            _showImportError(Lang.current() === 'en' ? 'No data provided.' : 'データがありません。');
+            return;
+        }
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch {
+            _showImportError(Lang.current() === 'en' ? 'Invalid JSON format.' : 'JSONの形式が不正です。');
+            return;
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+            _showImportError(Lang.current() === 'en' ? 'JSON must be a non-empty array.' : 'JSONは空でない配列である必要があります。');
+            return;
+        }
+        const valid = data.every(m => m && typeof m.role === 'string' && typeof m.content === 'string');
+        if (!valid) {
+            _showImportError(Lang.current() === 'en' ? 'Each item must have "role" and "content".' : '各要素に "role" と "content" が必要です。');
+            return;
+        }
+        // システムプロンプトがあれば設定に反映
+        const systemMsg = data.find(m => m.role === 'system');
+        if (systemMsg) {
+            const s = Settings.get();
+            s.systemPrompt = systemMsg.content;
+            Settings.save(s);
+        }
+        // ストリーミング中なら停止
+        if (_isStreaming) {
+            ApiClient.abort();
+            TypingSimulator.interrupt();
+            _isStreaming = false;
+        }
+        ChatHistory.importJSON(data);
+        chatMessages.innerHTML = '';
+        _assistantBubblesInTurn = [];
+        _typingIndicator = null;
+        _continueBtn = null;
+        _hideRetryBar();
+        _renderAllMessages();
+        _closeImportDialog();
+    }
+
+    function _showImportError(msg) {
+        importError.textContent = msg;
+        importError.classList.remove('hidden');
     }
 
     // ─── DOM Helpers ───

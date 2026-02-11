@@ -467,9 +467,137 @@ body {
   background: var(--gb-darkest);
 }
 
-#btn-cancel-settings {
+#btn-cancel-settings,
+#btn-import-cancel {
   background: var(--gb-light);
   color: var(--gb-darkest);
+}
+
+/* ===== Import Dialog ===== */
+#import-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 56, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#import-dialog {
+  background: var(--gb-lightest);
+  border: var(--border-w) solid var(--gb-darkest);
+  padding: 20px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+#import-dialog h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+  letter-spacing: 2px;
+  border-bottom: 2px solid var(--gb-darkest);
+  padding-bottom: 8px;
+}
+
+#import-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#import-content label {
+  font-size: 14px;
+  margin-top: 4px;
+  color: var(--gb-dark);
+}
+
+.import-file-label {
+  display: inline-block;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px 16px;
+  background: var(--gb-light);
+  border: 2px solid var(--gb-darkest);
+  color: var(--gb-darkest);
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.1s;
+}
+
+.import-file-label:hover {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
+#import-file {
+  display: none;
+}
+
+.import-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--gb-dark);
+  font-size: 13px;
+}
+
+.import-divider::before,
+.import-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gb-dark);
+}
+
+#import-json {
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 6px 8px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  outline: none;
+  resize: vertical;
+}
+
+#import-error {
+  color: #8b0000;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+#import-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#import-buttons button {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 8px;
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-import-exec {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
+#btn-import-exec:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-import-cancel:hover {
+  background: var(--gb-lightest);
 }
 
 #btn-cancel-settings:hover {

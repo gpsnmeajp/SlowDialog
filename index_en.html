@@ -31,6 +31,12 @@
             stroke-linecap="square" />
         </svg>
       </button>
+      <button id="btn-import" title="Import History">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 17V7M10 7l-3 3M10 7l3 3M4 5h12" stroke="currentColor" stroke-width="2"
+            stroke-linecap="square" />
+        </svg>
+      </button>
       <button id="btn-clear" title="Clear Chat">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path d="M5 5h10M8 5V4h4v1M6 5v11h8V5" stroke="currentColor" stroke-width="2" stroke-linecap="square" />
@@ -112,6 +118,25 @@
       <p>You can "interrupt" at any time. Even while the AI is still talking, just send a message — the AI will swallow its words and listen to you.</p>
       <p>Take it slow. At your own pace.</p>
       <button id="btn-intro-next">Get Started</button>
+    </div>
+  </div>
+
+  <!-- ===== Import Dialog ===== -->
+  <div id="import-overlay" class="hidden">
+    <div id="import-dialog">
+      <h2>Import History</h2>
+      <div id="import-content">
+        <label for="import-file" class="import-file-label">Choose File</label>
+        <input type="file" id="import-file" accept=".json">
+        <div class="import-divider"><span>or</span></div>
+        <label for="import-json">Paste JSON</label>
+        <textarea id="import-json" rows="6" placeholder='[{"role":"user","content":"..."}]'></textarea>
+        <div id="import-error" class="hidden"></div>
+        <div id="import-buttons">
+          <button type="button" id="btn-import-exec">Import</button>
+          <button type="button" id="btn-import-cancel">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 
