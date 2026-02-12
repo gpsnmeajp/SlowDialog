@@ -1275,8 +1275,8 @@ const UIController = (() => {
             const ch = text[i];
             current += ch;
             if (ch === '。') {
-                // 次の文字が「」」なら「」」まで含めて区切る
-                if (i + 1 < text.length && text[i + 1] === '」') {
+                // 次の文字が閉じ括弧系なら含めて区切る
+                if (i + 1 < text.length && '」）)"\'】》〉>'.includes(text[i + 1])) {
                     current += text[++i];
                 }
                 chunks.push(current);
