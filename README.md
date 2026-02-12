@@ -28,6 +28,7 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 <img width="300" src="https://github.com/user-attachments/assets/75485b00-0492-4c5c-bd8e-913ef3eb2b5f" />　<img width="300" src="https://github.com/user-attachments/assets/5d8eb689-e599-4797-a8be-e9300a0d7cc8" />
 
+<img width="300" src="https://github.com/user-attachments/assets/1ddf2a29-6c63-4e37-8cf7-d8dfef98d985" />　<img width="300" src="https://github.com/user-attachments/assets/b0817eed-9493-412e-bb49-7c42547416a2" />
 
 
 
@@ -142,6 +143,7 @@ slowdialog/
 ## ライセンス
 
 フォントファイルを除くソースコードのライセンスは、MIT LICENSEです。
+
 
 
 
