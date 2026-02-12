@@ -664,6 +664,27 @@ body {
   resize: vertical;
 }
 
+#btn-github-link {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 12px;
+  padding: 8px;
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  text-align: center;
+  text-decoration: none;
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+#btn-github-link:hover {
+  background: var(--gb-dark);
+}
+
 #settings-buttons {
   display: flex;
   gap: 8px;
