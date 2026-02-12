@@ -12,7 +12,7 @@ const Lang = (() => {
     const _strings = {
         ja: {
             defaultSystemPrompt: 'あなたは親切なアシスタントです。',
-            defaultQuickResponses: 'なるほど\nちょっと待って\nそうじゃない',
+            defaultQuickResponses: '待って\n長すぎ\n一言で\nなんでやねん\n違うよ',
             continueButton: '続きを読む ▼',
             bubbleUserAction: 'この発言を編集または再送信しますか？',
             bubbleResend: '再送信',
@@ -25,7 +25,7 @@ const Lang = (() => {
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
-            defaultQuickResponses: 'I see\nHold on\nThat\'s not right',
+            defaultQuickResponses: 'Hold on\nToo long\nIn a word?\nWhy?\nNot right',
             continueButton: 'Continue ▼',
             bubbleUserAction: 'Edit or resend this message?',
             bubbleResend: 'Resend',
