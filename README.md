@@ -24,6 +24,11 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 <img width="300" src="https://github.com/user-attachments/assets/dfde7498-61e8-4387-a477-493cc6cfad6b" />　<img width="300" src="https://github.com/user-attachments/assets/409fdcb5-75f8-4f34-9003-f77d415fa128" />
 
+カラーテーマいろいろ
+
+<img width="300" src="https://github.com/user-attachments/assets/75485b00-0492-4c5c-bd8e-913ef3eb2b5f" />　<img width="300" src="https://github.com/user-attachments/assets/5d8eb689-e599-4797-a8be-e9300a0d7cc8" />
+
+
 
 
 本ソフトウェアは、Google Antigravity, Github Copilotでバイブコーディングしたものです。
@@ -137,6 +142,7 @@ slowdialog/
 ## ライセンス
 
 フォントファイルを除くソースコードのライセンスは、MIT LICENSEです。
+
 
 
 
