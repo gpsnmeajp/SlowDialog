@@ -14,6 +14,8 @@ const Lang = (() => {
             defaultSystemPrompt: 'あなたは親切なアシスタントです。',
             defaultQuickResponses: '待って\n長すぎ\n一言で\nなんでやねん\n違うよ',
             continueButton: '続きを読む ▼',
+            pauseButton: '一時停止 ⏸',
+            resumeButton: '再開 ▶',
             bubbleUserAction: 'この発言を編集または再送信しますか？',
             bubbleResend: '再送信',
             bubbleEdit: '編集',
@@ -27,6 +29,8 @@ const Lang = (() => {
             defaultSystemPrompt: 'You are a helpful assistant.',
             defaultQuickResponses: 'Hold on\nToo long\nIn a word?\nWhy?\nNot right',
             continueButton: 'Continue ▼',
+            pauseButton: 'Pause ⏸',
+            resumeButton: 'Resume ▶',
             bubbleUserAction: 'Edit or resend this message?',
             bubbleResend: 'Resend',
             bubbleEdit: 'Edit',
@@ -60,6 +64,7 @@ const Settings = (() => {
         font: 'NotoSansJP',
         theme: 'gb',
         autoAdvance: true,
+        showPauseButton: true,
         soundEnabled: true,
         scanlineEffect: false,
         scanlineStrength: 2,
@@ -470,17 +475,23 @@ const TypingSimulator = (() => {
     let _manualQueue = [];      // 手動モード: チャンクのキュー
     let _manualWaiting = false; // 手動モード: ボタン待ち状態か
     let _isFirstChunk = true;   // 最初のチャンクは自動表示
+    let _paused = false;        // 一時停止状態
+    let _onPaused = null;       // 一時停止時コールバック
+    let _onResumed = null;      // 再開時コールバック
 
-    function start(onDisplayChunk, onAllDone, onWaitManual) {
+    function start(onDisplayChunk, onAllDone, onWaitManual, onPaused, onResumed) {
         _buffer = '';
         _displayedText = '';
         _streamDone = false;
         _onDisplayChunk = onDisplayChunk;
         _onAllDone = onAllDone;
         _onWaitManual = onWaitManual || null;
+        _onPaused = onPaused || null;
+        _onResumed = onResumed || null;
         _manualQueue = [];
         _manualWaiting = false;
         _isFirstChunk = true;
+        _paused = false;
     }
 
     /** API から受信したテキストをバッファに追加 */
@@ -500,6 +511,7 @@ const TypingSimulator = (() => {
         clearTimeout(_timer);
         _timer = null;
         _streamDone = true;
+        _paused = false;
         _manualQueue = [];
         _manualWaiting = false;
         return _displayedText;
@@ -514,6 +526,7 @@ const TypingSimulator = (() => {
 
         // 手動モードでボタン待ち中なら、新チャンクはキューに積むだけ
         const s = Settings.get();
+        if (_paused) return;
         if (!s.autoAdvance && _manualWaiting) {
             // バッファからチャンクを抽出してキューに積む
             let chunk = _extractNextChunk();
@@ -659,7 +672,28 @@ const TypingSimulator = (() => {
         _tryFlush();
     }
 
-    return { start, feed, finish, interrupt, getDisplayedText, resumeManual, hasMoreChunks, switchToAutoAdvance, switchToManualAdvance };
+    /** 自動進行を一時停止 */
+    function pause() {
+        if (_paused) return;
+        _paused = true;
+        if (_timer) {
+            clearTimeout(_timer);
+            _timer = null;
+        }
+        if (_onPaused) _onPaused();
+    }
+
+    /** 一時停止から再開 */
+    function resume() {
+        if (!_paused) return;
+        _paused = false;
+        if (_onResumed) _onResumed();
+        _tryFlush();
+    }
+
+    function isPaused() { return _paused; }
+
+    return { start, feed, finish, interrupt, getDisplayedText, resumeManual, hasMoreChunks, switchToAutoAdvance, switchToManualAdvance, pause, resume, isPaused };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -876,6 +910,7 @@ const UIController = (() => {
         const displayedText = TypingSimulator.interrupt();
         _removeTypingIndicator();
         _removeContinueButton();
+        _removePauseButton();
 
         const lastMsg = ChatHistory.peekLast();
 
@@ -931,6 +966,7 @@ const UIController = (() => {
             (chunk, fullText) => {
                 _removeTypingIndicator();
                 _removeContinueButton();
+                _removePauseButton();
                 const bubble = _appendBubble('assistant', chunk.trim(), assistantHistIdx, _streamChunkCounter++);
                 _assistantBubblesInTurn.push(bubble);
                 SoundManager.play('assistant');
@@ -938,6 +974,7 @@ const UIController = (() => {
                 if (_isStreaming) {
                     if (Settings.get().autoAdvance) {
                         _showTypingIndicator();
+                        _showPauseButton();
                     }
                 }
                 _scrollToBottom();
@@ -946,6 +983,7 @@ const UIController = (() => {
             () => {
                 _removeTypingIndicator();
                 _removeContinueButton();
+                _removePauseButton();
                 _isStreaming = false;
                 const last = ChatHistory.peekLast();
                 if (last && last.role === 'assistant' && !last.content.trim()) {
@@ -963,6 +1001,24 @@ const UIController = (() => {
             () => {
                 _removeTypingIndicator();
                 _showContinueButton();
+            },
+            // onPaused — 自動進行一時停止時
+            () => {
+                _removeTypingIndicator();
+                _removePauseButton();
+                // 一時停止ボタンを再開ボタンに切り替え
+                _pauseBtn = document.createElement('button');
+                _pauseBtn.className = 'continue-btn pause-btn';
+                _pauseBtn.textContent = Lang.t('resumeButton');
+                _pauseBtn.addEventListener('click', _togglePause);
+                chatMessages.appendChild(_pauseBtn);
+                _scrollToBottom();
+            },
+            // onResumed — 自動進行再開時
+            () => {
+                _removePauseButton();
+                _showTypingIndicator();
+                _showPauseButton();
             }
         );
 
@@ -976,6 +1032,7 @@ const UIController = (() => {
                 _isStreaming = false;
                 TypingSimulator.interrupt();
                 _removeTypingIndicator();
+                _removePauseButton();
                 // 空の assistant メッセージを削除
                 const last = ChatHistory.peekLast();
                 if (last && last.role === 'assistant' && !last.content.trim()) {
@@ -1015,6 +1072,7 @@ const UIController = (() => {
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
         _continueBtn = null;
+        _pauseBtn = null;
         _hideRetryBar();
     }
 
@@ -1082,6 +1140,7 @@ const UIController = (() => {
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
         _continueBtn = null;
+        _pauseBtn = null;
         _hideRetryBar();
         _renderAllMessages();
         _renderQuickResponses();
@@ -1190,6 +1249,35 @@ const UIController = (() => {
         if (_continueBtn) {
             _continueBtn.remove();
             _continueBtn = null;
+        }
+    }
+
+    // ─── Pause Button (自動進行中の一時停止/再開) ───
+    let _pauseBtn = null;
+
+    function _showPauseButton() {
+        if (_pauseBtn) return;
+        if (!Settings.get().showPauseButton) return;
+        _pauseBtn = document.createElement('button');
+        _pauseBtn.className = 'continue-btn pause-btn';
+        _pauseBtn.textContent = Lang.t('pauseButton');
+        _pauseBtn.addEventListener('click', _togglePause);
+        chatMessages.appendChild(_pauseBtn);
+        _scrollToBottom();
+    }
+
+    function _removePauseButton() {
+        if (_pauseBtn) {
+            _pauseBtn.remove();
+            _pauseBtn = null;
+        }
+    }
+
+    function _togglePause() {
+        if (TypingSimulator.isPaused()) {
+            TypingSimulator.resume();
+        } else {
+            TypingSimulator.pause();
         }
     }
 
@@ -1362,6 +1450,7 @@ const UIController = (() => {
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
         _continueBtn = null;
+        _pauseBtn = null;
         _hideRetryBar();
 
         _closeBubbleActionDialog();
@@ -1406,6 +1495,7 @@ const UIController = (() => {
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
         _continueBtn = null;
+        _pauseBtn = null;
         _hideRetryBar();
 
         _closeBubbleEditDialog();
@@ -1450,6 +1540,7 @@ const UIController = (() => {
         _assistantBubblesInTurn = [];
         _typingIndicator = null;
         _continueBtn = null;
+        _pauseBtn = null;
         _hideRetryBar();
 
         _closeBubbleDeleteDialog();
@@ -1468,6 +1559,7 @@ const UIController = (() => {
         document.getElementById('setting-font').value = s.font;
         document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
+        document.getElementById('setting-show-pause-button').checked = s.showPauseButton;
         document.getElementById('setting-sound').checked = s.soundEnabled;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
@@ -1540,6 +1632,7 @@ const UIController = (() => {
             font: document.getElementById('setting-font').value,
             theme: document.getElementById('setting-theme').value,
             autoAdvance: document.getElementById('setting-autoadvance').checked,
+            showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,
@@ -1564,8 +1657,10 @@ const UIController = (() => {
                 _removeContinueButton();
                 TypingSimulator.switchToAutoAdvance();
                 _showTypingIndicator();
+                _showPauseButton();
             } else {
                 _removeTypingIndicator();
+                _removePauseButton();
                 TypingSimulator.switchToManualAdvance();
             }
         }
