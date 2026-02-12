@@ -21,6 +21,15 @@ Feel free to chime in whenever you like.
 
 <img width="300" src="https://github.com/user-attachments/assets/aa103612-261d-40ec-99ae-412a3153b6d0" />　<img width="300" src="https://github.com/user-attachments/assets/6a88728e-6468-410e-abc3-fe19a72137b3" />
 
+<img width="300" src="https://github.com/user-attachments/assets/dfde7498-61e8-4387-a477-493cc6cfad6b" />　<img width="300" src="https://github.com/user-attachments/assets/409fdcb5-75f8-4f34-9003-f77d415fa128" />
+
+Color theme
+
+<img width="300" src="https://github.com/user-attachments/assets/75485b00-0492-4c5c-bd8e-913ef3eb2b5f" />　<img width="300" src="https://github.com/user-attachments/assets/5d8eb689-e599-4797-a8be-e9300a0d7cc8" />
+
+<img width="300" src="https://github.com/user-attachments/assets/1ddf2a29-6c63-4e37-8cf7-d8dfef98d985" />　<img width="300" src="https://github.com/user-attachments/assets/b0817eed-9493-412e-bb49-7c42547416a2" />
+
+
 This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 ## Features
@@ -28,10 +37,14 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Delayed Display** — AI responses are split at punctuation marks and line breaks, with pauses proportional to the character count. A typing indicator is shown during the waiting time.
 - **Interruption** — You can send a message even while the AI is still "speaking." The AI output is interrupted, the displayed content is finalized, and the conversation continues from there.
 - **Manual Advance Mode** — Turn off auto-advance and use the "Continue" button to read at your own pace.
+- **Pause/Resume** — Use the pause button during auto-advance to control reading pace.
 - **Quick Responses** — Register frequently used replies as buttons and send them with one click.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
+- **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
 - **Multi-language Support** — Provides Japanese and English interfaces.
-- **Customizable Themes** — Choose from multiple retro-style color themes and scanline effects.
+- **Rich Color Themes** — Choose from 14 retro-style themes including GB Classic, Red, Amber, Green, Blue, Mono, DOS Console, and MSX Console. Each theme has an inverted version.
+- **Font Selection** — Choose from k8x12 series, Misaki Gothic, or Noto Sans JP fonts.
+- **Scanline Effect** — Enable retro CRT-style scanline effects with adjustable intensity.
 - **Sound Effects** — Retro sound effects play when sending and receiving messages.
 - **Game Boy–style Design** — A nostalgic, calm aesthetic powered by pixel fonts and a 4-color palette.
 - **No Frameworks** — A simple single-page application built with HTML, CSS, and JavaScript only.
@@ -64,15 +77,38 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | API Key | API key | — |
 | Model Name | Model identifier to use | `google/gemini-3-flash-preview` |
 | System Prompt | Instructions for the AI | `You are a helpful assistant.` |
-| Font | Display font | k8x12S |
+| Font | Display font | Noto Sans JP |
 | Theme | Color theme | GB Classic |
 | Auto Advance | Whether to advance automatically | On |
+| Pause Button (Auto Advance) | Show pause button during auto-advance | On |
 | Sound Effects | Whether to enable sound effects | On |
+| Borders | Show message borders | On |
+| Send Time to AI | Add timestamp to user messages | Off |
 | Scanline Effect | Retro-style scanline effect | Off |
+| Scanline Strength | Scanline intensity (1-50%) | 2% |
 | Delay per Character | Delay display speed (ms) | 150 |
 | Minimum Delay | Minimum delay between chunks (seconds) | 2 |
-| Context Size | Number of history messages sent to API | 20 |
-| Quick Responses | One-click replies (newline-separated) | I see… |
+| Context Size | Number of history messages sent to API | 1000 |
+| Quick Responses | One-click replies (newline-separated) | Hold on<br>Too long<br>In a word?<br>Why?<br>Not right |
+
+#### Font Options
+
+- **k8x12S** — 8-dot non-kanji pixel font
+- **k8x12** — Standard pixel font
+- **k8x12L** — Tall kana variant pixel font
+- **Misaki Gothic** — 8×8 dot Japanese font
+- **Noto Sans JP** — Google's readable sans-serif font
+
+#### Color Theme List
+
+- **GB Classic / GB Classic (Inverted)** — Game Boy-style 4-color green palette
+- **Red / Red (Inverted)** — Red monochrome palette
+- **Amber / Amber (Inverted)** — Amber monochrome palette (retro PC style)
+- **Green / Green (Inverted)** — Green monochrome palette (terminal style)
+- **Blue / Blue (Inverted)** — Blue monochrome palette
+- **Mono / Mono (Inverted)** — Black and white palette
+- **DOS Console** — MS-DOS style color palette
+- **MSX Console** — MSX style color palette
 
 Settings are saved in the browser's localStorage and automatically loaded on subsequent visits.
 
