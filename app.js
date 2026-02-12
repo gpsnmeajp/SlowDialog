@@ -66,6 +66,7 @@ const Settings = (() => {
         autoAdvance: true,
         showPauseButton: true,
         soundEnabled: true,
+        showBorders: true,
         scanlineEffect: false,
         scanlineStrength: 2,
         sendTimestamp: false,
@@ -125,7 +126,15 @@ const Settings = (() => {
         document.documentElement.style.setProperty('--scanline-strength', strength);
     }
 
-    return { load, save, get, isConfigured, applyFont, applyTheme, applyScanline };
+    function applyBorders() {
+        if (_settings.showBorders) {
+            document.body.classList.remove('no-borders');
+        } else {
+            document.body.classList.add('no-borders');
+        }
+    }
+
+    return { load, save, get, isConfigured, applyFont, applyTheme, applyScanline, applyBorders };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -786,6 +795,7 @@ const UIController = (() => {
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();
+        Settings.applyBorders();
         ChatHistory.load();
 
         _renderAllMessages();
@@ -1561,6 +1571,7 @@ const UIController = (() => {
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-show-pause-button').checked = s.showPauseButton;
         document.getElementById('setting-sound').checked = s.soundEnabled;
+        document.getElementById('setting-show-borders').checked = s.showBorders;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
         document.getElementById('setting-scanline-strength').value = s.scanlineStrength ?? 2;
@@ -1634,6 +1645,7 @@ const UIController = (() => {
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
+            showBorders: document.getElementById('setting-show-borders').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,
             scanlineStrength: parseInt(document.getElementById('setting-scanline-strength').value, 10) || 2,
@@ -1645,6 +1657,7 @@ const UIController = (() => {
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();
+        Settings.applyBorders();
         _renderQuickResponses();
         _originalTheme = null;
         _originalScanline = null;

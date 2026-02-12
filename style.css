@@ -1121,6 +1121,52 @@ body {
   display: none !important;
 }
 
+/* ===== No Borders Mode ===== */
+body.no-borders #toolbar {
+  border-bottom-color: transparent;
+}
+
+body.no-borders .msg {
+  border-color: transparent;
+}
+
+body.no-borders .typing-indicator {
+  border-color: transparent;
+}
+
+body.no-borders #input-area {
+  border-top-color: transparent;
+}
+
+body.no-borders #user-input {
+  border-color: transparent;
+}
+
+body.no-borders #retry-bar {
+  border-color: transparent;
+}
+
+body.no-borders .msg-timestamp {
+  border-color: transparent;
+}
+
+body.no-borders #settings-dialog h2 {
+  border-bottom-color: transparent;
+}
+
+body.no-borders #import-dialog h2 {
+  border-bottom-color: transparent;
+}
+
+body.no-borders #intro-dialog h2 {
+  border-bottom-color: transparent;
+}
+
+body.no-borders .import-divider::before,
+body.no-borders .import-divider::after {
+  background: transparent;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
   :root {
