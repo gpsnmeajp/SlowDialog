@@ -558,8 +558,8 @@ const TypingSimulator = (() => {
         for (let i = 0; i < _buffer.length; i++) {
             const ch = _buffer[i];
             if (ch === '。') {
-                // 次の文字が「」」なら「」」で区切る
-                if (i + 1 < _buffer.length && _buffer[i + 1] === '」') {
+                // 次の文字が閉じ括弧系なら含めて区切る
+                if (i + 1 < _buffer.length && '」）)"\'】》〉>'.includes(_buffer[i + 1])) {
                     idx = i + 1;
                 } else {
                     idx = i;
