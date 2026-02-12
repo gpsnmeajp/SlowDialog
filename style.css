@@ -179,6 +179,24 @@
   --overlay-bg: rgba(7, 26, 4, 0.8);
 }
 
+/* ── Theme: DOS Console ── */
+[data-theme="dos"] {
+  --gb-darkest: #AAAAAA;
+  --gb-dark: #AAAAAA;
+  --gb-light: #000000;
+  --gb-lightest: #000000;
+  --overlay-bg: rgba(0, 0, 0, 0.85);
+}
+
+/* ── Theme: MSX Console ── */
+[data-theme="msx"] {
+  --gb-darkest: #AAAAAA;
+  --gb-dark: #AAAAAA;
+  --gb-light: #0000AA;
+  --gb-lightest: #0000AA;
+  --overlay-bg: rgba(33, 33, 138, 0.8);
+}
+
 /* ===== Reset & Base ===== */
 *,
 *::before,
