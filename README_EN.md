@@ -39,6 +39,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Manual Advance Mode** — Turn off auto-advance and use the "Continue" button to read at your own pace.
 - **Pause/Resume** — Use the pause button during auto-advance to control reading pace.
 - **Quick Responses** — Register frequently used replies as buttons and send them with one click.
+- **Mode Tags** — Select tags from dropdowns to append them to your prompt on send. Combined with your system prompt, this lets you switch AI behavior on the fly.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
 - **Multi-language Support** — Provides Japanese and English interfaces.
@@ -90,6 +91,8 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Minimum Delay | Minimum delay between chunks (seconds) | 2 |
 | Context Size | Number of history messages sent to API | 1000 |
 | Quick Responses | One-click replies (newline-separated) | Hold on<br>Too long<br>In a word?<br>Why?<br>Not right |
+| Mode Tags | Show mode tag dropdowns | Off |
+| Mode 1–4 | Mode choices (newline-separated) | (see defaults) |
 
 #### Font Options
 
@@ -123,9 +126,46 @@ You can download the conversation history in JSON format from the export button 
 From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text is not simply hidden — the history is modified.)
 - If nothing has been displayed yet, the previous user message and the new message are concatenated.
 
-### Exporting History
+### Exporting / Importing History
 
-You can download the conversation history in JSON format from the export button in the toolbar.
+You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, mode tag settings, system prompt, and conversation history.
+
+From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text.
+
+## Using Mode Tags
+
+Mode tags automatically append a tag to the end of your user prompt on each send.  
+The tag is added only at send time and does not appear in the chat display or history.
+
+### Setup
+
+1. Enable **"Mode Tags"** in the settings dialog.
+2. Enter newline-separated choices for **Mode 1–Mode 4** (modes with no entries will not show a dropdown).
+3. After saving, dropdowns appear below the quick response buttons.
+
+### How to Use
+
+When you send a message, the currently selected value from each dropdown is appended to the prompt, separated by a space.
+
+**Example:** With Mode 1 set to `#short only`, sending "What's the plan for today?" delivers  
+`What's the plan for today? #short only`  
+to the AI.
+
+### Combining with the System Prompt
+
+Define what each tag means in your system prompt, and you can instantly switch the AI's response style just by changing the dropdown.
+
+**Example system prompt:**
+```
+You are a helpful assistant.
+When the user's message contains the following tags, respond in the corresponding style.
+#short only  → Answer concisely in 3 lines or fewer.
+#long allowed → Answer in detail.
+#task        → Organize things as a bullet-point to-do list.
+#chat        → Have a friendly, casual conversation.
+#energetic   → Speak in a bright, upbeat tone.
+#tired       → Speak in a calm, gentle tone.
+```
 
 ## File Structure
 
