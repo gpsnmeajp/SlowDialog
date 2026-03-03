@@ -13,6 +13,10 @@ const Lang = (() => {
         ja: {
             defaultSystemPrompt: 'あなたは親切なアシスタントです。',
             defaultQuickResponses: '待って\n長すぎ\n一言で\nなんでやねん\n違うよ',
+            defaultMode1: '#短文のみ\n#長文許可',
+            defaultMode2: '#タスク\n#雑談\n#ソクラテス',
+            defaultMode3: '#元気\n#疲れている',
+            defaultMode4: '#現実\n#物語\n#哲学',
             continueButton: '続きを読む ▼',
             pauseButton: '一時停止 ⏸',
             resumeButton: '再開 ▶',
@@ -28,6 +32,10 @@ const Lang = (() => {
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
             defaultQuickResponses: 'Hold on\nToo long\nIn a word?\nWhy?\nNot right',
+            defaultMode1: '#short only\n#long allowed',
+            defaultMode2: '#task\n#chat\n#socrates',
+            defaultMode3: '#energetic\n#tired',
+            defaultMode4: '#reality\n#story\n#philosophy',
             continueButton: 'Continue ▼',
             pauseButton: 'Pause ⏸',
             resumeButton: 'Resume ▶',
@@ -72,10 +80,10 @@ const Settings = (() => {
         sendTimestamp: false,
         quickResponses: Lang.t('defaultQuickResponses'),
         modeTagEnabled: false,
-        mode1: '#短文のみ\n#長文許可',
-        mode2: '#タスク\n#雑談\n#ソクラテス',
-        mode3: '#元気\n#疲れている',
-        mode4: '#現実\n#物語\n#哲学',
+        mode1: Lang.t('defaultMode1'),
+        mode2: Lang.t('defaultMode2'),
+        mode3: Lang.t('defaultMode3'),
+        mode4: Lang.t('defaultMode4'),
     };
 
     const FONT_MAP = {
