@@ -564,6 +564,46 @@ body {
   box-shadow: none;
 }
 
+/* ===== Mode Dropdowns ===== */
+#mode-dropdowns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px;
+  background: none;
+  flex-shrink: 0;
+  justify-content: space-evenly;
+}
+
+#mode-dropdowns.hidden {
+  display: none;
+}
+
+.mode-dropdown {
+  font-family: var(--app-font);
+  font-size: calc(var(--font-size) * 0.85);
+  padding: 4px 10px;
+  background: var(--gb-dark);
+  border: 2px solid var(--gb-darkest);
+  color: var(--gb-lightest);
+  cursor: pointer;
+  box-shadow: 2px 2px 0px var(--gb-darkest);
+}
+
+.mode-dropdown:hover {
+  background-color: var(--gb-darkest);
+}
+
+.mode-dropdown:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.mode-dropdown option {
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+}
+
 /* ===== Input Area ===== */
 #input-area {
   display: flex;

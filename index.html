@@ -50,6 +50,9 @@
   <!-- ===== クイックレスポンスエリア ===== -->
   <div id="quick-responses"></div>
 
+  <!-- ===== モードドロップダウンエリア ===== -->
+  <div id="mode-dropdowns" class="hidden"></div>
+
   <!-- ===== 入力エリア ===== -->
   <footer id="input-area">
     <textarea id="user-input" placeholder="メッセージを入力..." rows="1"></textarea>
@@ -150,6 +153,23 @@
 
         <label for="setting-quickresponses">クイックレスポンス (改行区切り)</label>
         <textarea id="setting-quickresponses" rows="3" placeholder="なるほど&#10;ちょっと待って&#10;そうじゃない"></textarea>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="setting-mode-tag-enabled">
+          モードタグ有効
+        </label>
+
+        <label for="setting-mode1">モード1 (改行区切り)</label>
+        <textarea id="setting-mode1" rows="2" placeholder="#短文のみ&#10;#長文許可"></textarea>
+
+        <label for="setting-mode2">モード2 (改行区切り)</label>
+        <textarea id="setting-mode2" rows="2" placeholder="#タスク&#10;#雑談&#10;#ソクラテス"></textarea>
+
+        <label for="setting-mode3">モード3 (改行区切り)</label>
+        <textarea id="setting-mode3" rows="2" placeholder="#元気&#10;#疲れている"></textarea>
+
+        <label for="setting-mode4">モード4 (改行区切り)</label>
+        <textarea id="setting-mode4" rows="2" placeholder="#現実&#10;#物語&#10;#哲学"></textarea>
 
         <a href="https://github.com/gpsnmeajp/SlowDialog" target="_blank" rel="noopener noreferrer" id="btn-github-link">GitHub リポジトリ</a>
 

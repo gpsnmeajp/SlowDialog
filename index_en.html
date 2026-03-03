@@ -50,6 +50,9 @@
   <!-- ===== Quick Responses ===== -->
   <div id="quick-responses"></div>
 
+  <!-- ===== Mode Dropdowns ===== -->
+  <div id="mode-dropdowns" class="hidden"></div>
+
   <!-- ===== Input Area ===== -->
   <footer id="input-area">
     <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
@@ -150,6 +153,23 @@
 
         <label for="setting-quickresponses">Quick Responses (one per line)</label>
         <textarea id="setting-quickresponses" rows="3" placeholder="I see&#10;Hold on&#10;That's not right"></textarea>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="setting-mode-tag-enabled">
+          Mode Tags
+        </label>
+
+        <label for="setting-mode1">Mode 1 (one per line)</label>
+        <textarea id="setting-mode1" rows="2" placeholder="#short only&#10;#long allowed"></textarea>
+
+        <label for="setting-mode2">Mode 2 (one per line)</label>
+        <textarea id="setting-mode2" rows="2" placeholder="#task&#10;#chat&#10;#socrates"></textarea>
+
+        <label for="setting-mode3">Mode 3 (one per line)</label>
+        <textarea id="setting-mode3" rows="2" placeholder="#energetic&#10;#tired"></textarea>
+
+        <label for="setting-mode4">Mode 4 (one per line)</label>
+        <textarea id="setting-mode4" rows="2" placeholder="#reality&#10;#story&#10;#philosophy"></textarea>
 
         <a href="https://github.com/gpsnmeajp/SlowDialog" target="_blank" rel="noopener noreferrer" id="btn-github-link">GitHub Repository</a>
 

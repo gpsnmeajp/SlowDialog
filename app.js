@@ -71,6 +71,11 @@ const Settings = (() => {
         scanlineStrength: 2,
         sendTimestamp: false,
         quickResponses: Lang.t('defaultQuickResponses'),
+        modeTagEnabled: false,
+        mode1: '#短文のみ\n#長文許可',
+        mode2: '#タスク\n#雑談\n#ソクラテス',
+        mode3: '#元気\n#疲れている',
+        mode4: '#現実\n#物語\n#哲学',
     };
 
     const FONT_MAP = {
@@ -344,20 +349,28 @@ const ChatHistory = (() => {
     }
 
     /** API に送るメッセージ配列を構築 */
-    function buildApiMessages() {
+    function buildApiMessages(modeTags) {
         const s = Settings.get();
         const msgs = [];
         if (s.systemPrompt) msgs.push({ role: 'system', content: s.systemPrompt });
-        for (const m of _messages) {
+        for (let i = 0; i < _messages.length; i++) {
+            const m = _messages[i];
+            let content = m.content;
+            // 最後のユーザーメッセージにモードタグを付与
+            const isLastUser = (m.role === 'user' && i === _messages.length - 1)
+                || (m.role === 'user' && i === _messages.length - 2 && _messages[_messages.length - 1].role === 'assistant' && !_messages[_messages.length - 1].content);
+            if (isLastUser && modeTags) {
+                content = content + ' ' + modeTags;
+            }
             if (s.sendTimestamp && m.role === 'user' && m.timestamp) {
                 const d = new Date(m.timestamp);
                 const dowJa = ['日','月','火','水','木','金','土'];
                 const dowEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                 const dow = (Lang.current() === 'en' ? dowEn : dowJa)[d.getDay()];
                 const ts = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}(${dow}) ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-                msgs.push({ role: m.role, content: m.content + `<timestamp>${ts}</timestamp>` });
+                msgs.push({ role: m.role, content: content + `<timestamp>${ts}</timestamp>` });
             } else {
-                msgs.push({ role: m.role, content: m.content });
+                msgs.push({ role: m.role, content });
             }
         }
         return msgs;
@@ -367,6 +380,11 @@ const ChatHistory = (() => {
         const s = Settings.get();
         const exportData = [];
         if (s.quickResponses) exportData.push({ role: '_quickresponse', content: s.quickResponses });
+        if (s.modeTagEnabled !== undefined) exportData.push({ role: '_modeTagEnabled', content: s.modeTagEnabled ? '1' : '0' });
+        if (s.mode1) exportData.push({ role: '_mode1', content: s.mode1 });
+        if (s.mode2) exportData.push({ role: '_mode2', content: s.mode2 });
+        if (s.mode3) exportData.push({ role: '_mode3', content: s.mode3 });
+        if (s.mode4) exportData.push({ role: '_mode4', content: s.mode4 });
         if (s.systemPrompt) exportData.push({ role: 'system', content: s.systemPrompt });
         exportData.push(..._messages);
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -381,13 +399,26 @@ const ChatHistory = (() => {
     function importJSON(data) {
         // _quickresponse エントリがあれば設定に反映
         const qrMsg = data.find(m => m.role === '_quickresponse');
+        const s = Settings.get();
         if (qrMsg) {
-            const s = Settings.get();
             s.quickResponses = qrMsg.content;
+        }
+        // モード設定エントリがあれば設定に反映
+        const modeTagMsg = data.find(m => m.role === '_modeTagEnabled');
+        if (modeTagMsg) s.modeTagEnabled = modeTagMsg.content === '1';
+        const mode1Msg = data.find(m => m.role === '_mode1');
+        if (mode1Msg) s.mode1 = mode1Msg.content;
+        const mode2Msg = data.find(m => m.role === '_mode2');
+        if (mode2Msg) s.mode2 = mode2Msg.content;
+        const mode3Msg = data.find(m => m.role === '_mode3');
+        if (mode3Msg) s.mode3 = mode3Msg.content;
+        const mode4Msg = data.find(m => m.role === '_mode4');
+        if (mode4Msg) s.mode4 = mode4Msg.content;
+        if (qrMsg || modeTagMsg || mode1Msg || mode2Msg || mode3Msg || mode4Msg) {
             Settings.save(s);
         }
-        // system / _quickresponse メッセージは除外して会話メッセージのみ取り込む
-        _messages = data.filter(m => m.role !== 'system' && m.role !== '_quickresponse');
+        // system / _quickresponse / _mode* メッセージは除外して会話メッセージのみ取り込む
+        _messages = data.filter(m => m.role !== 'system' && m.role !== '_quickresponse' && !m.role.startsWith('_mode'));
         save();
     }
 
@@ -740,6 +771,7 @@ const UIController = (() => {
     const userInput = document.getElementById('user-input');
     const btnSend = document.getElementById('btn-send');
     const quickResponsesContainer = document.getElementById('quick-responses');
+    const modeDropdownsContainer = document.getElementById('mode-dropdowns');
     const btnSettings = document.getElementById('btn-settings');
     const btnExport = document.getElementById('btn-export');
     const btnClear = document.getElementById('btn-clear');
@@ -801,6 +833,7 @@ const UIController = (() => {
         _renderAllMessages();
         _bindEvents();
         _renderQuickResponses();
+        _renderModeDropdowns();
 
         const introSeen = localStorage.getItem('slowdialog_intro_seen');
         if (!introSeen) {
@@ -963,7 +996,9 @@ const UIController = (() => {
         _showTypingIndicator();
 
         // API に送るメッセージを構築したら、空の assistant エントリを履歴に仮追加
-        const apiMessages = ChatHistory.buildApiMessages();
+        const modeValues = _getSelectedModeValues();
+        const modeTags = modeValues.length > 0 ? modeValues.join(' ') : null;
+        const apiMessages = ChatHistory.buildApiMessages(modeTags);
         _lastRetryMessages = apiMessages;
         ChatHistory.push('assistant', '');
         const assistantHistIdx = ChatHistory.getAll().length - 1;
@@ -1154,6 +1189,7 @@ const UIController = (() => {
         _hideRetryBar();
         _renderAllMessages();
         _renderQuickResponses();
+        _renderModeDropdowns();
         _closeImportDialog();
     }
 
@@ -1340,6 +1376,53 @@ const UIController = (() => {
         } else {
             _sendNewMessage(text);
         }
+    }
+
+    // ─── Mode Dropdowns ───
+    function _renderModeDropdowns() {
+        modeDropdownsContainer.innerHTML = '';
+        const s = Settings.get();
+        if (!s.modeTagEnabled) {
+            modeDropdownsContainer.classList.add('hidden');
+            return;
+        }
+        const modes = [
+            { key: 'mode1', value: s.mode1 },
+            { key: 'mode2', value: s.mode2 },
+            { key: 'mode3', value: s.mode3 },
+            { key: 'mode4', value: s.mode4 },
+        ];
+        let hasAny = false;
+        for (const mode of modes) {
+            const raw = mode.value || '';
+            const items = raw.split('\n').map(x => x.trim()).filter(Boolean);
+            if (items.length === 0) continue;
+            hasAny = true;
+            const select = document.createElement('select');
+            select.className = 'mode-dropdown';
+            select.dataset.modeKey = mode.key;
+            for (const item of items) {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                select.appendChild(opt);
+            }
+            modeDropdownsContainer.appendChild(select);
+        }
+        if (hasAny) {
+            modeDropdownsContainer.classList.remove('hidden');
+        } else {
+            modeDropdownsContainer.classList.add('hidden');
+        }
+    }
+
+    function _getSelectedModeValues() {
+        const selects = modeDropdownsContainer.querySelectorAll('.mode-dropdown');
+        const values = [];
+        for (const sel of selects) {
+            if (sel.value) values.push(sel.value);
+        }
+        return values;
     }
 
     /** 履歴からメッセージを復元表示。assistant メッセージはチャンク分割して複数バブルで表示 */
@@ -1580,6 +1663,11 @@ const UIController = (() => {
         document.getElementById('setting-mindelay').value = s.minDelaySec;
         document.getElementById('setting-contextsize').value = s.contextSize;
         document.getElementById('setting-quickresponses').value = s.quickResponses || '';
+        document.getElementById('setting-mode-tag-enabled').checked = s.modeTagEnabled;
+        document.getElementById('setting-mode1').value = s.mode1 || '';
+        document.getElementById('setting-mode2').value = s.mode2 || '';
+        document.getElementById('setting-mode3').value = s.mode3 || '';
+        document.getElementById('setting-mode4').value = s.mode4 || '';
         settingsOverlay.classList.remove('hidden');
     }
 
@@ -1653,12 +1741,18 @@ const UIController = (() => {
             minDelaySec: parseFloat(document.getElementById('setting-mindelay').value) || 0,
             contextSize: parseInt(document.getElementById('setting-contextsize').value, 10) || 20,
             quickResponses: document.getElementById('setting-quickresponses').value,
+            modeTagEnabled: document.getElementById('setting-mode-tag-enabled').checked,
+            mode1: document.getElementById('setting-mode1').value,
+            mode2: document.getElementById('setting-mode2').value,
+            mode3: document.getElementById('setting-mode3').value,
+            mode4: document.getElementById('setting-mode4').value,
         });
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();
         Settings.applyBorders();
         _renderQuickResponses();
+        _renderModeDropdowns();
         _originalTheme = null;
         _originalScanline = null;
         _originalScanlineStrength = null;
