@@ -18,7 +18,7 @@ slowdialog/
 ├── index.html          # SPA のエントリポイント（日本語）
 ├── index_en.html       # SPA のエントリポイント（英語）
 ├── style.css           # 全スタイル定義
-├── app.js              # 全ロジック（8モジュール）
+├── app.js              # 全ロジック（9モジュール）
 ├── DIRECTION.md        # 企画書
 ├── ARCHITECTURE.md     # 本ファイル
 ├── README.md           # ドキュメント（日本語）
@@ -41,7 +41,7 @@ slowdialog/
 
 ## モジュール構成 (app.js)
 
-app.js は IIFE パターンで 8 つのモジュールに分割されている。
+app.js は IIFE パターンで 9 つのモジュールに分割されている。
 モジュール間の依存関係は一方向で、循環依存はない。
 
 ```
@@ -97,6 +97,16 @@ app.js は IIFE パターンで 8 つのモジュールに分割されている�
 | `theme` | string | `gb` | カラーテーマ |
 | `autoAdvance` | boolean | `true` | 自動進行モード |
 | `soundEnabled` | boolean | `true` | 効果音を有効にするか |
+| `voicevoxEnabled` | boolean | `false` | VOICEVOX音声合成を有効にするか |
+| `voicevoxUrl` | string | `http://localhost:50021` | VOICEVOX Engine URL |
+| `voicevoxSpeaker` | number | `3` | VOICEVOX話者ID |
+| `voicevoxSpeakers` | array | `[]` | 取得済み話者リスト |
+| `voicevoxSpeedScale` | number | `1` | VOICEVOX話速 |
+| `voicevoxPitchScale` | number | `0` | VOICEVOX音高 |
+| `voicevoxIntonationScale` | number | `1` | VOICEVOX抑揚 |
+| `voicevoxVolumeScale` | number | `1` | VOICEVOX音量 |
+| `voicevoxPrePhonemeLength` | number | `0.1` | VOICEVOX開始無音 |
+| `voicevoxPostPhonemeLength` | number | `0.1` | VOICEVOX終了無音 |
 | `scanlineEffect` | boolean | `false` | スキャンライン効果 |
 | `scanlineStrength` | number | `2` | スキャンライン強度（%） |
 | `sendTimestamp` | boolean | `false` | タイムスタンプをAPIに送信するか |
@@ -280,7 +290,21 @@ feed(text) → _tryFlush() → _extractNextChunk()
 
 ---
 
-### 8. UIController
+### 8. VoiceVoxClient
+
+VOICEVOX Engine への接続、話者取得、音声合成を担当する。
+
+**主要メソッド:**
+- `testConnection(url)` — `/version` へ接続して疎通確認
+- `fetchSpeakers(url)` — `/speakers` から話者/スタイル一覧を取得
+- `synthesize(text)` — `/audio_query` → `/synthesis` の順でWAVを生成し、Object URLを返す
+- `play(url)` — 生成済みObject URLをAudioで再生し、終了時に解放
+
+**発話パラメータ:** `audio_query` の結果に `speedScale`, `pitchScale`, `intonationScale`, `volumeScale`, `prePhonemeLength`, `postPhonemeLength` を反映する。
+
+---
+
+### 9. UIController
 
 DOM操作・イベント管理・各モジュールの統合を担う最上位モジュール。
 
@@ -317,7 +341,7 @@ _handleSend()
 ```
 _startStreaming()
   → ChatHistory.push('assistant', '')  [仮エントリ]
-  → TypingSimulator.start(onDisplayChunk, onAllDone, onWaitManual)
+  → TypingSimulator.start(onDisplayChunk, onAllDone, onWaitManual, ..., onPrepareChunk)
   → ApiClient.streamChat(...)
       onChunk → TypingSimulator.feed()
       onDone  → TypingSimulator.finish()
@@ -346,6 +370,8 @@ _performInterrupt(newText)
 #### 表示チャンク処理
 
 - 各チャンクは **個別のチャットバブル** として追加（`_appendBubble`）
+- VOICEVOX有効時は、チャンク確定時に `VoiceVoxClient.synthesize()` を開始し、音声準備後にバブル表示と再生を同期
+- 次チャンクへの進行は、通常の待機時間と `VoiceVoxClient.play()` の再生完了Promiseの両方を待つ
 - assistant メッセージは `SimpleMarkdown.render()` で HTML 変換して `innerHTML` に設定
 - user メッセージは `textContent` で設定（XSS対策）
 - タイムスタンプは最後のチャンクの後に表示

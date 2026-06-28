@@ -29,6 +29,12 @@ const Lang = (() => {
             bubbleDeleteConfirm: 'この発言とそれ以降を削除しますか？',
             bubbleDelete: '削除',
             cancel: 'キャンセル',
+            voicevoxTesting: '接続テスト中...',
+            voicevoxTestOk: '接続しました。',
+            voicevoxTestNg: '接続に失敗しました。',
+            voicevoxLoadingSpeakers: '話者リストを取得中...',
+            voicevoxSpeakersOk: '話者リストを取得しました。',
+            voicevoxSpeakersNg: '話者リストの取得に失敗しました。',
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
@@ -49,6 +55,12 @@ const Lang = (() => {
             bubbleDeleteConfirm: 'Delete this message and all subsequent messages?',
             bubbleDelete: 'Delete',
             cancel: 'Cancel',
+            voicevoxTesting: 'Testing connection...',
+            voicevoxTestOk: 'Connected.',
+            voicevoxTestNg: 'Connection failed.',
+            voicevoxLoadingSpeakers: 'Loading speakers...',
+            voicevoxSpeakersOk: 'Speakers loaded.',
+            voicevoxSpeakersNg: 'Failed to load speakers.',
         },
     };
 
@@ -77,6 +89,16 @@ const Settings = (() => {
         autoAdvance: true,
         showPauseButton: true,
         soundEnabled: true,
+        voicevoxEnabled: false,
+        voicevoxUrl: 'http://localhost:50021',
+        voicevoxSpeaker: 3,
+        voicevoxSpeakers: [],
+        voicevoxSpeedScale: 1,
+        voicevoxPitchScale: 0,
+        voicevoxIntonationScale: 1,
+        voicevoxVolumeScale: 1,
+        voicevoxPrePhonemeLength: 0.1,
+        voicevoxPostPhonemeLength: 0.1,
         showBorders: true,
         scanlineEffect: false,
         scanlineStrength: 2,
@@ -520,7 +542,11 @@ const TypingSimulator = (() => {
     let _timer = null;
     let _streamDone = false;
     let _onDisplayChunk = null; // (chunkText, fullText) => void
+    let _onPrepareChunk = null; // (chunkText) => Promise<any>
     let _onAllDone = null;
+    let _isPreparingDisplay = false;
+    let _waitingAfterDisplay = false;
+    let _scheduleSeq = 0;
 
     let _onWaitManual = null;
     let _manualQueue = [];      // 手動モード: チャンクのキュー
@@ -530,11 +556,12 @@ const TypingSimulator = (() => {
     let _onPaused = null;       // 一時停止時コールバック
     let _onResumed = null;      // 再開時コールバック
 
-    function start(onDisplayChunk, onAllDone, onWaitManual, onPaused, onResumed) {
+    function start(onDisplayChunk, onAllDone, onWaitManual, onPaused, onResumed, onPrepareChunk) {
         _buffer = '';
         _displayedText = '';
         _streamDone = false;
         _onDisplayChunk = onDisplayChunk;
+        _onPrepareChunk = onPrepareChunk || null;
         _onAllDone = onAllDone;
         _onWaitManual = onWaitManual || null;
         _onPaused = onPaused || null;
@@ -543,6 +570,9 @@ const TypingSimulator = (() => {
         _manualWaiting = false;
         _isFirstChunk = true;
         _paused = false;
+        _isPreparingDisplay = false;
+        _waitingAfterDisplay = false;
+        _scheduleSeq++;
     }
 
     /** API から受信したテキストをバッファに追加 */
@@ -565,6 +595,9 @@ const TypingSimulator = (() => {
         _paused = false;
         _manualQueue = [];
         _manualWaiting = false;
+        _isPreparingDisplay = false;
+        _waitingAfterDisplay = false;
+        _scheduleSeq++;
         return _displayedText;
     }
 
@@ -573,22 +606,22 @@ const TypingSimulator = (() => {
     }
 
     function _tryFlush() {
-        if (_timer) return;
+        if (_timer || _isPreparingDisplay) return;
 
         // 手動モードでボタン待ち中なら、新チャンクはキューに積むだけ
         const s = Settings.get();
+        if (_waitingAfterDisplay) {
+            _queueBufferedChunks();
+            return;
+        }
         if (_paused) return;
+        if (s.autoAdvance && _manualQueue.length > 0) {
+            _scheduleDisplayItem(_manualQueue.shift());
+            return;
+        }
         if (!s.autoAdvance && _manualWaiting) {
             // バッファからチャンクを抽出してキューに積む
-            let chunk = _extractNextChunk();
-            while (chunk !== null) {
-                _manualQueue.push(chunk);
-                chunk = _extractNextChunk();
-            }
-            if (_streamDone && _buffer.length > 0) {
-                _manualQueue.push(_buffer);
-                _buffer = '';
-            }
+            _queueBufferedChunks();
             return;
         }
 
@@ -639,18 +672,28 @@ const TypingSimulator = (() => {
     }
 
     function _scheduleDisplay(chunk) {
+        _scheduleDisplayItem(_createChunkItem(chunk));
+    }
+
+    function _scheduleDisplayItem(item) {
         const s = Settings.get();
         if (!s.autoAdvance) {
             if (_isFirstChunk) {
                 // 最初のチャンクは自動表示
                 _isFirstChunk = false;
-                _displayedText += chunk;
-                if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
-                _tryFlush();
+                _displayChunkItem(item, (playbackDone) => {
+                    const seq = _scheduleSeq;
+                    _waitingAfterDisplay = true;
+                    playbackDone.then(() => {
+                        if (seq !== _scheduleSeq) return;
+                        _waitingAfterDisplay = false;
+                        _tryFlush();
+                    });
+                });
                 return;
             }
             // 手動モード: キューに積んでボタン表示
-            _manualQueue.push(chunk);
+            _manualQueue.push(item);
             if (!_manualWaiting) {
                 _manualWaiting = true;
                 if (_onWaitManual) _onWaitManual();
@@ -658,15 +701,63 @@ const TypingSimulator = (() => {
             return;
         }
         _isFirstChunk = false;
-        _displayedText += chunk;
-        if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
-        const typingDelay = chunk.length * s.charDelayMs;
-        const minDelay = (s.minDelaySec || 0) * 1000;
-        const delay = Math.max(typingDelay, minDelay);
-        _timer = setTimeout(() => {
-            _timer = null;
-            _tryFlush();
-        }, delay);
+        _displayChunkItem(item, (playbackDone) => {
+            const typingDelay = item.text.length * s.charDelayMs;
+            const minDelay = (s.minDelaySec || 0) * 1000;
+            const delay = Math.max(typingDelay, minDelay);
+            const seq = _scheduleSeq;
+            _waitingAfterDisplay = true;
+            const delayDone = new Promise((resolve) => {
+                _timer = setTimeout(resolve, delay);
+            }).then(() => {
+                _timer = null;
+            });
+            Promise.all([delayDone, playbackDone]).then(() => {
+                if (seq !== _scheduleSeq) return;
+                _waitingAfterDisplay = false;
+                if (!_paused) _tryFlush();
+            });
+        });
+    }
+
+    function _queueBufferedChunks() {
+        let chunk = _extractNextChunk();
+        while (chunk !== null) {
+            _manualQueue.push(_createChunkItem(chunk));
+            chunk = _extractNextChunk();
+        }
+        if (_streamDone && _buffer.length > 0) {
+            _manualQueue.push(_createChunkItem(_buffer));
+            _buffer = '';
+        }
+    }
+
+    function _createChunkItem(chunk) {
+        const prepared = _onPrepareChunk
+            ? Promise.resolve(_onPrepareChunk(chunk)).catch((err) => {
+                console.warn('Chunk preparation failed:', err);
+                return null;
+            })
+            : Promise.resolve(null);
+        return { text: chunk, prepared };
+    }
+
+    function _displayChunkItem(item, afterDisplay) {
+        const seq = _scheduleSeq;
+        _isPreparingDisplay = true;
+        item.prepared.then((prepared) => {
+            if (seq !== _scheduleSeq) {
+                if (typeof prepared === 'string') URL.revokeObjectURL(prepared);
+                return;
+            }
+            _isPreparingDisplay = false;
+            _displayedText += item.text;
+            const playbackResult = _onDisplayChunk ? _onDisplayChunk(item.text, _displayedText, prepared) : null;
+            const playbackDone = Promise.resolve(playbackResult).catch((err) => {
+                console.warn('Chunk playback failed:', err);
+            });
+            if (afterDisplay) afterDisplay(playbackDone);
+        });
     }
 
     /** 手動モードでキューの先頭チャンクを表示して次へ進む */
@@ -679,24 +770,33 @@ const TypingSimulator = (() => {
             }
             return;
         }
-        const chunk = _manualQueue.shift();
-        _displayedText += chunk;
-        if (_onDisplayChunk) _onDisplayChunk(chunk, _displayedText);
+        const item = _manualQueue.shift();
+        _displayChunkItem(item, (playbackDone) => {
+            const seq = _scheduleSeq;
+            _waitingAfterDisplay = true;
+            playbackDone.then(() => {
+                if (seq !== _scheduleSeq) return;
+                _waitingAfterDisplay = false;
+                // キューにまだ残りがあるか、バッファから追加抽出
+                _tryFlush();
 
-        // キューにまだ残りがあるか、バッファから追加抽出
-        _tryFlush();
-
-        if (_manualQueue.length === 0 && _streamDone && _buffer.length === 0) {
-            _manualWaiting = false;
-            if (_onAllDone) _onAllDone();
-        } else if (_manualQueue.length === 0 && !_streamDone) {
-            // ストリーム中でキュー空 → 次のチャンクが届くまで待ち解除
-            _manualWaiting = false;
-        }
-        // else: キューにまだある → ボタン再表示は UIController 側で制御
+                if (_manualQueue.length > 0) {
+                    _manualWaiting = true;
+                    if (_onWaitManual) _onWaitManual();
+                } else if (_streamDone && _buffer.length === 0) {
+                    _manualWaiting = false;
+                    if (_onAllDone) _onAllDone();
+                } else if (!_streamDone) {
+                    // ストリーム中でキュー空 → 次のチャンクが届くまで待ち解除
+                    _manualWaiting = false;
+                }
+                // else: キューにまだある → ボタン再表示は UIController 側で制御
+            });
+        });
     }
 
     function hasMoreChunks() {
+        if (_isPreparingDisplay) return false;
         return _manualQueue.length > 0 || (!_streamDone && _buffer.length > 0);
     }
 
@@ -704,7 +804,7 @@ const TypingSimulator = (() => {
     function switchToAutoAdvance() {
         _manualWaiting = false;
         if (_manualQueue.length > 0) {
-            const queuedText = _manualQueue.join('');
+            const queuedText = _manualQueue.map(item => item.text).join('');
             _manualQueue = [];
             _buffer = queuedText + _buffer;
         }
@@ -716,8 +816,14 @@ const TypingSimulator = (() => {
     /** autoAdvance=false に切り替え時: 自動進行タイマーを停止し手動モードへ遷移 */
     function switchToManualAdvance() {
         if (_timer) {
-            clearTimeout(_timer);
-            _timer = null;
+            if (!_waitingAfterDisplay) {
+                clearTimeout(_timer);
+                _timer = null;
+            }
+        }
+        if (_isPreparingDisplay) {
+            _isPreparingDisplay = false;
+            _scheduleSeq++;
         }
         _isFirstChunk = false; // 途中切替なので最初のチャンク扱いしない
         _tryFlush();
@@ -728,8 +834,10 @@ const TypingSimulator = (() => {
         if (_paused) return;
         _paused = true;
         if (_timer) {
-            clearTimeout(_timer);
-            _timer = null;
+            if (!_waitingAfterDisplay) {
+                clearTimeout(_timer);
+                _timer = null;
+            }
         }
         if (_onPaused) _onPaused();
     }
@@ -773,6 +881,102 @@ const SoundManager = (() => {
 })();
 
 // ────────────────────────────────────────────────────────────
+// VoiceVoxClient — VOICEVOX Engine 連携
+// ────────────────────────────────────────────────────────────
+const VoiceVoxClient = (() => {
+    function _baseUrl(url) {
+        return (url || Settings.get().voicevoxUrl || 'http://localhost:50021').replace(/\/+$/, '');
+    }
+
+    async function testConnection(url) {
+        const res = await fetch(`${_baseUrl(url)}/version`);
+        if (!res.ok) throw new Error(`VOICEVOX version failed: ${res.status}`);
+        return res.text();
+    }
+
+    async function fetchSpeakers(url) {
+        const res = await fetch(`${_baseUrl(url)}/speakers`);
+        if (!res.ok) throw new Error(`VOICEVOX speakers failed: ${res.status}`);
+        return await res.json();
+    }
+
+    async function synthesize(text) {
+        const s = Settings.get();
+        if (!s.voicevoxEnabled) return null;
+        const normalized = (text || '').trim();
+        if (!normalized) return null;
+        const speaker = parseInt(s.voicevoxSpeaker, 10) || 3;
+        const baseUrl = _baseUrl();
+
+        const queryUrl = `${baseUrl}/audio_query?text=${encodeURIComponent(normalized)}&speaker=${encodeURIComponent(speaker)}`;
+        const queryRes = await fetch(queryUrl, { method: 'POST' });
+        if (!queryRes.ok) throw new Error(`VOICEVOX audio_query failed: ${queryRes.status}`);
+        const query = await queryRes.json();
+
+        _applyAudioQuerySettings(query, s);
+
+        const synthUrl = `${baseUrl}/synthesis?speaker=${encodeURIComponent(speaker)}`;
+        const synthRes = await fetch(synthUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(query),
+        });
+        if (!synthRes.ok) throw new Error(`VOICEVOX synthesis failed: ${synthRes.status}`);
+        const blob = await synthRes.blob();
+        return URL.createObjectURL(blob);
+    }
+
+    function play(url) {
+        if (!url) return Promise.resolve();
+        return new Promise((resolve) => {
+            try {
+                const audio = new Audio(url);
+                let done = false;
+                const finish = () => {
+                    if (done) return;
+                    done = true;
+                    URL.revokeObjectURL(url);
+                    resolve();
+                };
+                const waitDurationThenFinish = () => {
+                    const seconds = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0;
+                    setTimeout(finish, seconds * 1000);
+                };
+                audio.addEventListener('ended', finish, { once: true });
+                audio.addEventListener('error', finish, { once: true });
+                audio.play().catch(() => {
+                    if (audio.readyState >= 1) {
+                        waitDurationThenFinish();
+                    } else {
+                        audio.addEventListener('loadedmetadata', waitDurationThenFinish, { once: true });
+                        audio.load();
+                    }
+                });
+            } catch {
+                URL.revokeObjectURL(url);
+                resolve();
+            }
+        });
+    }
+
+    function _applyAudioQuerySettings(query, s) {
+        _setNumber(query, 'speedScale', s.voicevoxSpeedScale);
+        _setNumber(query, 'pitchScale', s.voicevoxPitchScale);
+        _setNumber(query, 'intonationScale', s.voicevoxIntonationScale);
+        _setNumber(query, 'volumeScale', s.voicevoxVolumeScale);
+        _setNumber(query, 'prePhonemeLength', s.voicevoxPrePhonemeLength);
+        _setNumber(query, 'postPhonemeLength', s.voicevoxPostPhonemeLength);
+    }
+
+    function _setNumber(obj, key, value) {
+        const n = parseFloat(value);
+        if (Number.isFinite(n)) obj[key] = n;
+    }
+
+    return { testConnection, fetchSpeakers, synthesize, play };
+})();
+
+// ────────────────────────────────────────────────────────────
 // UIController
 // ────────────────────────────────────────────────────────────
 const UIController = (() => {
@@ -808,6 +1012,10 @@ const UIController = (() => {
     const settingsOverlay = document.getElementById('settings-overlay');
     const settingsForm = document.getElementById('settings-form');
     const btnCancel = document.getElementById('btn-cancel-settings');
+    const btnVoiceVoxTest = document.getElementById('btn-voicevox-test');
+    const btnVoiceVoxLoadSpeakers = document.getElementById('btn-voicevox-load-speakers');
+    const voiceVoxStatus = document.getElementById('voicevox-status');
+    const voiceVoxSettings = document.getElementById('voicevox-settings');
     const retryBar = document.getElementById('retry-bar');
     const btnRetry = document.getElementById('btn-retry');
     const introOverlay = document.getElementById('intro-overlay');
@@ -845,6 +1053,7 @@ const UIController = (() => {
     let _callStartedAt = null;
     let _lastCallDurationMs = null;
     let _callTimerId = null;
+    let _voicevoxSpeakers = [];
 
     function init() {
         Settings.load();
@@ -885,6 +1094,9 @@ const UIController = (() => {
         btnSettings.addEventListener('click', openSettings);
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
+        btnVoiceVoxTest.addEventListener('click', _handleVoiceVoxTest);
+        btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
+        document.getElementById('setting-voicevox-enabled').addEventListener('change', _handleVoiceVoxEnabledChange);
         document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
         document.getElementById('setting-scanline').addEventListener('change', _handleScanlinePreview);
         document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
@@ -1062,12 +1274,13 @@ const UIController = (() => {
 
         TypingSimulator.start(
             // onDisplayChunk
-            (chunk, fullText) => {
+            (chunk, fullText, voiceUrl) => {
                 _removeTypingIndicator();
                 _removeContinueButton();
                 _removePauseButton();
                 const bubble = _appendBubble('assistant', chunk.trim(), assistantHistIdx, _streamChunkCounter++);
                 _assistantBubblesInTurn.push(bubble);
+                const playbackDone = VoiceVoxClient.play(voiceUrl);
                 SoundManager.play('assistant');
                 ChatHistory.updateLast(fullText);
                 if (_isStreaming) {
@@ -1077,6 +1290,7 @@ const UIController = (() => {
                     }
                 }
                 _scrollToBottom();
+                return playbackDone;
             },
             // onAllDone
             () => {
@@ -1118,7 +1332,9 @@ const UIController = (() => {
                 _removePauseButton();
                 _showTypingIndicator();
                 _showPauseButton();
-            }
+            },
+            // onPrepareChunk — チャンク確定時点で音声合成を開始
+            (chunk) => VoiceVoxClient.synthesize(chunk)
         );
 
         ApiClient.streamChat(apiMessages, {
@@ -1821,6 +2037,18 @@ const UIController = (() => {
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-show-pause-button').checked = s.showPauseButton;
         document.getElementById('setting-sound').checked = s.soundEnabled;
+        document.getElementById('setting-voicevox-enabled').checked = s.voicevoxEnabled;
+        _toggleVoiceVoxSettings(s.voicevoxEnabled);
+        document.getElementById('setting-voicevox-url').value = s.voicevoxUrl || 'http://localhost:50021';
+        _voicevoxSpeakers = Array.isArray(s.voicevoxSpeakers) ? s.voicevoxSpeakers : [];
+        _populateVoiceVoxSpeakers(_voicevoxSpeakers, s.voicevoxSpeaker);
+        document.getElementById('setting-voicevox-speed').value = s.voicevoxSpeedScale ?? 1;
+        document.getElementById('setting-voicevox-pitch').value = s.voicevoxPitchScale ?? 0;
+        document.getElementById('setting-voicevox-intonation').value = s.voicevoxIntonationScale ?? 1;
+        document.getElementById('setting-voicevox-volume').value = s.voicevoxVolumeScale ?? 1;
+        document.getElementById('setting-voicevox-pre-phoneme').value = s.voicevoxPrePhonemeLength ?? 0.1;
+        document.getElementById('setting-voicevox-post-phoneme').value = s.voicevoxPostPhonemeLength ?? 0.1;
+        voiceVoxStatus.textContent = '';
         document.getElementById('setting-show-borders').checked = s.showBorders;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
@@ -1888,6 +2116,74 @@ const UIController = (() => {
         document.documentElement.style.setProperty('--scanline-strength', val / 100);
     }
 
+    async function _handleVoiceVoxTest() {
+        voiceVoxStatus.textContent = Lang.t('voicevoxTesting');
+        try {
+            await VoiceVoxClient.testConnection(_getVoiceVoxUrlFromForm());
+            voiceVoxStatus.textContent = Lang.t('voicevoxTestOk');
+        } catch (err) {
+            console.warn('VOICEVOX connection test failed:', err);
+            voiceVoxStatus.textContent = Lang.t('voicevoxTestNg');
+        }
+    }
+
+    function _handleVoiceVoxEnabledChange() {
+        _toggleVoiceVoxSettings(document.getElementById('setting-voicevox-enabled').checked);
+    }
+
+    function _toggleVoiceVoxSettings(enabled) {
+        voiceVoxSettings.classList.toggle('hidden', !enabled);
+    }
+
+    async function _handleVoiceVoxLoadSpeakers() {
+        voiceVoxStatus.textContent = Lang.t('voicevoxLoadingSpeakers');
+        try {
+            const speakers = await VoiceVoxClient.fetchSpeakers(_getVoiceVoxUrlFromForm());
+            _voicevoxSpeakers = Array.isArray(speakers) ? speakers : [];
+            _populateVoiceVoxSpeakers(_voicevoxSpeakers, document.getElementById('setting-voicevox-speaker').value);
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersOk');
+        } catch (err) {
+            console.warn('VOICEVOX speaker loading failed:', err);
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersNg');
+        }
+    }
+
+    function _getVoiceVoxUrlFromForm() {
+        return document.getElementById('setting-voicevox-url').value.trim() || 'http://localhost:50021';
+    }
+
+    function _populateVoiceVoxSpeakers(speakers, selectedId) {
+        const select = document.getElementById('setting-voicevox-speaker');
+        select.innerHTML = '';
+        const flat = [];
+        for (const speaker of speakers || []) {
+            for (const style of speaker.styles || []) {
+                flat.push({
+                    id: style.id,
+                    label: `${speaker.name} / ${style.name} (${style.id})`,
+                });
+            }
+        }
+        if (flat.length === 0) {
+            flat.push({ id: selectedId || 3, label: Lang.current() === 'en' ? `Speaker ID ${selectedId || 3}` : `話者ID ${selectedId || 3}` });
+        }
+        const selected = selectedId !== undefined && selectedId !== null ? String(selectedId) : String(flat[0].id);
+        let hasSelected = false;
+        for (const item of flat) {
+            const opt = document.createElement('option');
+            opt.value = String(item.id);
+            opt.textContent = item.label;
+            if (String(item.id) === selected) hasSelected = true;
+            select.appendChild(opt);
+        }
+        select.value = hasSelected ? selected : String(flat[0].id);
+    }
+
+    function _readNumber(id, fallback) {
+        const n = parseFloat(document.getElementById(id).value);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
     function _handleSaveSettings(e) {
         e.preventDefault();
         const previousMode = Settings.get().appMode || 'chat';
@@ -1903,6 +2199,16 @@ const UIController = (() => {
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
+            voicevoxEnabled: document.getElementById('setting-voicevox-enabled').checked,
+            voicevoxUrl: _getVoiceVoxUrlFromForm(),
+            voicevoxSpeaker: parseInt(document.getElementById('setting-voicevox-speaker').value, 10) || 3,
+            voicevoxSpeakers: _voicevoxSpeakers,
+            voicevoxSpeedScale: _readNumber('setting-voicevox-speed', 1),
+            voicevoxPitchScale: _readNumber('setting-voicevox-pitch', 0),
+            voicevoxIntonationScale: _readNumber('setting-voicevox-intonation', 1),
+            voicevoxVolumeScale: _readNumber('setting-voicevox-volume', 1),
+            voicevoxPrePhonemeLength: _readNumber('setting-voicevox-pre-phoneme', 0.1),
+            voicevoxPostPhonemeLength: _readNumber('setting-voicevox-post-phoneme', 0.1),
             showBorders: document.getElementById('setting-show-borders').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,

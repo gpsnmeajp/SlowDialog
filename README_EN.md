@@ -43,6 +43,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
+- **VOICEVOX Speech Synthesis** — Connect to VOICEVOX Engine and synthesize AI responses in the same units as chat bubbles.
 - **Multi-language Support** — Provides Japanese and English interfaces.
 - **Rich Color Themes** — Choose from 14 retro-style themes including GB Classic, Red, Amber, Green, Blue, Mono, DOS Console, and MSX Console. Each theme has an inverted version.
 - **Font Selection** — Choose from k8x12 series, Misaki Gothic, or Noto Sans JP fonts.
@@ -55,6 +56,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 - A modern browser (latest version of Chrome, Firefox, Safari, or Edge)
 - An endpoint and API key for an OpenAI-compatible ChatCompletion API (with SSE streaming support)
+- VOICEVOX Engine running locally or on the same network when using speech synthesis
 
 ## Usage
 
@@ -85,6 +87,10 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Auto Advance | Whether to advance automatically | On |
 | Pause Button (Auto Advance) | Show pause button during auto-advance | On |
 | Sound Effects | Whether to enable sound effects | On |
+| VOICEVOX Speech Synthesis | Read AI responses aloud with VOICEVOX | Off |
+| VOICEVOX URL | VOICEVOX Engine URL | `http://localhost:50021` |
+| VOICEVOX Speaker | Speaker ID used for synthesis | 3 |
+| VOICEVOX Speech Parameters | Speed, pitch, intonation, volume, pre/post silence | Defaults per field |
 | Borders | Show message borders | On |
 | Send Time to AI | Add timestamp to user messages | Off |
 | Scanline Effect | Retro-style scanline effect | Off |
@@ -133,6 +139,16 @@ From the import button, you can restore history by uploading a previously export
 You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, mode tag settings, system prompt, and conversation history.
 
 From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text.
+
+## VOICEVOX Speech Synthesis
+
+Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI responses aloud through VOICEVOX. The default URL is `http://localhost:50021`.
+
+- **Test Connection** — Checks whether SlowDialog can reach VOICEVOX Engine through `/version`.
+- **Load Speakers** — Loads speakers and styles from `/speakers` and updates the speaker selector.
+- **Speech Parameters** — Configure speed, pitch, intonation, volume, pre-phoneme length, and post-phoneme length.
+
+Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.
 
 ## Text Call Mode
 

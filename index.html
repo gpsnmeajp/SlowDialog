@@ -139,6 +139,44 @@
         </label>
 
         <label class="checkbox-row">
+          <input type="checkbox" id="setting-voicevox-enabled">
+          VOICEVOX音声合成
+        </label>
+
+        <div id="voicevox-settings" class="settings-subsection hidden">
+          <label for="setting-voicevox-url">VOICEVOX接続先URL</label>
+          <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
+          <div class="settings-button-row">
+            <button type="button" id="btn-voicevox-test">接続テスト</button>
+            <button type="button" id="btn-voicevox-load-speakers">話者リスト取得</button>
+          </div>
+          <div id="voicevox-status" class="settings-status"></div>
+
+          <label for="setting-voicevox-speaker">VOICEVOX話者</label>
+          <select id="setting-voicevox-speaker">
+            <option value="3">話者ID 3</option>
+          </select>
+
+          <label for="setting-voicevox-speed">話速</label>
+          <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-pitch">音高</label>
+          <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
+
+          <label for="setting-voicevox-intonation">抑揚</label>
+          <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-volume">音量</label>
+          <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-pre-phoneme">開始無音 (秒)</label>
+          <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+          <label for="setting-voicevox-post-phoneme">終了無音 (秒)</label>
+          <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
+        </div>
+
+        <label class="checkbox-row">
           <input type="checkbox" id="setting-show-borders" checked>
           枠線
         </label>

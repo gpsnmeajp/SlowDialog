@@ -139,6 +139,44 @@
         </label>
 
         <label class="checkbox-row">
+          <input type="checkbox" id="setting-voicevox-enabled">
+          VOICEVOX Speech Synthesis
+        </label>
+
+        <div id="voicevox-settings" class="settings-subsection hidden">
+          <label for="setting-voicevox-url">VOICEVOX URL</label>
+          <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
+          <div class="settings-button-row">
+            <button type="button" id="btn-voicevox-test">Test Connection</button>
+            <button type="button" id="btn-voicevox-load-speakers">Load Speakers</button>
+          </div>
+          <div id="voicevox-status" class="settings-status"></div>
+
+          <label for="setting-voicevox-speaker">VOICEVOX Speaker</label>
+          <select id="setting-voicevox-speaker">
+            <option value="3">Speaker ID 3</option>
+          </select>
+
+          <label for="setting-voicevox-speed">Speed</label>
+          <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-pitch">Pitch</label>
+          <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
+
+          <label for="setting-voicevox-intonation">Intonation</label>
+          <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-volume">Volume</label>
+          <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
+
+          <label for="setting-voicevox-pre-phoneme">Pre-phoneme Length (sec)</label>
+          <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+          <label for="setting-voicevox-post-phoneme">Post-phoneme Length (sec)</label>
+          <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
+        </div>
+
+        <label class="checkbox-row">
           <input type="checkbox" id="setting-show-borders" checked>
           Borders
         </label>

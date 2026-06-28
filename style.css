@@ -608,6 +608,44 @@ body {
   color: var(--gb-darkest);
 }
 
+.settings-button-row {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-button-row button {
+  flex: 1;
+  font-family: var(--app-font);
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  cursor: pointer;
+}
+
+.settings-button-row button:hover {
+  background: var(--gb-darkest);
+}
+
+.settings-status {
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--gb-darkest);
+}
+
+.settings-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 16px;
+  border-left: 2px solid var(--gb-dark);
+}
+
+.settings-subsection.hidden {
+  display: none;
+}
+
 @keyframes dot-bounce {
 
   0%,
