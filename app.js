@@ -1236,6 +1236,7 @@ const UIController = (() => {
         _callStartedAt = Date.now();
         _lastCallDurationMs = null;
         _startCallTimer();
+        SoundManager.play('begin');
         _applyInteractionMode();
         _hideRetryBar();
         ChatHistory.push('user', CALL_START_PROMPT);
@@ -1252,6 +1253,7 @@ const UIController = (() => {
         _stopStreamingForModeChange();
         _hideRetryBar();
         _applyInteractionMode();
+        SoundManager.play('end');
     }
 
     function _performInterrupt(newText) {
