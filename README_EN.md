@@ -140,7 +140,7 @@ Select **"Text Call"** from **"Mode"** at the top of the settings dialog. In sta
 
 When you press "Start Call", the normal chat screen opens and displays **"Call started"**. At the same time, SlowDialog automatically sends an internal call-start message to the AI, prompting it to begin the conversation.
 
-During a call, the header shows an **"End Call"** button in the center. Pressing it returns to standby without clearing any conversation history.
+During a call, the header shows an **"End Call"** button in the center, with the call duration displayed to its right. Pressing it returns to standby without clearing any conversation history. The standby screen shows **"Previous Call Duration"** and the previous call duration prominently above the start button.
 
 ## Using Mode Tags
 

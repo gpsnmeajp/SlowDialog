@@ -301,6 +301,19 @@ body {
   transform: translateX(-50%) scale(0.96);
 }
 
+#call-duration {
+  position: absolute;
+  left: calc(50% + 76px);
+  right: 158px;
+  font-family: var(--app-font);
+  font-size: calc(var(--font-size) * 0.9);
+  color: var(--gb-lightest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ===== Chat Area ===== */
 #chat-area {
   flex: 1;
@@ -338,13 +351,35 @@ body {
 #call-standby {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 24px;
   min-height: 100%;
 }
 
 #call-standby.hidden {
   display: none;
+}
+
+#last-call-duration {
+  text-align: center;
+  color: var(--gb-darkest);
+}
+
+#last-call-duration.hidden {
+  display: none;
+}
+
+.call-duration-caption {
+  font-size: calc(var(--font-size) * 0.9);
+  margin-bottom: 6px;
+}
+
+#last-call-duration-value {
+  font-size: calc(var(--font-size) * 2.4);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 #btn-start-call {

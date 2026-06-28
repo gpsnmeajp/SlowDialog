@@ -14,6 +14,7 @@
   <header id="toolbar">
     <h1 id="app-title">SlowDialog</h1>
     <button id="btn-end-call" class="hidden">End Call</button>
+    <div id="call-duration" class="hidden" aria-live="polite">00:00</div>
     <div id="toolbar-buttons">
       <button id="btn-settings" title="Settings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -46,6 +47,10 @@
   <!-- ===== Chat Area ===== -->
   <main id="chat-area">
     <div id="call-standby" class="hidden">
+      <div id="last-call-duration" class="hidden">
+        <div class="call-duration-caption">Previous Call Duration</div>
+        <div id="last-call-duration-value">00:00</div>
+      </div>
       <button id="btn-start-call">Start Call</button>
     </div>
     <div id="chat-messages"></div>

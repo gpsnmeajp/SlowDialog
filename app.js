@@ -784,6 +784,9 @@ const UIController = (() => {
     const callStandby = document.getElementById('call-standby');
     const btnStartCall = document.getElementById('btn-start-call');
     const btnEndCall = document.getElementById('btn-end-call');
+    const callDuration = document.getElementById('call-duration');
+    const lastCallDuration = document.getElementById('last-call-duration');
+    const lastCallDurationValue = document.getElementById('last-call-duration-value');
     const userInput = document.getElementById('user-input');
     const inputArea = document.getElementById('input-area');
     const btnSend = document.getElementById('btn-send');
@@ -839,6 +842,9 @@ const UIController = (() => {
     let _originalScanline = null; // 設定ダイアログを開いた時のスキャンライン状態
     let _originalScanlineStrength = null;
     let _isCallActive = false;
+    let _callStartedAt = null;
+    let _lastCallDurationMs = null;
+    let _callTimerId = null;
 
     function init() {
         Settings.load();
@@ -974,6 +980,9 @@ const UIController = (() => {
             return;
         }
         _isCallActive = true;
+        _callStartedAt = Date.now();
+        _lastCallDurationMs = null;
+        _startCallTimer();
         _applyInteractionMode();
         _hideRetryBar();
         ChatHistory.push('user', CALL_START_PROMPT);
@@ -985,6 +994,7 @@ const UIController = (() => {
     }
 
     function _handleEndCall() {
+        _finishCallTimer();
         _isCallActive = false;
         _stopStreamingForModeChange();
         _hideRetryBar();
@@ -1459,6 +1469,7 @@ const UIController = (() => {
         chatMessages.classList.toggle('hidden', isStandby);
         inputArea.classList.toggle('hidden', isStandby);
         btnEndCall.classList.toggle('hidden', !isTextCall || !_isCallActive);
+        _renderCallDuration(isTextCall, isStandby);
 
         if (isStandby) {
             quickResponsesContainer.classList.add('hidden');
@@ -1468,6 +1479,55 @@ const UIController = (() => {
             _renderQuickResponses();
             _renderModeDropdowns();
         }
+    }
+
+    function _startCallTimer() {
+        _stopCallTimer();
+        _updateCallDuration();
+        _callTimerId = setInterval(_updateCallDuration, 1000);
+    }
+
+    function _finishCallTimer() {
+        if (_callStartedAt !== null) {
+            _lastCallDurationMs = Date.now() - _callStartedAt;
+        }
+        _callStartedAt = null;
+        _stopCallTimer();
+        _updateCallDuration();
+    }
+
+    function _stopCallTimer() {
+        if (_callTimerId !== null) {
+            clearInterval(_callTimerId);
+            _callTimerId = null;
+        }
+    }
+
+    function _updateCallDuration() {
+        const durationMs = _isCallActive && _callStartedAt !== null
+            ? Date.now() - _callStartedAt
+            : _lastCallDurationMs;
+        const text = _formatDuration(durationMs || 0);
+        callDuration.textContent = text;
+        lastCallDurationValue.textContent = text;
+    }
+
+    function _renderCallDuration(isTextCall, isStandby) {
+        if (!isTextCall) {
+            callDuration.classList.add('hidden');
+            lastCallDuration.classList.add('hidden');
+            return;
+        }
+        callDuration.classList.toggle('hidden', !_isCallActive);
+        lastCallDuration.classList.toggle('hidden', !isStandby || _lastCallDurationMs === null);
+        if (_isCallActive || _lastCallDurationMs !== null) _updateCallDuration();
+    }
+
+    function _formatDuration(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
     // ─── Mode Dropdowns ───
@@ -1865,8 +1925,10 @@ const UIController = (() => {
         _renderModeDropdowns();
         if (nextMode === 'chat') {
             _isCallActive = false;
+            _finishCallTimer();
         } else if (previousMode !== nextMode) {
             _isCallActive = false;
+            _finishCallTimer();
             _stopStreamingForModeChange();
         }
         _applyInteractionMode();

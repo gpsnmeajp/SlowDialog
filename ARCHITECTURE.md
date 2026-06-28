@@ -372,7 +372,9 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
   - 履歴には通話開始用の内部ユーザーメッセージを追加し、既存の `_startStreaming()` 経路でAIへ送信
   - 通常のユーザーメッセージと同じく、有効なモードタグやタイムスタンプはAPI送信時に付加される
 - 通話中はヘッダー中央の「通話を切断」ボタンを表示。
+- 通話中は「通話を切断」ボタンと設定ボタン群の間に通話時間を表示し、1秒ごとに更新する。
 - 「通話を切断」クリック時は `_isCallActive = false` に戻し、必要なら進行中ストリームを停止する。履歴は消去しない。
+- 待機画面では `_lastCallDurationMs` を使って、中央上に「前回の通話時間」と前回の通話時間を大きく表示する。
 
 #### メッセージ編集・削除
 
@@ -402,9 +404,10 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 
 ```
 <body>
-  <header id="toolbar">        ← タイトル + 通話切断 + 設定/エクスポート/インポート/クリアボタン
+  <header id="toolbar">        ← タイトル + 通話切断 + 通話時間 + 設定/エクスポート/インポート/クリアボタン
   <main id="chat-area">         ← スクロール領域
     <div id="call-standby">     ← 文字通話モードの待機画面
+      <div id="last-call-duration"> ← 前回の通話時間
     <div id="chat-messages">    ← バブル・インジケータの親
   <div id="quick-responses">    ← クイックレスポンスボタンエリア
   <footer id="input-area">      ← テキストエリア + 送信ボタン

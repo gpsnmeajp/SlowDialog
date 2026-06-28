@@ -14,6 +14,7 @@
   <header id="toolbar">
     <h1 id="app-title">SlowDialog</h1>
     <button id="btn-end-call" class="hidden">通話を切断</button>
+    <div id="call-duration" class="hidden" aria-live="polite">00:00</div>
     <div id="toolbar-buttons">
       <button id="btn-settings" title="設定">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -46,6 +47,10 @@
   <!-- ===== チャットエリア ===== -->
   <main id="chat-area">
     <div id="call-standby" class="hidden">
+      <div id="last-call-duration" class="hidden">
+        <div class="call-duration-caption">前回の通話時間</div>
+        <div id="last-call-duration-value">00:00</div>
+      </div>
       <button id="btn-start-call">通話を開始</button>
     </div>
     <div id="chat-messages"></div>
