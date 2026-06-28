@@ -634,6 +634,13 @@ body {
   color: var(--gb-darkest);
 }
 
+.settings-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--gb-darkest);
+  opacity: 0.7;
+}
+
 .settings-subsection {
   display: flex;
   flex-direction: column;

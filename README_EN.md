@@ -144,6 +144,8 @@ From the import button, you can restore history by uploading a previously export
 
 Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI responses aloud through VOICEVOX. The default URL is `http://localhost:50021`.
 
+- Set **CORS Policy Mode** to **all** in VOICEVOX Engine settings so the browser can connect.
+- Use **"Open Engine Settings"** to open `{VOICEVOX URL}/setting`.
 - **Test Connection** — Checks whether SlowDialog can reach VOICEVOX Engine through `/version`.
 - **Load Speakers** — Loads speakers and styles from `/speakers` and updates the speaker selector.
 - **Speech Parameters** — Configure speed, pitch, intonation, volume, pre-phoneme length, and post-phoneme length.

@@ -1012,6 +1012,7 @@ const UIController = (() => {
     const settingsOverlay = document.getElementById('settings-overlay');
     const settingsForm = document.getElementById('settings-form');
     const btnCancel = document.getElementById('btn-cancel-settings');
+    const btnVoiceVoxOpenSettings = document.getElementById('btn-voicevox-open-settings');
     const btnVoiceVoxTest = document.getElementById('btn-voicevox-test');
     const btnVoiceVoxLoadSpeakers = document.getElementById('btn-voicevox-load-speakers');
     const voiceVoxStatus = document.getElementById('voicevox-status');
@@ -1094,6 +1095,7 @@ const UIController = (() => {
         btnSettings.addEventListener('click', openSettings);
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
+        btnVoiceVoxOpenSettings.addEventListener('click', _handleVoiceVoxOpenSettings);
         btnVoiceVoxTest.addEventListener('click', _handleVoiceVoxTest);
         btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
         document.getElementById('setting-voicevox-enabled').addEventListener('change', _handleVoiceVoxEnabledChange);
@@ -2133,6 +2135,11 @@ const UIController = (() => {
 
     function _toggleVoiceVoxSettings(enabled) {
         voiceVoxSettings.classList.toggle('hidden', !enabled);
+    }
+
+    function _handleVoiceVoxOpenSettings() {
+        const url = _getVoiceVoxUrlFromForm().replace(/\/+$/, '') + '/setting';
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     async function _handleVoiceVoxLoadSpeakers() {

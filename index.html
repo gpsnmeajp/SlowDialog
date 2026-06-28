@@ -146,6 +146,10 @@
         <div id="voicevox-settings" class="settings-subsection hidden">
           <label for="setting-voicevox-url">VOICEVOX接続先URL</label>
           <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
+          <div class="settings-note">VOICEVOX Engine の設定で CORS Policy Mode を all にしてください。</div>
+          <div class="settings-button-row">
+            <button type="button" id="btn-voicevox-open-settings">エンジン設定を開く</button>
+          </div>
           <div class="settings-button-row">
             <button type="button" id="btn-voicevox-test">接続テスト</button>
             <button type="button" id="btn-voicevox-load-speakers">話者リスト取得</button>
