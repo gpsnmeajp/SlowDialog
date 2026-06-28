@@ -17,6 +17,7 @@ const Lang = (() => {
             defaultMode2: '#タスク\n#雑談\n#ソクラテス',
             defaultMode3: '#元気\n#疲れている',
             defaultMode4: '#現実\n#物語\n#哲学',
+            callStarted: '*通話を開始しました*',
             continueButton: '続きを読む ▼',
             pauseButton: '一時停止 ⏸',
             resumeButton: '再開 ▶',
@@ -36,6 +37,7 @@ const Lang = (() => {
             defaultMode2: '#task\n#chat\n#socrates',
             defaultMode3: '#energetic\n#tired',
             defaultMode4: '#reality\n#story\n#philosophy',
+            callStarted: '*Call started*',
             continueButton: 'Continue ▼',
             pauseButton: 'Pause ⏸',
             resumeButton: 'Resume ▶',
@@ -62,6 +64,7 @@ const Lang = (() => {
 const Settings = (() => {
     const STORAGE_KEY = 'slowdialog_settings';
     const DEFAULTS = {
+        appMode: 'chat',
         baseUrl: 'https://openrouter.ai/api/v1',
         apiKey: '',
         model: 'google/gemini-3-flash-preview',
@@ -773,10 +776,16 @@ const SoundManager = (() => {
 // UIController
 // ────────────────────────────────────────────────────────────
 const UIController = (() => {
+    const CALL_START_PROMPT = '<SYSTEM>Ringring! The user has called you. A call session has started. Please begin responding in the language defined by the system prompt.</SYSTEM>';
+
     // DOM refs
     const chatMessages = document.getElementById('chat-messages');
     const chatArea = document.getElementById('chat-area');
+    const callStandby = document.getElementById('call-standby');
+    const btnStartCall = document.getElementById('btn-start-call');
+    const btnEndCall = document.getElementById('btn-end-call');
     const userInput = document.getElementById('user-input');
+    const inputArea = document.getElementById('input-area');
     const btnSend = document.getElementById('btn-send');
     const quickResponsesContainer = document.getElementById('quick-responses');
     const modeDropdownsContainer = document.getElementById('mode-dropdowns');
@@ -829,6 +838,7 @@ const UIController = (() => {
     let _originalTheme = null; // 設定ダイアログを開いた時のテーマ
     let _originalScanline = null; // 設定ダイアログを開いた時のスキャンライン状態
     let _originalScanlineStrength = null;
+    let _isCallActive = false;
 
     function init() {
         Settings.load();
@@ -842,6 +852,7 @@ const UIController = (() => {
         _bindEvents();
         _renderQuickResponses();
         _renderModeDropdowns();
+        _applyInteractionMode();
 
         const introSeen = localStorage.getItem('slowdialog_intro_seen');
         if (!introSeen) {
@@ -855,6 +866,8 @@ const UIController = (() => {
     // ─── Event Binding ───
     function _bindEvents() {
         btnSend.addEventListener('click', _handleSend);
+        btnStartCall.addEventListener('click', _handleStartCall);
+        btnEndCall.addEventListener('click', _handleEndCall);
         userInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -950,9 +963,32 @@ const UIController = (() => {
         ChatHistory.push('user', text);
         const messages = ChatHistory.getAll();
         const idx = messages.length - 1;
-        _appendBubble('user', text, idx, undefined, messages[idx].timestamp);
+        _appendBubble('user', _getDisplayText('user', text), idx, undefined, messages[idx].timestamp);
         SoundManager.play('user');
         _startStreaming();
+    }
+
+    function _handleStartCall() {
+        if (!Settings.isConfigured()) {
+            openSettings();
+            return;
+        }
+        _isCallActive = true;
+        _applyInteractionMode();
+        _hideRetryBar();
+        ChatHistory.push('user', CALL_START_PROMPT);
+        const messages = ChatHistory.getAll();
+        const idx = messages.length - 1;
+        _appendBubble('user', Lang.t('callStarted'), idx, undefined, messages[idx].timestamp);
+        SoundManager.play('user');
+        _startStreaming();
+    }
+
+    function _handleEndCall() {
+        _isCallActive = false;
+        _stopStreamingForModeChange();
+        _hideRetryBar();
+        _applyInteractionMode();
     }
 
     function _performInterrupt(newText) {
@@ -987,12 +1023,12 @@ const UIController = (() => {
         if (currentLast && currentLast.role === 'user') {
             const combined = currentLast.content + '\n' + newText;
             ChatHistory.updateLast(combined);
-            _updateLastBubbleText(combined);
+            _updateLastBubbleText(_getDisplayText('user', combined));
         } else {
             ChatHistory.push('user', newText);
             const messages = ChatHistory.getAll();
             const idx = messages.length - 1;
-            _appendBubble('user', newText, idx, undefined, messages[idx].timestamp);
+            _appendBubble('user', _getDisplayText('user', newText), idx, undefined, messages[idx].timestamp);
         }
 
         _isStreaming = false;
@@ -1129,6 +1165,34 @@ const UIController = (() => {
         _hideRetryBar();
     }
 
+    function _stopStreamingForModeChange() {
+        if (!_isStreaming) return;
+        ApiClient.abort();
+        const displayedText = TypingSimulator.interrupt();
+        _removeTypingIndicator();
+        _removeContinueButton();
+        _removePauseButton();
+
+        const last = ChatHistory.peekLast();
+        if (last && last.role === 'assistant') {
+            if (displayedText.trim()) {
+                ChatHistory.updateLast(displayedText);
+                if (last.timestamp) {
+                    _appendTimestamp('assistant', last.timestamp);
+                }
+            } else {
+                ChatHistory.popLast();
+                for (const b of _assistantBubblesInTurn) b.remove();
+            }
+        }
+
+        _assistantBubblesInTurn = [];
+        _typingIndicator = null;
+        _continueBtn = null;
+        _pauseBtn = null;
+        _isStreaming = false;
+    }
+
     // ─── Import ───
     function _openImportDialog() {
         importFileInput.value = '';
@@ -1198,6 +1262,7 @@ const UIController = (() => {
         _renderAllMessages();
         _renderQuickResponses();
         _renderModeDropdowns();
+        _applyInteractionMode();
         _closeImportDialog();
     }
 
@@ -1386,6 +1451,25 @@ const UIController = (() => {
         }
     }
 
+    function _applyInteractionMode() {
+        const isTextCall = Settings.get().appMode === 'textCall';
+        const isStandby = isTextCall && !_isCallActive;
+
+        callStandby.classList.toggle('hidden', !isStandby);
+        chatMessages.classList.toggle('hidden', isStandby);
+        inputArea.classList.toggle('hidden', isStandby);
+        btnEndCall.classList.toggle('hidden', !isTextCall || !_isCallActive);
+
+        if (isStandby) {
+            quickResponsesContainer.classList.add('hidden');
+            modeDropdownsContainer.classList.add('hidden');
+            _hideRetryBar();
+        } else {
+            _renderQuickResponses();
+            _renderModeDropdowns();
+        }
+    }
+
     // ─── Mode Dropdowns ───
     function _renderModeDropdowns() {
         modeDropdownsContainer.innerHTML = '';
@@ -1450,10 +1534,24 @@ const UIController = (() => {
                     _appendBubble('assistant', validChunks[j].trim(), i, ci++, isLast ? msg.timestamp : null);
                 }
             } else {
-                _appendBubble(msg.role, msg.content, i, undefined, msg.timestamp);
+                _appendBubble(msg.role, _getDisplayText(msg.role, msg.content), i, undefined, msg.timestamp);
             }
         }
         _scrollToBottom();
+    }
+
+    function _getDisplayText(role, content) {
+        if (role === 'user' && content === CALL_START_PROMPT) {
+            return Lang.t('callStarted');
+        }
+        if (role === 'user' && _isCallStartMessage(content)) {
+            return Lang.t('callStarted') + content.slice(CALL_START_PROMPT.length);
+        }
+        return content;
+    }
+
+    function _isCallStartMessage(content) {
+        return content === CALL_START_PROMPT || content.startsWith(CALL_START_PROMPT + '\n');
     }
 
     /** テキストを「。」「. 」改行で分割（空行は区切りとしない） */
@@ -1574,7 +1672,7 @@ const UIController = (() => {
         bubbleEditTitle.textContent = Lang.t('bubbleEditTitle');
         btnBubbleEditSend.textContent = Lang.t('bubbleEditSend');
         btnBubbleEditCancel.textContent = Lang.t('cancel');
-        bubbleEditText.value = text;
+        bubbleEditText.value = _getDisplayText('user', text);
         bubbleEditOverlay.classList.remove('hidden');
         bubbleEditText.focus();
     }
@@ -1654,6 +1752,7 @@ const UIController = (() => {
         _originalScanline = s.scanlineEffect;
         _originalScanlineStrength = s.scanlineStrength ?? 2;
         document.getElementById('setting-baseurl').value = s.baseUrl;
+        document.getElementById('setting-app-mode').value = s.appMode || 'chat';
         document.getElementById('setting-apikey').value = s.apiKey;
         document.getElementById('setting-model').value = s.model;
         document.getElementById('setting-systemprompt').value = s.systemPrompt;
@@ -1731,7 +1830,10 @@ const UIController = (() => {
 
     function _handleSaveSettings(e) {
         e.preventDefault();
+        const previousMode = Settings.get().appMode || 'chat';
+        const nextMode = document.getElementById('setting-app-mode').value;
         Settings.save({
+            appMode: nextMode,
             baseUrl: document.getElementById('setting-baseurl').value.trim(),
             apiKey: document.getElementById('setting-apikey').value.trim(),
             model: document.getElementById('setting-model').value.trim(),
@@ -1761,6 +1863,13 @@ const UIController = (() => {
         Settings.applyBorders();
         _renderQuickResponses();
         _renderModeDropdowns();
+        if (nextMode === 'chat') {
+            _isCallActive = false;
+        } else if (previousMode !== nextMode) {
+            _isCallActive = false;
+            _stopStreamingForModeChange();
+        }
+        _applyInteractionMode();
         _originalTheme = null;
         _originalScanline = null;
         _originalScanlineStrength = null;

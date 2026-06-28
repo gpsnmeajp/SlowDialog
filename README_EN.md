@@ -40,6 +40,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Pause/Resume** — Use the pause button during auto-advance to control reading pace.
 - **Quick Responses** — Register frequently used replies as buttons and send them with one click.
 - **Mode Tags** — Select tags from dropdowns to append them to your prompt on send. Combined with your system prompt, this lets you switch AI behavior on the fly.
+- **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
 - **Multi-language Support** — Provides Japanese and English interfaces.
@@ -74,6 +75,7 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 
 | Field | Description | Default |
 |-------|-------------|---------|
+| Mode | Switch between Chat and Text Call | Chat |
 | Base URL | API base URL | `https://openrouter.ai/api/v1` |
 | API Key | API key | — |
 | Model Name | Model identifier to use | `google/gemini-3-flash-preview` |
@@ -131,6 +133,14 @@ From the import button, you can restore history by uploading a previously export
 You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, mode tag settings, system prompt, and conversation history.
 
 From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text.
+
+## Text Call Mode
+
+Select **"Text Call"** from **"Mode"** at the top of the settings dialog. In standby, the chat history and input area are hidden, and only the **"Start Call"** button appears in the center.
+
+When you press "Start Call", the normal chat screen opens and displays **"Call started"**. At the same time, SlowDialog automatically sends an internal call-start message to the AI, prompting it to begin the conversation.
+
+During a call, the header shows an **"End Call"** button in the center. Pressing it returns to standby without clearing any conversation history.
 
 ## Using Mode Tags
 

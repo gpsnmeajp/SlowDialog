@@ -85,6 +85,7 @@ app.js は IIFE パターンで 8 つのモジュールに分割されている�
 
 | キー | 型 | デフォルト | 説明 |
 |------|-----|-----------|------|
+| `appMode` | string | `chat` | `chat` または `textCall` のUIモード |
 | `baseUrl` | string | `https://openrouter.ai/api/v1` | API ベース URL |
 | `apiKey` | string | `""` | API キー |
 | `model` | string | `google/gemini-3-flash-preview` | モデル名 |
@@ -293,6 +294,7 @@ DOMContentLoaded
       → _renderAllMessages()
       → _bindEvents()
       → _renderQuickResponses()
+      → _applyInteractionMode()
       → 初回起動判定:
           introSeen なし → イントロダイアログ表示
           introSeen あり & 未設定 → 設定ダイアログ表示
@@ -359,6 +361,19 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 - 入力エリア上部にボタンとして表示
 - クリックで即座にそのテキストを送信
 
+#### 文字通話モード
+
+- `Settings.appMode === "textCall"` かつ `_isCallActive === false` のときは待機画面。
+  - `#chat-messages`, `#quick-responses`, `#mode-dropdowns`, `#input-area` を隠す。
+  - `#call-standby` の「通話を開始」ボタンだけを中央表示する。
+- 「通話を開始」クリック時:
+  - `_isCallActive = true`
+  - UIには「通話を開始しました」と表示
+  - 履歴には通話開始用の内部ユーザーメッセージを追加し、既存の `_startStreaming()` 経路でAIへ送信
+  - 通常のユーザーメッセージと同じく、有効なモードタグやタイムスタンプはAPI送信時に付加される
+- 通話中はヘッダー中央の「通話を切断」ボタンを表示。
+- 「通話を切断」クリック時は `_isCallActive = false` に戻し、必要なら進行中ストリームを停止する。履歴は消去しない。
+
 #### メッセージ編集・削除
 
 - ユーザーバブルタップ → 再送信/編集ダイアログ
@@ -387,8 +402,9 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 
 ```
 <body>
-  <header id="toolbar">        ← タイトル + 設定/エクスポート/インポート/クリアボタン
+  <header id="toolbar">        ← タイトル + 通話切断 + 設定/エクスポート/インポート/クリアボタン
   <main id="chat-area">         ← スクロール領域
+    <div id="call-standby">     ← 文字通話モードの待機画面
     <div id="chat-messages">    ← バブル・インジケータの親
   <div id="quick-responses">    ← クイックレスポンスボタンエリア
   <footer id="input-area">      ← テキストエリア + 送信ボタン

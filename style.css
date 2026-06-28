@@ -244,6 +244,7 @@ body {
   border-bottom: var(--border-w) solid var(--gb-darkest);
   flex-shrink: 0;
   z-index: 10;
+  position: relative;
 }
 
 #app-title {
@@ -278,6 +279,28 @@ body {
   transform: scale(0.93);
 }
 
+#btn-end-call {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--app-font);
+  font-size: calc(var(--font-size) * 0.9);
+  padding: 5px 12px;
+  background: var(--gb-light);
+  border: 2px solid var(--gb-lightest);
+  color: var(--gb-darkest);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#btn-end-call:hover {
+  background: var(--gb-lightest);
+}
+
+#btn-end-call:active {
+  transform: translateX(-50%) scale(0.96);
+}
+
 /* ===== Chat Area ===== */
 #chat-area {
   flex: 1;
@@ -306,6 +329,42 @@ body {
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
+}
+
+#chat-messages.hidden {
+  display: none;
+}
+
+#call-standby {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+#call-standby.hidden {
+  display: none;
+}
+
+#btn-start-call {
+  font-family: var(--app-font);
+  font-size: var(--font-size);
+  padding: 12px 24px;
+  background: var(--gb-dark);
+  border: var(--border-w) solid var(--gb-darkest);
+  color: var(--gb-lightest);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--gb-darkest);
+}
+
+#btn-start-call:hover {
+  background: var(--gb-darkest);
+}
+
+#btn-start-call:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
 }
 
 /* ===== Chat Bubbles ===== */
