@@ -91,6 +91,7 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | VOICEVOX URL | VOICEVOX Engine URL | `http://localhost:50021` |
 | VOICEVOX Speaker | Speaker ID used for synthesis | 3 |
 | VOICEVOX Speech Parameters | Speed, pitch, intonation, volume, pre/post silence | Defaults per field |
+| Skip ruby and notes in speech | Exclude ruby text and notes inside `()` / `（）` from VOICEVOX synthesis | On |
 | Borders | Show message borders | On |
 | Send Time to AI | Add timestamp to user messages | Off |
 | Scanline Effect | Retro-style scanline effect | Off |
@@ -149,6 +150,7 @@ Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI respons
 - **Test Connection** — Checks whether SlowDialog can reach VOICEVOX Engine through `/version`.
 - **Load Speakers** — Loads speakers and styles from `/speakers` and updates the speaker selector.
 - **Speech Parameters** — Configure speed, pitch, intonation, volume, pre-phoneme length, and post-phoneme length.
+- **Skip ruby and notes in speech** — Enabled by default. Ruby markup and notes inside `()` / `（）` stay visible on screen but are removed from the text sent to VOICEVOX.
 - **Test Speech** — Synthesizes the test text with the current form settings and plays it immediately.
 
 Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.

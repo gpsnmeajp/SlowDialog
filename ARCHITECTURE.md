@@ -107,6 +107,7 @@ app.js は IIFE パターンで 9 つのモジュールに分割されている�
 | `voicevoxVolumeScale` | number | `1` | VOICEVOX音量 |
 | `voicevoxPrePhonemeLength` | number | `0.1` | VOICEVOX開始無音 |
 | `voicevoxPostPhonemeLength` | number | `0.1` | VOICEVOX終了無音 |
+| `voicevoxSkipAnnotations` | boolean | `true` | ルビや括弧内補足をVOICEVOX読み上げから除外するか |
 | `scanlineEffect` | boolean | `false` | スキャンライン効果 |
 | `scanlineStrength` | number | `2` | スキャンライン強度（%） |
 | `sendTimestamp` | boolean | `false` | タイムスタンプをAPIに送信するか |
@@ -301,6 +302,8 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 - `play(url)` — 生成済みObject URLをAudioで再生し、終了時に解放
 
 **発話パラメータ:** `audio_query` の結果に `speedScale`, `pitchScale`, `intonationScale`, `volumeScale`, `prePhonemeLength`, `postPhonemeLength` を反映する。
+
+**発話テキスト正規化:** `voicevoxSkipAnnotations` が有効な場合、VOICEVOXへ送る前にルビ表記と `()` / `（）` 内の補足を除去する。画面表示と履歴のテキストは変更しない。
 
 ---
 

@@ -105,6 +105,7 @@ const Settings = (() => {
         voicevoxVolumeScale: 1,
         voicevoxPrePhonemeLength: 0.1,
         voicevoxPostPhonemeLength: 0.1,
+        voicevoxSkipAnnotations: true,
         showBorders: true,
         scanlineEffect: false,
         scanlineStrength: 2,
@@ -909,10 +910,10 @@ const VoiceVoxClient = (() => {
     async function synthesize(text, overrides = null) {
         const s = { ...Settings.get(), ...(overrides || {}) };
         if (!s.voicevoxEnabled) return null;
-        const normalized = (text || '').trim();
+        const normalized = _normalizeSpeechText(text, s).trim();
         if (!normalized) return null;
         const speaker = parseInt(s.voicevoxSpeaker, 10) || 3;
-        const baseUrl = _baseUrl();
+        const baseUrl = _baseUrl(s.voicevoxUrl);
 
         const queryUrl = `${baseUrl}/audio_query?text=${encodeURIComponent(normalized)}&speaker=${encodeURIComponent(speaker)}`;
         const queryRes = await fetch(queryUrl, { method: 'POST' });
@@ -977,6 +978,36 @@ const VoiceVoxClient = (() => {
     function _setNumber(obj, key, value) {
         const n = parseFloat(value);
         if (Number.isFinite(n)) obj[key] = n;
+    }
+
+    function _normalizeSpeechText(text, s) {
+        const raw = String(text || '');
+        if (!s.voicevoxSkipAnnotations) return raw;
+        return _stripAnnotations(raw);
+    }
+
+    function _stripAnnotations(text) {
+        let result = text
+            .replace(/<rt\b[^>]*>[\s\S]*?<\/rt>/gi, '')
+            .replace(/<rp\b[^>]*>[\s\S]*?<\/rp>/gi, '')
+            .replace(/<\/?ruby\b[^>]*>/gi, '')
+            .replace(/｜([^《》]+)《[^《》]*》/g, '$1')
+            .replace(/([一-龯々〆ヵヶぁ-んァ-ンーA-Za-z0-9]+)《[^《》]*》/g, '$1')
+            .replace(/《[^《》]*》/g, '');
+
+        for (let i = 0; i < 4; i++) {
+            const next = result
+                .replace(/（[^（）]*）/g, '')
+                .replace(/\([^()]*\)/g, '');
+            if (next === result) break;
+            result = next;
+        }
+
+        return result
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\s+([、。，．！？!?])/g, '$1')
+            .replace(/([、。，．！？!?])\s+/g, '$1')
+            .replace(/\n{3,}/g, '\n\n');
     }
 
     return { testConnection, fetchSpeakers, synthesize, play };
@@ -2058,6 +2089,7 @@ const UIController = (() => {
         document.getElementById('setting-voicevox-volume').value = s.voicevoxVolumeScale ?? 1;
         document.getElementById('setting-voicevox-pre-phoneme').value = s.voicevoxPrePhonemeLength ?? 0.1;
         document.getElementById('setting-voicevox-post-phoneme').value = s.voicevoxPostPhonemeLength ?? 0.1;
+        document.getElementById('setting-voicevox-skip-annotations').checked = s.voicevoxSkipAnnotations ?? true;
         voiceVoxStatus.textContent = '';
         document.getElementById('setting-show-borders').checked = s.showBorders;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
@@ -2224,6 +2256,7 @@ const UIController = (() => {
             voicevoxVolumeScale: _readNumber('setting-voicevox-volume', 1),
             voicevoxPrePhonemeLength: _readNumber('setting-voicevox-pre-phoneme', 0.1),
             voicevoxPostPhonemeLength: _readNumber('setting-voicevox-post-phoneme', 0.1),
+            voicevoxSkipAnnotations: document.getElementById('setting-voicevox-skip-annotations').checked,
         };
     }
 
