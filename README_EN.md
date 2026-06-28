@@ -149,6 +149,7 @@ Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI respons
 - **Test Connection** — Checks whether SlowDialog can reach VOICEVOX Engine through `/version`.
 - **Load Speakers** — Loads speakers and styles from `/speakers` and updates the speaker selector.
 - **Speech Parameters** — Configure speed, pitch, intonation, volume, pre-phoneme length, and post-phoneme length.
+- **Test Speech** — Synthesizes the test text with the current form settings and plays it immediately.
 
 Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.
 

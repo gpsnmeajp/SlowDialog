@@ -35,6 +35,9 @@ const Lang = (() => {
             voicevoxLoadingSpeakers: '話者リストを取得中...',
             voicevoxSpeakersOk: '話者リストを取得しました。',
             voicevoxSpeakersNg: '話者リストの取得に失敗しました。',
+            voicevoxSpeakingTest: '発話テスト中...',
+            voicevoxSpeakTestOk: '発話テストを再生しました。',
+            voicevoxSpeakTestNg: '発話テストに失敗しました。',
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
@@ -61,6 +64,9 @@ const Lang = (() => {
             voicevoxLoadingSpeakers: 'Loading speakers...',
             voicevoxSpeakersOk: 'Speakers loaded.',
             voicevoxSpeakersNg: 'Failed to load speakers.',
+            voicevoxSpeakingTest: 'Testing speech...',
+            voicevoxSpeakTestOk: 'Test speech played.',
+            voicevoxSpeakTestNg: 'Test speech failed.',
         },
     };
 
@@ -900,8 +906,8 @@ const VoiceVoxClient = (() => {
         return await res.json();
     }
 
-    async function synthesize(text) {
-        const s = Settings.get();
+    async function synthesize(text, overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
         if (!s.voicevoxEnabled) return null;
         const normalized = (text || '').trim();
         if (!normalized) return null;
@@ -1015,6 +1021,7 @@ const UIController = (() => {
     const btnVoiceVoxOpenSettings = document.getElementById('btn-voicevox-open-settings');
     const btnVoiceVoxTest = document.getElementById('btn-voicevox-test');
     const btnVoiceVoxLoadSpeakers = document.getElementById('btn-voicevox-load-speakers');
+    const btnVoiceVoxSpeakTest = document.getElementById('btn-voicevox-speak-test');
     const voiceVoxStatus = document.getElementById('voicevox-status');
     const voiceVoxSettings = document.getElementById('voicevox-settings');
     const retryBar = document.getElementById('retry-bar');
@@ -1098,6 +1105,7 @@ const UIController = (() => {
         btnVoiceVoxOpenSettings.addEventListener('click', _handleVoiceVoxOpenSettings);
         btnVoiceVoxTest.addEventListener('click', _handleVoiceVoxTest);
         btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
+        btnVoiceVoxSpeakTest.addEventListener('click', _handleVoiceVoxSpeakTest);
         document.getElementById('setting-voicevox-enabled').addEventListener('change', _handleVoiceVoxEnabledChange);
         document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
         document.getElementById('setting-scanline').addEventListener('change', _handleScanlinePreview);
@@ -2142,6 +2150,20 @@ const UIController = (() => {
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
+    async function _handleVoiceVoxSpeakTest() {
+        const text = document.getElementById('setting-voicevox-test-text').value.trim()
+            || (Lang.current() === 'en' ? 'Hello.' : 'こんにちは。');
+        voiceVoxStatus.textContent = Lang.t('voicevoxSpeakingTest');
+        try {
+            const url = await VoiceVoxClient.synthesize(text, _getVoiceVoxSettingsFromForm(true));
+            await VoiceVoxClient.play(url);
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestOk');
+        } catch (err) {
+            console.warn('VOICEVOX speech test failed:', err);
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestNg');
+        }
+    }
+
     async function _handleVoiceVoxLoadSpeakers() {
         voiceVoxStatus.textContent = Lang.t('voicevoxLoadingSpeakers');
         try {
@@ -2191,6 +2213,20 @@ const UIController = (() => {
         return Number.isFinite(n) ? n : fallback;
     }
 
+    function _getVoiceVoxSettingsFromForm(forceEnabled = false) {
+        return {
+            voicevoxEnabled: forceEnabled || document.getElementById('setting-voicevox-enabled').checked,
+            voicevoxUrl: _getVoiceVoxUrlFromForm(),
+            voicevoxSpeaker: parseInt(document.getElementById('setting-voicevox-speaker').value, 10) || 3,
+            voicevoxSpeedScale: _readNumber('setting-voicevox-speed', 1),
+            voicevoxPitchScale: _readNumber('setting-voicevox-pitch', 0),
+            voicevoxIntonationScale: _readNumber('setting-voicevox-intonation', 1),
+            voicevoxVolumeScale: _readNumber('setting-voicevox-volume', 1),
+            voicevoxPrePhonemeLength: _readNumber('setting-voicevox-pre-phoneme', 0.1),
+            voicevoxPostPhonemeLength: _readNumber('setting-voicevox-post-phoneme', 0.1),
+        };
+    }
+
     function _handleSaveSettings(e) {
         e.preventDefault();
         const previousMode = Settings.get().appMode || 'chat';
@@ -2206,16 +2242,8 @@ const UIController = (() => {
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
-            voicevoxEnabled: document.getElementById('setting-voicevox-enabled').checked,
-            voicevoxUrl: _getVoiceVoxUrlFromForm(),
-            voicevoxSpeaker: parseInt(document.getElementById('setting-voicevox-speaker').value, 10) || 3,
             voicevoxSpeakers: _voicevoxSpeakers,
-            voicevoxSpeedScale: _readNumber('setting-voicevox-speed', 1),
-            voicevoxPitchScale: _readNumber('setting-voicevox-pitch', 0),
-            voicevoxIntonationScale: _readNumber('setting-voicevox-intonation', 1),
-            voicevoxVolumeScale: _readNumber('setting-voicevox-volume', 1),
-            voicevoxPrePhonemeLength: _readNumber('setting-voicevox-pre-phoneme', 0.1),
-            voicevoxPostPhonemeLength: _readNumber('setting-voicevox-post-phoneme', 0.1),
+            ..._getVoiceVoxSettingsFromForm(),
             showBorders: document.getElementById('setting-show-borders').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,
