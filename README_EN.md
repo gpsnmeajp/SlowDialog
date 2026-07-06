@@ -103,6 +103,17 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Mode Tags | Show mode tag dropdowns | Off |
 | Mode 1–4 | Mode choices (newline-separated) | (see defaults) |
 
+#### Note when using an `http://` Base URL
+
+If you open SlowDialog over `https://`, such as the demo page, and set a Base URL that starts with `http://`, the browser will block the request as "mixed content" for security reasons.
+
+In this case, pressing the save button shows a warning. The settings are saved, but SlowDialog still cannot connect to that API URL. Use one of these approaches:
+
+- Save the SlowDialog HTML file on your PC and open it as a local file
+- Or run both SlowDialog and the API through a separate HTTP server
+
+For beginners: most browsers do not allow an `https://` page to connect directly to an `http://` API. If you use a local LLM or local API, make sure the way you open the page matches the way the API is served.
+
 #### Font Options
 
 - **k8x12S** — 8-dot non-kanji pixel font

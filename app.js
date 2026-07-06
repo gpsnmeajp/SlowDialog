@@ -38,6 +38,18 @@ const Lang = (() => {
             voicevoxSpeakingTest: '発話テスト中...',
             voicevoxSpeakTestOk: '発話テストを再生しました。',
             voicevoxSpeakTestNg: '発話テストに失敗しました。',
+            mixedContentWarning: [
+                'Base URL が http:// で、このページが https:// で開かれています。',
+                '',
+                'この組み合わせでは、ブラウザの安全機能により「混合コンテンツ」として通信がブロックされます。',
+                'そのため、保存してもこの Base URL には接続できません。',
+                '',
+                '対処方法:',
+                '1. SlowDialog の HTML ファイルをPC上に保存して、ローカルファイルとして開く',
+                '2. または、SlowDialog とAPIの両方を別途 HTTP サーバーで動かす',
+                '',
+                '初心者向けの補足: https:// のページから http:// のAPIへ直接つなぐことは、多くのブラウザで禁止されています。'
+            ].join('\n'),
         },
         en: {
             defaultSystemPrompt: 'You are a helpful assistant.',
@@ -67,6 +79,18 @@ const Lang = (() => {
             voicevoxSpeakingTest: 'Testing speech...',
             voicevoxSpeakTestOk: 'Test speech played.',
             voicevoxSpeakTestNg: 'Test speech failed.',
+            mixedContentWarning: [
+                'The Base URL starts with http://, but this page is open over https://.',
+                '',
+                'In this combination, the browser blocks the request as "mixed content" for security reasons.',
+                'This Base URL will not be reachable even after saving the settings.',
+                '',
+                'How to fix it:',
+                '1. Save the SlowDialog HTML file on your PC and open it as a local file',
+                '2. Or run both SlowDialog and the API through a separate HTTP server',
+                '',
+                'Beginner note: most browsers do not allow an https:// page to connect directly to an http:// API.'
+            ].join('\n'),
         },
     };
 
@@ -2262,13 +2286,29 @@ const UIController = (() => {
         };
     }
 
+    function _shouldWarnMixedContent(baseUrl) {
+        try {
+            return window.location.protocol === 'https:' && new URL(baseUrl).protocol === 'http:';
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function _showMixedContentWarning() {
+        alert(Lang.t('mixedContentWarning'));
+    }
+
     function _handleSaveSettings(e) {
         e.preventDefault();
         const previousMode = Settings.get().appMode || 'chat';
         const nextMode = document.getElementById('setting-app-mode').value;
+        const baseUrl = document.getElementById('setting-baseurl').value.trim();
+        if (_shouldWarnMixedContent(baseUrl)) {
+            _showMixedContentWarning();
+        }
         Settings.save({
             appMode: nextMode,
-            baseUrl: document.getElementById('setting-baseurl').value.trim(),
+            baseUrl,
             apiKey: document.getElementById('setting-apikey').value.trim(),
             model: document.getElementById('setting-model').value.trim(),
             systemPrompt: document.getElementById('setting-systemprompt').value.trim(),
