@@ -66,6 +66,8 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 `index.html` をブラウザで開くだけで動作します。ビルドやサーバーの構築は不要です。
 
+スマートフォン上にHTMLをダウンロードして利用する場合は、リポジトリ直下の `index.html` ではなく、単一ファイル版の `dist/index.html` を使用してください。`dist/` 内のHTMLはフォントや効果音を内包しているため、ファイル1つで動作します。
+
 [デモを利用するにはこちら](https://gpsnmeajp.github.io/SlowDialog)
 
 OpenAI互換のAPIを提供するサービスをご利用ください。
@@ -219,10 +221,14 @@ slowdialog/
 ├── index_en.html       # エントリポイント（英語）
 ├── style.css           # スタイル定義
 ├── app.js              # アプリケーションロジック
+├── package_single_html.py  # 単一HTMLパッケージ生成スクリプト
 ├── README.md           # ドキュメント（日本語）
 ├── README_EN.md        # ドキュメント（英語）
 ├── DIRECTION.md        # 企画書
 ├── ARCHITECTURE.md     # 内部設計書
+├── dist/               # 単一HTMLパッケージ出力先
+│   ├── index.html      # 日本語版（生成物）
+│   └── index_en.html   # 英語版（生成物）
 ├── fonts/
 │   ├── littlelimit/
 │   │   ├── k8x12.ttf       # k8x12（ピクセルフォント）
@@ -236,7 +242,9 @@ slowdialog/
 └── sound/
     ├── user.wav            # ユーザー送信音
     ├── assistant.wav       # AI応答音
-    └── assistant_end.wav   # AI応答完了音
+    ├── assistant_end.wav   # AI応答完了音
+    ├── begin.wav           # 通話開始音
+    └── end.wav             # 通話終了音
 ```
 
 ## フォントについて
@@ -246,6 +254,30 @@ slowdialog/
 - **k8x12 / k8x12L / k8x12S / 美咲ゴシック** — 門真 なむ氏による8×8ドットの日本語フォントです。[Little Limit](https://littlelimit.net/font.htm) で公開されています。
 
 各フォントのライセンスについては、それぞれの配布元をご確認ください。
+
+
+### 単一HTMLパッケージの作成
+
+配布用に、HTML/CSS/JavaScript/フォント/効果音を1つのHTMLへ結合したファイルを作成できます。
+
+```sh
+python package_single_html.py
+```
+
+実行すると `dist/` に以下の2ファイルが出力されます。
+
+- `dist/index.html` — 日本語版
+- `dist/index_en.html` — 英語版
+
+`dist/` は配布用パッケージとしてリポジトリに含めます。スマートフォンへコピーまたはダウンロードして使う場合も、ここにあるHTMLを使用してください。
+
+生成されたHTMLはフォントと効果音もdata URLとして内包するため、ファイル単体で開けます。外部APIやVOICEVOX Engineへの通信は、通常版と同じく設定したURLへブラウザから接続します。
+
+出力先を変える場合は `--dist` を指定します。
+
+```sh
+python package_single_html.py --dist release
+```
 
 ## ライセンス
 

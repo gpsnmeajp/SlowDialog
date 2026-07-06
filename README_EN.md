@@ -64,6 +64,8 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 Simply open `index_en.html` in your browser. No build step or server setup is required.
 
+When downloading the app onto a smartphone and opening it locally, use the single-file package `dist/index_en.html` instead of the repository-root `index_en.html`. The HTML files in `dist/` embed the fonts and sound effects, so each one can run as a single file.
+
 Please use a service that provides an OpenAI-compatible API.
 
 OpenRouter is recommended, but local LLMs also work.  
@@ -139,11 +141,9 @@ Settings are saved in the browser's localStorage and automatically loaded on sub
 
 ### How Interruption Works
 
-You can type /Importing History
+You can type and send a new message even while the AI response is still being displayed. In that case, SlowDialog handles it as follows:
 
-You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, system prompt, and conversation history.
-
-From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text is not simply hidden — the history is modified.)
+- The AI output is interrupted, and the text already shown is finalized into the history. It is not simply hidden; the history is updated.
 - If nothing has been displayed yet, the previous user message and the new message are concatenated.
 
 ### Exporting / Importing History
@@ -217,8 +217,12 @@ slowdialog/
 ├── index_en.html       # Entry point (English)
 ├── style.css           # Style definitions
 ├── app.js              # Application logic
+├── package_single_html.py  # Single-file HTML package builder
 ├── README.md           # Documentation (Japanese)
 ├── README_EN.md        # Documentation (English)
+├── dist/               # Single-file HTML package output
+│   ├── index.html      # Japanese version (generated)
+│   └── index_en.html   # English version (generated)
 ├── fonts/
 │   ├── littlelimit/
 │   │   ├── k8x12.ttf       # k8x12 (pixel font)
@@ -232,9 +236,9 @@ slowdialog/
 └── sound/
     ├── user.wav            # User send sound
     ├── assistant.wav       # AI response sound
-    └── assistant_end.wav   # AI response complete sounda variant)
-    ├── k8x12S.ttf      # k8x12S (8-dot non-kanji)
-    └── misaki_gothic.ttf  # Misaki Gothic
+    ├── assistant_end.wav   # AI response complete sound
+    ├── begin.wav           # Call start sound
+    └── end.wav             # Call end sound
 ```
 
 ## About the Fonts
@@ -244,6 +248,29 @@ The following fonts are bundled with this application:
 - **k8x12 / k8x12L / k8x12S / Misaki Gothic** — 8×8 dot Japanese fonts by Num Kadoma. Available at [Little Limit](https://littlelimit.net/font.htm).
 
 Please refer to each font's distribution page for licensing details.
+
+### Building Single-File HTML Packages
+
+For distribution, you can build HTML files that bundle the HTML, CSS, JavaScript, fonts, and sound effects into one file.
+
+```sh
+python package_single_html.py
+```
+
+This writes the following files to `dist/`.
+
+- `dist/index.html` — Japanese version
+- `dist/index_en.html` — English version
+
+The `dist/` directory is included in the repository as the distribution package. Use these HTML files when copying or downloading SlowDialog onto a smartphone.
+
+The generated files embed fonts and sound effects as data URLs, so each HTML file can run on its own. External API and VOICEVOX Engine requests still connect from the browser to the configured URLs, just like the normal version.
+
+Use `--dist` to change the output directory.
+
+```sh
+python package_single_html.py --dist release
+```
 
 ## License
 
