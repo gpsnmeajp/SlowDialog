@@ -3595,7 +3595,7 @@ const UIController = (() => {
         const previousMode = previousSettings.appMode || 'chat';
         const nextMode = document.getElementById('setting-app-mode').value;
         const baseUrl = document.getElementById('setting-baseurl').value.trim();
-        if (_shouldWarnMixedContent(baseUrl)) {
+        if (_shouldWarnMixedContent(baseUrl) || _shouldWarnMixedContent(intentSettings.intentBaseUrl)) {
             _showMixedContentWarning();
         }
         const saved = await BackgroundImage.save({
