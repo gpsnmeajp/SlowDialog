@@ -113,22 +113,28 @@
             <input type="text" id="setting-model" placeholder="gpt-4o-mini">
           </section>
           <section id="settings-panel-intent" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-intent" tabindex="0" hidden>
-            <label><input id="intent-Enabled" type="checkbox"> Enable</label>
-            <label for="intent-BaseUrl">Base URL</label>
-            <input id="intent-BaseUrl" type="url">
-            <label for="intent-ApiKey">API key</label>
-            <input id="intent-ApiKey" type="password">
-            <label for="intent-Model">Model</label>
-            <input id="intent-Model" type="text">
-            <label for="intent-Delay">Classification delay (seconds)</label>
-            <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
-            <label for="intent-Confidence">Minimum confidence</label>
-            <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
-            <label for="intent-Choices">Choices (one per line)</label>
-            <textarea id="intent-Choices" rows="6"></textarea>
-            <label for="intent-Instructions">Additional question guidance</label>
-            <textarea id="intent-Instructions" rows="3"></textarea>
-            <label><input id="intent-Tracking" type="checkbox"> Conversation tracking</label>
+            <label class="checkbox-row"><input id="intent-Enabled" type="checkbox"> System one automatic intent analysis</label>
+            <div id="intent-settings" class="settings-subsection hidden">
+              <label for="intent-BaseUrl">Base URL</label>
+              <input id="intent-BaseUrl" type="url">
+              <label for="intent-ApiKey">API key</label>
+              <input id="intent-ApiKey" type="password">
+              <label for="intent-Model">Model</label>
+              <input id="intent-Model" type="text">
+              <label for="intent-Delay">Classification delay (seconds)</label>
+              <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
+              <label for="intent-Confidence">Minimum confidence</label>
+              <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
+              <label for="intent-Choices">Choices (one per line)</label>
+              <textarea id="intent-Choices" rows="6"></textarea>
+              <label for="intent-Instructions">Additional question guidance</label>
+              <textarea id="intent-Instructions" rows="3"></textarea>
+              <label for="intent-Tracking">Conversation tracking</label>
+              <select id="intent-Tracking">
+                <option value="false">Current user message only</option>
+                <option value="true">Last three conversation turns</option>
+              </select>
+            </div>
           </section>
           <section id="settings-panel-display" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-display" tabindex="0" hidden>
             <label for="setting-font">Font</label>

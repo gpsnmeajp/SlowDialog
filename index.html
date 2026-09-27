@@ -113,22 +113,28 @@
             <input type="text" id="setting-model" placeholder="gpt-4o-mini">
           </section>
           <section id="settings-panel-intent" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-intent" tabindex="0" hidden>
-            <label><input id="intent-Enabled" type="checkbox"> 有効にする</label>
-            <label for="intent-BaseUrl">Base URL</label>
-            <input id="intent-BaseUrl" type="url">
-            <label for="intent-ApiKey">APIキー</label>
-            <input id="intent-ApiKey" type="password">
-            <label for="intent-Model">モデル名</label>
-            <input id="intent-Model" type="text">
-            <label for="intent-Delay">判定遅延（秒）</label>
-            <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
-            <label for="intent-Confidence">判定不能のしきい値(Confidence)</label>
-            <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
-            <label for="intent-Choices">選択肢（改行区切り）</label>
-            <textarea id="intent-Choices" rows="6"></textarea>
-            <label for="intent-Instructions">質問文への追加情報</label>
-            <textarea id="intent-Instructions" rows="3"></textarea>
-            <label><input id="intent-Tracking" type="checkbox"> 会話追跡モード</label>
+            <label class="checkbox-row"><input id="intent-Enabled" type="checkbox"> System one 自動意図分析</label>
+            <div id="intent-settings" class="settings-subsection hidden">
+              <label for="intent-BaseUrl">Base URL</label>
+              <input id="intent-BaseUrl" type="url">
+              <label for="intent-ApiKey">APIキー</label>
+              <input id="intent-ApiKey" type="password">
+              <label for="intent-Model">モデル名</label>
+              <input id="intent-Model" type="text">
+              <label for="intent-Delay">判定遅延（秒）</label>
+              <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
+              <label for="intent-Confidence">判定不能のしきい値(Confidence)</label>
+              <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
+              <label for="intent-Choices">選択肢（改行区切り）</label>
+              <textarea id="intent-Choices" rows="6"></textarea>
+              <label for="intent-Instructions">質問文への追加情報</label>
+              <textarea id="intent-Instructions" rows="3"></textarea>
+              <label for="intent-Tracking">会話追跡モード</label>
+              <select id="intent-Tracking">
+                <option value="false">ユーザー発言単発</option>
+                <option value="true">直近の会話3ターン</option>
+              </select>
+            </div>
           </section>
           <section id="settings-panel-display" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-display" tabindex="0" hidden>
             <label for="setting-font">フォント</label>

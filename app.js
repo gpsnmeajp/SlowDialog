@@ -1819,7 +1819,7 @@ const SystemOneIntent = (() => {
             dialog.showModal();
         });
     }
-    const fields = { Enabled: 'checked', BaseUrl: 'value', ApiKey: 'value', Model: 'value', Delay: 'value', Confidence: 'value', Choices: 'value', Instructions: 'value', Tracking: 'checked' };
+    const fields = { Enabled: 'checked', BaseUrl: 'value', ApiKey: 'value', Model: 'value', Delay: 'value', Confidence: 'value', Choices: 'value', Instructions: 'value', Tracking: 'value' };
     function options(raw) {
         return [...new Set(String(raw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean))];
     }
@@ -1843,11 +1843,16 @@ const SystemOneIntent = (() => {
     function openSettings() {
         const s = Settings.get();
         for (const [name, property] of Object.entries(fields)) document.getElementById('intent-' + name)[property] = s['intent' + name];
+        const enabled = document.getElementById('intent-Enabled');
+        const updateVisibility = () => document.getElementById('intent-settings').classList.toggle('hidden', !enabled.checked);
+        enabled.onchange = updateVisibility;
+        updateVisibility();
     }
     // フォーム値を読み込み、意図判定が有効なときはモデル・選択肢・数値範囲を検証
     function readSettings() {
         const result = {};
         for (const [name, property] of Object.entries(fields)) result['intent' + name] = document.getElementById('intent-' + name)[property];
+        result.intentTracking = result.intentTracking === 'true';
         if (!result.intentChoices.trim()) result.intentChoices = IntentChoices.defaults();
         result.intentDelay = Number(result.intentDelay);
         result.intentConfidence = Number(result.intentConfidence);

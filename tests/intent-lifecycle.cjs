@@ -69,7 +69,7 @@ const assert = require('node:assert/strict');
             await page.locator('#btn-settings').click();
             await page.locator('#settings-tab-intent').click();
             await page.locator('#intent-Instructions').fill('Prefer literal interpretation.');
-            await page.locator('#intent-Tracking').check();
+            await page.locator('#intent-Tracking').selectOption('true');
             await page.locator('#btn-save-settings').click();
             await waitLabel('質問');
             for (const change of ['clear', 'import', 'truncate', 'reply']) {
