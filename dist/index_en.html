@@ -1726,6 +1726,9 @@ body.no-borders .import-divider::after {
 
             <label for="setting-model">Model Name</label>
             <input type="text" id="setting-model" placeholder="gpt-4o-mini">
+
+            <label for="setting-systemprompt">System Prompt</label>
+            <textarea id="setting-systemprompt" rows="3" placeholder="You are a helpful assistant."></textarea>
           </section>
           <section id="settings-panel-intent" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-intent" tabindex="0" hidden>
             <label class="checkbox-row"><input id="intent-Enabled" type="checkbox"> System one automatic intent analysis</label>
@@ -1877,9 +1880,6 @@ body.no-borders .import-divider::after {
             </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
-            <label for="setting-systemprompt">System Prompt</label>
-            <textarea id="setting-systemprompt" rows="3" placeholder="You are a helpful assistant."></textarea>
-
             <label class="checkbox-row">
               <input type="checkbox" id="setting-autoadvance" checked>
               Auto Advance
