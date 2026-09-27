@@ -314,6 +314,61 @@ body {
 }
 
 /* ===== Pixelated Border Utility ===== */
+/* Floating images sit below dialogs, with only the images receiving input. */
+#floating-icons {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-icon {
+  position: absolute;
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  object-fit: contain;
+  image-rendering: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.floating-icon[data-locked="true"] { cursor: default; }
+.floating-icon:focus-visible { outline: 2px dashed var(--gb-darkest); }
+
+#floating-icon-menu {
+  position: fixed;
+  z-index: 60;
+  width: min(240px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: 12px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-lightest);
+  color: var(--gb-darkest);
+  box-shadow: 3px 3px 0 var(--gb-darkest);
+}
+
+#floating-icon-menu label,
+#floating-icon-menu button { display: block; width: 100%; margin-top: 8px; }
+#floating-icon-menu input { width: 100%; }
+#floating-icon-menu button {
+  font: inherit;
+  padding: 6px;
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  border: 1px solid var(--gb-darkest);
+  cursor: pointer;
+}
+
 .px-border {
   border: var(--border-w) solid var(--gb-darkest);
 }
@@ -340,6 +395,7 @@ body {
 
 #toolbar-buttons {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
 }
 
@@ -389,7 +445,7 @@ body {
 #call-duration {
   position: absolute;
   left: calc(50% + 76px);
-  right: 158px;
+  right: 194px;
   font-family: var(--app-font);
   font-size: calc(var(--font-size) * 0.9);
   color: var(--gb-lightest);
@@ -1478,6 +1534,19 @@ body.no-borders .import-divider::after {
 
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
+  #toolbar:has(#btn-end-call:not(.hidden)) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+
+  #toolbar:has(#btn-end-call:not(.hidden)) #toolbar-buttons { grid-column: 2; grid-row: 1; }
+  #toolbar:has(#btn-end-call:not(.hidden)) #btn-end-call,
+  #toolbar:has(#btn-end-call:not(.hidden)) #call-duration {
+    position: static;
+    transform: none;
+    grid-row: 2;
+  }
   :root {
     --font-size: 14px;
   }
@@ -1492,6 +1561,10 @@ body.no-borders .import-divider::after {
   }
 }
 
+@media (max-width: 380px) {
+  #app-title { font-size: 14px; letter-spacing: 1px; }
+}
+
 </style>
 </head>
 
@@ -1503,6 +1576,13 @@ body.no-borders .import-divider::after {
     <button id="btn-end-call" class="hidden">通話を切断</button>
     <div id="call-duration" class="hidden" aria-live="polite">00:00</div>
     <div id="toolbar-buttons">
+      <button type="button" id="btn-add-floating-icon" title="フローティングアイコンを追加" aria-label="フローティングアイコンを追加">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M13 3H3v18h18V11M3 17l5-5 5 5 3-3 5 5M18 2v8M14 6h8" />
+          <circle cx="8" cy="8" r="1" />
+        </svg>
+      </button>
+      <input type="file" id="floating-icon-file" accept="image/*" multiple hidden>
       <button id="btn-settings" title="設定">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
@@ -2277,7 +2357,329 @@ const BackgroundImage = (() => {
         }
     }
 
-    return { init, open, cancel, save, isSaving: () => saving };
+    return { init, open, cancel, save, prepareImage: resize, isSaving: () => saving };
+})();
+
+// ────────────────────────────────────────────────────────────
+// FloatingIcons — normalized placement and pointer gestures
+// ────────────────────────────────────────────────────────────
+const FloatingIcons = (() => {
+    const text = (ja, en) => Lang.current() === 'ja' ? ja : en;
+    const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, n));
+    const icons = new Map();
+    let layer, menu, sizeInput, sizeOutput, lockButton, menuIcon;
+    let database, ready;
+
+    async function storage(method, record) {
+        if (!database) {
+            database = new Promise((resolve, reject) => {
+                const request = indexedDB.open('slowdialog_floating_icons', 1);
+                request.onupgradeneeded = () => request.result.createObjectStore('icons', { keyPath: 'id' });
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+                request.onblocked = () => reject(new Error('Icon storage is blocked'));
+            }).catch(error => { database = null; throw error; });
+        }
+        const db = await database;
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('icons', method === 'getAll' ? 'readonly' : 'readwrite');
+            const store = tx.objectStore('icons');
+            const request = method === 'getAll' ? store.getAll() : store[method](record);
+            tx.oncomplete = () => resolve(request.result);
+            tx.onabort = () => reject(tx.error || new Error('Icon storage failed'));
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    function failure() {
+        alert(text('フローティングアイコンを保存できませんでした。ブラウザーの空き容量や保存の許可を確認してください。', 'Could not save floating icons. Check browser storage space and permissions.'));
+    }
+
+    // x/y describe position within the available travel: 0 = left/top, 1 = right/bottom.
+    // size is the fraction of the screen box the image fits inside, preserving aspect ratio.
+    function dimensions(record) {
+        const width = Math.min(layer.clientWidth, layer.clientHeight * record.ratio) * record.size;
+        return { width, height: width / record.ratio };
+    }
+
+    function render(icon) {
+        const { width, height } = dimensions(icon.record);
+        Object.assign(icon.element.style, {
+            width: `${width}px`, height: `${height}px`,
+            left: `${icon.record.x * (layer.clientWidth - width)}px`,
+            top: `${icon.record.y * (layer.clientHeight - height)}px`,
+        });
+        icon.element.dataset.locked = String(icon.record.locked);
+    }
+
+    function place(icon, left, top) {
+        const { width, height } = dimensions(icon.record);
+        icon.record.x = clamp(left / Math.max(1, layer.clientWidth - width));
+        icon.record.y = clamp(top / Math.max(1, layer.clientHeight - height));
+    }
+
+    function persist(icon) {
+        const snapshot = { ...icon.record };
+        const revision = ++icon.revision;
+        icon.queue = icon.queue.then(async () => {
+            try {
+                await storage('put', snapshot);
+                icon.saved = snapshot;
+            } catch {
+                if (revision === icon.revision) {
+                    icon.record = { ...icon.saved };
+                    render(icon);
+                    if (menuIcon === icon) updateMenu();
+                }
+                failure();
+            }
+        });
+    }
+
+    function closeMenu(focus = false) {
+        const previous = menuIcon;
+        menuIcon = null;
+        menu.hidden = true;
+        if (focus && previous && icons.has(previous.record.id)) previous.element.focus();
+    }
+
+    function updateMenu() {
+        sizeInput.value = Math.round(menuIcon.record.size * 100);
+        sizeOutput.textContent = `${sizeInput.value}%`;
+        lockButton.textContent = menuIcon.record.locked
+            ? text('位置のロックを解除', 'Unlock position') : text('位置をロック', 'Lock position');
+        lockButton.setAttribute('aria-pressed', String(menuIcon.record.locked));
+    }
+
+    function showMenu(icon, x, y) {
+        clearTimeout(icon.holdTimer);
+        menuIcon = icon;
+        updateMenu();
+        menu.hidden = false;
+        menu.style.left = `${clamp(x, 8, Math.max(8, window.innerWidth - menu.offsetWidth - 8))}px`;
+        menu.style.top = `${clamp(y, 8, Math.max(8, window.innerHeight - menu.offsetHeight - 8))}px`;
+        sizeInput.focus();
+    }
+
+    function baseline(icon) {
+        const points = [...icon.pointers.values()];
+        const rect = icon.element.getBoundingClientRect();
+        const bounds = layer.getBoundingClientRect();
+        icon.gesture = {
+            x: points[0].x, y: points[0].y,
+            left: rect.left - bounds.left, top: rect.top - bounds.top,
+        };
+        if (points.length >= 2) {
+            const [a, b] = points;
+            icon.gesture.distance = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
+            icon.gesture.size = icon.record.size;
+            icon.gesture.anchorX = ((a.x + b.x) / 2 - rect.left) / rect.width;
+            icon.gesture.anchorY = ((a.y + b.y) / 2 - rect.top) / rect.height;
+        }
+    }
+
+    function mount(record) {
+        const element = document.createElement('img');
+        const url = URL.createObjectURL(record.blob);
+        element.src = url;
+        element.className = 'floating-icon';
+        element.alt = text('フローティングアイコン', 'Floating icon');
+        element.setAttribute('role', 'button');
+        element.setAttribute('aria-haspopup', 'dialog');
+        element.setAttribute('aria-label', text('フローティングアイコン。ドラッグで移動、右クリックまたは長押しでメニュー', 'Floating icon. Drag to move; right-click or long-press for options'));
+        element.tabIndex = 0;
+        element.draggable = false;
+        const icon = { record, saved: { ...record }, element, url, pointers: new Map(), queue: Promise.resolve(), revision: 0 };
+        icons.set(record.id, icon);
+        layer.append(element);
+        render(icon);
+        element.addEventListener('dragstart', event => event.preventDefault());
+        element.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            icon.suppressed = true;
+            showMenu(icon, event.clientX, event.clientY);
+        });
+        element.addEventListener('pointerdown', event => {
+            if (event.button !== 0 || icon.deleting) return;
+            event.preventDefault();
+            closeMenu();
+            element.focus({ preventScroll: true });
+            layer.append(element);
+            clearTimeout(icon.holdTimer);
+            icon.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            element.setPointerCapture(event.pointerId);
+            if (icon.pointers.size === 1) {
+                icon.dirty = false;
+                icon.suppressed = false;
+                icon.moved = false;
+                if (event.pointerType !== 'mouse') {
+                    icon.holdTimer = setTimeout(() => {
+                        icon.suppressed = true;
+                        showMenu(icon, event.clientX, event.clientY);
+                    }, 550);
+                }
+            }
+            baseline(icon);
+        });
+        element.addEventListener('pointermove', event => {
+            if (!icon.pointers.has(event.pointerId) || icon.suppressed) return;
+            icon.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+            const points = [...icon.pointers.values()];
+            const g = icon.gesture;
+            if (points.length >= 2) {
+                clearTimeout(icon.holdTimer);
+                const [a, b] = points;
+                icon.record.size = clamp(g.size * Math.hypot(b.x - a.x, b.y - a.y) / g.distance, 0.05, 1);
+                if (!icon.record.locked) {
+                    const bounds = layer.getBoundingClientRect();
+                    const { width, height } = dimensions(icon.record);
+                    place(icon, (a.x + b.x) / 2 - bounds.left - g.anchorX * width,
+                        (a.y + b.y) / 2 - bounds.top - g.anchorY * height);
+                }
+            } else {
+                const dx = points[0].x - g.x, dy = points[0].y - g.y;
+                if (!icon.moved && Math.hypot(dx, dy) < 6) return;
+                icon.moved = true;
+                clearTimeout(icon.holdTimer);
+                if (icon.record.locked) return;
+                place(icon, g.left + dx, g.top + dy);
+            }
+            icon.dirty = true;
+            render(icon);
+        });
+        const end = event => {
+            if (!icon.pointers.delete(event.pointerId)) return;
+            clearTimeout(icon.holdTimer);
+            if (icon.pointers.size) baseline(icon);
+            else if (icon.dirty) { icon.dirty = false; persist(icon); }
+        };
+        element.addEventListener('pointerup', end);
+        element.addEventListener('pointercancel', end);
+        element.addEventListener('lostpointercapture', end);
+        element.addEventListener('keydown', event => {
+            if (icon.deleting) return;
+            if (['Enter', ' ', 'ContextMenu'].includes(event.key) || (event.shiftKey && event.key === 'F10')) {
+                event.preventDefault();
+                const rect = element.getBoundingClientRect();
+                showMenu(icon, rect.left, rect.bottom);
+            } else if (event.key.startsWith('Arrow') && !icon.record.locked) {
+                event.preventDefault();
+                const step = event.shiftKey ? 0.1 : 0.01;
+                if (event.key === 'ArrowLeft') icon.record.x = clamp(icon.record.x - step);
+                if (event.key === 'ArrowRight') icon.record.x = clamp(icon.record.x + step);
+                if (event.key === 'ArrowUp') icon.record.y = clamp(icon.record.y - step);
+                if (event.key === 'ArrowDown') icon.record.y = clamp(icon.record.y + step);
+                render(icon);
+                persist(icon);
+            }
+        });
+    }
+
+    function init() {
+        layer = document.createElement('div');
+        layer.id = 'floating-icons';
+        document.body.append(layer);
+        menu = document.createElement('div');
+        menu.id = 'floating-icon-menu';
+        menu.hidden = true;
+        menu.setAttribute('role', 'dialog');
+        menu.setAttribute('aria-label', text('フローティングアイコンの操作', 'Floating icon options'));
+        const label = document.createElement('label');
+        label.htmlFor = 'floating-icon-size';
+        label.textContent = text('サイズ ', 'Size ');
+        sizeOutput = document.createElement('output');
+        sizeOutput.htmlFor = 'floating-icon-size';
+        label.append(sizeOutput);
+        sizeInput = document.createElement('input');
+        Object.assign(sizeInput, { id: 'floating-icon-size', type: 'range', min: '5', max: '100', step: '1' });
+        menu.append(label, sizeInput);
+        const button = (id, title, action) => {
+            const item = document.createElement('button');
+            item.id = id; item.type = 'button'; item.textContent = title;
+            item.addEventListener('click', action);
+            menu.append(item);
+            return item;
+        };
+        sizeInput.addEventListener('input', () => {
+            if (!menuIcon) return;
+            menuIcon.record.size = Number(sizeInput.value) / 100;
+            sizeOutput.textContent = `${sizeInput.value}%`;
+            render(menuIcon);
+        });
+        sizeInput.addEventListener('change', () => { if (menuIcon) persist(menuIcon); });
+        lockButton = button('floating-icon-lock', '', () => {
+            menuIcon.record.locked = !menuIcon.record.locked;
+            render(menuIcon); persist(menuIcon); updateMenu();
+        });
+        button('floating-icon-delete', text('消去', 'Delete'), async () => {
+            const icon = menuIcon;
+            icon.deleting = true;
+            closeMenu();
+            await icon.queue;
+            try {
+                await storage('delete', icon.record.id);
+                icons.delete(icon.record.id);
+                icon.element.remove();
+                URL.revokeObjectURL(icon.url);
+                document.getElementById('btn-add-floating-icon').focus();
+            } catch { icon.deleting = false; failure(); }
+        });
+        button('floating-icon-close', text('閉じる', 'Close'), () => closeMenu(true));
+        document.body.append(menu);
+        document.addEventListener('pointerdown', event => {
+            if (!menu.hidden && !menu.contains(event.target)) closeMenu();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !menu.hidden) { event.preventDefault(); closeMenu(true); }
+        });
+        menu.addEventListener('focusout', () => {
+            setTimeout(() => { if (!menu.contains(document.activeElement)) closeMenu(); }, 0);
+        });
+        const resize = () => {
+            layer.style.top = `${document.getElementById('toolbar').offsetHeight}px`;
+            closeMenu();
+            for (const icon of icons.values()) {
+                clearTimeout(icon.holdTimer);
+                if (icon.dirty) { icon.dirty = false; persist(icon); }
+                icon.pointers.clear();
+                render(icon);
+            }
+        };
+        new ResizeObserver(resize).observe(document.body);
+        new ResizeObserver(resize).observe(document.getElementById('toolbar'));
+        resize();
+        ready = storage('getAll').then(records => records.forEach(mount)).catch(() => {
+            alert(text('フローティングアイコンを読み込めませんでした。', 'Could not load floating icons.'));
+        });
+        const input = document.getElementById('floating-icon-file');
+        const addButton = document.getElementById('btn-add-floating-icon');
+        addButton.addEventListener('click', () => { closeMenu(); input.click(); });
+        input.addEventListener('change', async () => {
+            const files = [...input.files];
+            input.value = '';
+            addButton.disabled = true;
+            await ready;
+            try {
+                for (const file of files) {
+                    let image;
+                    try { image = await BackgroundImage.prepareImage(file); }
+                    catch {
+                        alert(text('画像を読み込めません。別の画像を選択してください。', 'Could not read this image. Please choose another image.'));
+                        continue;
+                    }
+                    const record = {
+                        id: `icon-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                        blob: image.blob, ratio: image.width / image.height,
+                        x: 1, y: 0, size: 0.25, locked: false,
+                    };
+                    try { await storage('put', record); mount(record); }
+                    catch { failure(); }
+                }
+            } finally { addButton.disabled = false; }
+        });
+    }
+
+    return { init };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -3195,6 +3597,7 @@ const UIController = (() => {
     function init() {
         Settings.load();
         BackgroundImage.init();
+        FloatingIcons.init();
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();

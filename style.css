@@ -304,6 +304,61 @@ body {
 }
 
 /* ===== Pixelated Border Utility ===== */
+/* Floating images sit below dialogs, with only the images receiving input. */
+#floating-icons {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-icon {
+  position: absolute;
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  object-fit: contain;
+  image-rendering: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.floating-icon[data-locked="true"] { cursor: default; }
+.floating-icon:focus-visible { outline: 2px dashed var(--gb-darkest); }
+
+#floating-icon-menu {
+  position: fixed;
+  z-index: 60;
+  width: min(240px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  padding: 12px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-lightest);
+  color: var(--gb-darkest);
+  box-shadow: 3px 3px 0 var(--gb-darkest);
+}
+
+#floating-icon-menu label,
+#floating-icon-menu button { display: block; width: 100%; margin-top: 8px; }
+#floating-icon-menu input { width: 100%; }
+#floating-icon-menu button {
+  font: inherit;
+  padding: 6px;
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  border: 1px solid var(--gb-darkest);
+  cursor: pointer;
+}
+
 .px-border {
   border: var(--border-w) solid var(--gb-darkest);
 }
@@ -330,6 +385,7 @@ body {
 
 #toolbar-buttons {
   display: flex;
+  flex-shrink: 0;
   gap: 4px;
 }
 
@@ -379,7 +435,7 @@ body {
 #call-duration {
   position: absolute;
   left: calc(50% + 76px);
-  right: 158px;
+  right: 194px;
   font-family: var(--app-font);
   font-size: calc(var(--font-size) * 0.9);
   color: var(--gb-lightest);
@@ -1468,6 +1524,19 @@ body.no-borders .import-divider::after {
 
 /* ===== Responsive ===== */
 @media (max-width: 600px) {
+  #toolbar:has(#btn-end-call:not(.hidden)) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+  }
+
+  #toolbar:has(#btn-end-call:not(.hidden)) #toolbar-buttons { grid-column: 2; grid-row: 1; }
+  #toolbar:has(#btn-end-call:not(.hidden)) #btn-end-call,
+  #toolbar:has(#btn-end-call:not(.hidden)) #call-duration {
+    position: static;
+    transform: none;
+    grid-row: 2;
+  }
   :root {
     --font-size: 14px;
   }
@@ -1480,4 +1549,8 @@ body.no-borders .import-divider::after {
     width: 95%;
     padding: 14px;
   }
+}
+
+@media (max-width: 380px) {
+  #app-title { font-size: 14px; letter-spacing: 1px; }
 }

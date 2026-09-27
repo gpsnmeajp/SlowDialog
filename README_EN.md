@@ -119,6 +119,16 @@ In this case, pressing the save button shows a warning. The settings are saved, 
 
 For beginners: most browsers do not allow an `https://` page to connect directly to an `http://` API. If you use a local LLM or local API, make sure the way you open the page matches the way the API is served.
 
+#### Floating Icons
+
+Use the toolbar's image-add button to place borderless images on the screen. Multiple images are supported and saved in the browser, resized to at most 4096×4096 pixels.
+
+- Images start at the upper right below the toolbar, fitting within one quarter of the placement area's width and height while preserving their aspect ratio.
+- Drag or swipe to move; pinch with two fingers to resize.
+- Right-click or long-press to open size controls (5–100%), lock/unlock position, or delete. Resizing remains available while position is locked.
+- Position and size are automatically saved as normalized relative values and adapt to screen resizing and page reloads.
+- With keyboard focus on an icon, use arrow keys to move and Enter or Shift+F10 to open its menu.
+
 #### Font Options
 
 - **k8x12S** — 8-dot non-kanji pixel font

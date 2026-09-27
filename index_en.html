@@ -17,6 +17,13 @@
     <button id="btn-end-call" class="hidden">End Call</button>
     <div id="call-duration" class="hidden" aria-live="polite">00:00</div>
     <div id="toolbar-buttons">
+      <button type="button" id="btn-add-floating-icon" title="Add floating icons" aria-label="Add floating icons">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M13 3H3v18h18V11M3 17l5-5 5 5 3-3 5 5M18 2v8M14 6h8" />
+          <circle cx="8" cy="8" r="1" />
+        </svg>
+      </button>
+      <input type="file" id="floating-icon-file" accept="image/*" multiple hidden>
       <button id="btn-settings" title="Settings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
