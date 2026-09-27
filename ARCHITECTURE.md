@@ -93,7 +93,7 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `intentModel` | string | `~typesafe/jev-latest` | 判定モデル |
 | `intentDelay` | number | `0.5` | 判定遅延（秒） |
 | `intentConfidence` | number | `0.65` | 判定不能のしきい値(Confidence) |
-| `intentChoices` | string | 日英91種類 | 改行区切りの選択肢 |
+| `intentChoices` | string | 日英106種類 | 改行区切りの選択肢 |
 | `intentInstructions` | string | `""` | 共通判定指示への追加情報 |
 | `intentTracking` | boolean | `false` | 直近3ターンを含める |
 | `appMode` | string | `chat` | `chat` または `textCall` のUIモード |
@@ -325,7 +325,7 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 
 ### 9. IntentChoices
 
-日英91個の既定ラベルを管理する。既定・カスタムともラベル自体をcriteriaのキーと値に使用し、既定だけの追加説明や移行処理は持たない。
+日英106個の既定ラベルを管理する。既定・カスタムともラベル自体をcriteriaのキーと値に使用し、既定だけの追加説明や移行処理は持たない。
 
 ### 10. SystemOneIntent
 

@@ -112,7 +112,7 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Jev model | Classification model | `~typesafe/jev-latest` |
 | Classification delay | Seconds after typing stops | 0.5 |
 | Minimum confidence | Lower values require send confirmation | 0.65 |
-| Intent choices | 2–255 options, one per line | 91 choices |
+| Intent choices | 2–255 options, one per line | 106 choices |
 | Additional question guidance | Custom classification guidance | Empty |
 | Conversation tracking | Include the last three turns | Off |
 | Mode Tags | Show mode tag dropdowns | Off |

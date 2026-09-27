@@ -14,10 +14,12 @@ const path = require('node:path');
             const errors = [], requests = [], requestUrls = [], chats = [];
             page.on('pageerror', error => errors.push(error.message));
             let confidence = 0.9, malformed = false, slow = false, fail = false, certain = false;
+            let intentGate = null;
             await page.route('**/v1/systemone', async route => {
                 const body = route.request().postDataJSON();
                 requests.push(body);
                 requestUrls.push(route.request().url());
+                if (intentGate) await intentGate;
                 if (slow) await new Promise(resolve => setTimeout(resolve, 700));
                 const probabilities = certain
                     ? Object.fromEntries(Object.keys(body.questions.intent.criteria).map(choice => [choice, choice === '感謝' ? 1 : 0]))
@@ -218,6 +220,35 @@ const path = require('node:path');
             await badge.click();
             assert.deepEqual(await page.locator('#intent-options .intent-choice-label').allTextContents(), ['感謝', '質問', '謝罪']);
             await page.locator('#btn-close-intent').click();
+            // A result arriving while the picker is open updates both order and percentages.
+            let releaseIntent;
+            intentGate = new Promise(resolve => { releaseIntent = resolve; });
+            await input.fill('ありがとう、助かった');
+            await badge.click();
+            assert.deepEqual(await page.locator('#intent-options .intent-choice-label').allTextContents(), ['質問', '感謝', '謝罪']);
+            assert.equal(await page.locator('.intent-choice-probability').count(), 0);
+            await page.locator('#intent-options button').first().focus();
+            releaseIntent();
+            await page.waitForFunction(() => document.querySelector('#intent-badge').textContent === '感謝');
+            intentGate = null;
+            assert.deepEqual(await page.locator('#intent-options .intent-choice-label').allTextContents(), ['感謝', '質問', '謝罪']);
+            assert.deepEqual(await page.locator('.intent-choice-probability').allTextContents(), ['100.0%', '0.0%', '0.0%']);
+            assert.equal(await page.evaluate(() => document.activeElement.textContent), '質問0.0%');
+            await page.locator('#btn-close-intent').click();
+            // The closing interaction controls focus, even when opened with a different input method.
+            for (const closeSelector of ['#btn-close-intent', '#btn-remove-intent', '#intent-options button']) {
+                await badge.focus();
+                await page.keyboard.press('Enter');
+                await page.locator(closeSelector).first().click();
+                await page.waitForFunction(() => document.activeElement.id === 'user-input');
+            }
+            await badge.focus();
+            await page.keyboard.press('Enter');
+            await page.locator('#btn-close-intent').tap();
+            await page.waitForFunction(() => document.activeElement.id === 'user-input');
+            await badge.click();
+            await page.keyboard.press('Escape');
+            await page.waitForFunction(() => document.activeElement.id === 'intent-badge');
             assert.deepEqual(errors, []);
             console.log('PASS ' + entry);
             await context.close();
