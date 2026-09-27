@@ -6,7 +6,7 @@ SlowDialogは、AIとの会話の主体を人間に取り戻すためのチャ�
 AIの返答を一気に表示せず、人間がタイピングしているかのようにチャンク単位で遅延表示する。
 
 - **技術スタック**: HTML5 + Vanilla CSS + Vanilla JavaScript（フレームワーク不使用）
-- **API**: OpenAI互換 ChatCompletion API（SSEストリーミング）
+- **API**: OpenAI互換 ChatCompletion API（SSEストリーミング）、System One API（意図判定）
 - **永続化**: localStorage
 - **フォント**: k8x12系（ピクセルフォント）/ 美咲ゴシック / Noto Sans JP
 - **多言語**: 日本語 / English
@@ -18,7 +18,7 @@ slowdialog/
 ├── index.html          # SPA のエントリポイント（日本語）
 ├── index_en.html       # SPA のエントリポイント（英語）
 ├── style.css           # 全スタイル定義
-├── app.js              # 全ロジック（9モジュール）
+├── app.js              # 全ロジック
 ├── DIRECTION.md        # 企画書
 ├── ARCHITECTURE.md     # 本ファイル
 ├── README.md           # ドキュメント（日本語）
@@ -41,7 +41,7 @@ slowdialog/
 
 ## モジュール構成 (app.js)
 
-app.js は IIFE パターンで 9 つのモジュールに分割されている。
+app.js は IIFE パターンで 複数のモジュールに分割されている。
 モジュール間の依存関係は一方向で、循環依存はない。
 
 ```
@@ -56,6 +56,8 @@ app.js は IIFE パターンで 9 つのモジュールに分割されている�
    │  └──────────────▶ ChatHistory       履歴管理・永続化
    └─────────────────▶ Settings          設定管理・永続化
                        SimpleMarkdown    Markdown → HTML 変換
+                       SystemOneIntent   意図判定とプレビュー
+                       IntentChoices     日英の既定選択肢
 ```
 
 ---
@@ -85,6 +87,15 @@ app.js は IIFE パターンで 9 つのモジュールに分割されている�
 
 | キー | 型 | デフォルト | 説明 |
 |------|-----|-----------|------|
+| `intentEnabled` | boolean | `false` | 意図判定の有効可否 |
+| `intentBaseUrl` | string | `https://openrouter.ai/api` | System One APIのBase URL |
+| `intentApiKey` | string | `""` | 意図判定用APIキー |
+| `intentModel` | string | `jev-latest` | 判定モデル |
+| `intentDelay` | number | `0.5` | 判定遅延（秒） |
+| `intentConfidence` | number | `0.65` | Confidenceの下限 |
+| `intentChoices` | string | 日英91種類 | 改行区切りの選択肢 |
+| `intentInstructions` | string | `""` | 共通判定指示への追加情報 |
+| `intentTracking` | boolean | `false` | 直近3ターンを含める |
 | `appMode` | string | `chat` | `chat` または `textCall` のUIモード |
 | `baseUrl` | string | `https://openrouter.ai/api/v1` | API ベース URL |
 | `apiKey` | string | `""` | API キー |
@@ -180,7 +191,8 @@ AIメッセージ内の Markdown を HTML に変換する軽量パーサ。
 **データ構造:**
 ```js
 _messages = [
-  { role: "user"|"assistant"|"system", content: string, timestamp: string },
+  { role: "user"|"assistant"|"system", content: string, timestamp: string,
+    intents?: [{ end: number, label: string }] },
   ...
 ]
 ```
@@ -189,7 +201,9 @@ _messages = [
 
 | メソッド | 説明 |
 |---------|------|
-| `push(role, content)` | メッセージ追加（タイムスタンプ自動付与） → トリム → 保存 |
+| `push(role, content, intent)` | メッセージ追加（タイムスタンプ自動付与） → トリム → 保存 |
+| `appendUser(content, intent)` | 最後のユーザー発言へ改行で連結し、タグの境界を保持 |
+| `subscribe(listener)` | 保存時に履歴変更を通知 |
 | `updateLast(content)` | 最後のメッセージの content を上書き → 保存 |
 | `updateAt(index, content)` | 指定インデックスのメッセージを更新 → 保存 |
 | `popLast()` | 最後のメッセージを削除 → 保存 |
@@ -198,6 +212,8 @@ _messages = [
 | `buildApiMessages()` | system プロンプトを先頭に付けた API 送信用配列を生成 |
 | `exportJSON()` | クイックレスポンス設定を含めた Blob + ダウンロードリンクで JSON エクスポート |
 | `importJSON(data)` | JSON データから履歴をインポート（クイックレスポンスも含む） |
+
+**意図タグ:** `content`はタグなしの本文。`intents`は各発言の末尾位置（JavaScript文字列のUTF-16オフセット）とラベルを保持する。API送信時だけ各位置に` [label]`を挿入し、画面ではラベルを時刻の左へ表示する。割り込み時も1件のユーザーメッセージへ連結する。本文の全面置換では既存のタグ境界を破棄する。JSONエクスポート・インポートでも`intents`を保持する。
 
 **タイムスタンプ送信:** `sendTimestamp` が有効な場合、APIに送信するメッセージに `<timestamp>` タグを付与。
 
@@ -307,7 +323,20 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 
 ---
 
-### 9. UIController
+### 9. IntentChoices
+
+日英91個の既定ラベルを管理する。既定・カスタムともラベル自体をcriteriaのキーと値に使用し、既定だけの追加説明や移行処理は持たない。
+
+### 10. SystemOneIntent
+
+通常入力と編集・定型入力プレビューを独立管理する。入力停止後に`/v1/systemone`へ`state`・`model`・`questions.intent`を送り、ChoiceとConfidenceを検証する。低Confidence、HTTPエラー、15秒タイムアウト、不正応答は判定不能として送信前に確認する。
+
+- debounce、AbortController、revisionで古い応答を破棄する。IME変換中は判定しない。
+- 意図設定の変更時だけ再判定し、テーマなど無関係な設定保存では手動選択・消去を保持する。
+- 会話追跡はタグなしの本文から直近3ターンを構築する。履歴変更通知で会話を比較し、変化した場合は自動判定を無効化して再判定する。手動選択は保持する。
+- 定型入力は既存の編集ダイアログを送信プレビューとして使用する。元の下書きとその手動選択は送信・キャンセルで上書きしない。
+
+### 11. UIController
 
 DOM操作・イベント管理・各モジュールの統合を担う最上位モジュール。
 
@@ -439,14 +468,15 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
       <div id="last-call-duration"> ← 前回の通話時間
     <div id="chat-messages">    ← バブル・インジケータの親
   <div id="quick-responses">    ← クイックレスポンスボタンエリア
-  <footer id="input-area">      ← テキストエリア + 送信ボタン
+  <footer id="input-area">      ← テキストエリア + 意図バッジ + 送信ボタン
   <div id="settings-overlay">   ← 設定ダイアログ（モーダル）
   <div id="intro-overlay">      ← イントロダイアログ（初回のみ）
   <div id="retry-bar">          ← エラー時リトライバー
   <div id="import-overlay">     ← インポートダイアログ
   <div id="confirm-overlay">    ← クリア確認ダイアログ
   <div id="bubble-action-overlay"> ← メッセージアクションダイアログ
-  <div id="bubble-edit-overlay">   ← メッセージ編集ダイアログ
+  <div id="bubble-edit-overlay">   ← メッセージ編集・定型入力プレビュー
+  <dialog id="intent-picker">      ← 意図の手動選択・消去
   <div id="bubble-delete-overlay"> ← メッセージ削除確認ダイアログ
 ```
 
@@ -500,3 +530,12 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 | `slowdialog_settings` | 設定 JSON |
 | `slowdialog_history` | 会話履歴 JSON（タイムスタンプ含む） |
 | `slowdialog_intro_seen` | イントロ表示済みフラグ（`"1"`） |
+
+## 検証
+
+- `node tests/intent-choices.cjs`：日英の選択肢数・重複・カスタム設定の保持。
+- `node tests/intent.cjs`：debounce、Confidence、送信確認、手動選択・消去、送信内容、モバイル配置。
+- `node tests/intent-lifecycle.cjs`：下書き保持、無関係な設定保存、履歴変更時の再判定、タグ付き割り込み連結、タグ境界の保存・復元。
+- `node tests/background.cjs`、`node tests/floating-icons.cjs`：既存機能の回帰確認。
+
+ブラウザテストはPlaywrightとEdgeを使用し、日英の通常版・単一HTML配布版を確認する。APIはモックのため、Jev実接続での分類精度・Confidenceの評価は含まない。

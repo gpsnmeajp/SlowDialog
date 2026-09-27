@@ -73,6 +73,7 @@
   <!-- ===== Input Area ===== -->
   <footer id="input-area">
     <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+    <button type="button" id="intent-badge" class="intent-badge hidden" aria-live="polite"></button>
     <button id="btn-send" title="Send">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
         <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
@@ -91,6 +92,7 @@
           <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-panel-display" aria-selected="false" tabindex="-1">Display</button>
           <button type="button" id="settings-tab-speech" role="tab" aria-controls="settings-panel-speech" aria-selected="false" tabindex="-1">Speech</button>
           <button type="button" id="settings-tab-conversation" role="tab" aria-controls="settings-panel-conversation" aria-selected="false" tabindex="-1">Conversation</button>
+          <button type="button" id="settings-tab-intent" role="tab" aria-controls="settings-panel-intent" aria-selected="false" tabindex="-1">Intent</button>
           <button type="button" id="settings-tab-shortcuts" role="tab" aria-controls="settings-panel-shortcuts" aria-selected="false" tabindex="-1">Shortcuts</button>
         </div>
         <div class="settings-panels">
@@ -109,6 +111,24 @@
 
             <label for="setting-model">Model Name</label>
             <input type="text" id="setting-model" placeholder="gpt-4o-mini">
+          </section>
+          <section id="settings-panel-intent" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-intent" tabindex="0" hidden>
+            <label><input id="intent-Enabled" type="checkbox"> Enable</label>
+            <label for="intent-BaseUrl">Base URL</label>
+            <input id="intent-BaseUrl" type="url">
+            <label for="intent-ApiKey">API key</label>
+            <input id="intent-ApiKey" type="password">
+            <label for="intent-Model">Model</label>
+            <input id="intent-Model" type="text">
+            <label for="intent-Delay">Classification delay (seconds)</label>
+            <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
+            <label for="intent-Confidence">Minimum confidence</label>
+            <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
+            <label for="intent-Choices">Choices (one per line)</label>
+            <textarea id="intent-Choices" rows="6"></textarea>
+            <label for="intent-Instructions">Additional question guidance</label>
+            <textarea id="intent-Instructions" rows="3"></textarea>
+            <label><input id="intent-Tracking" type="checkbox"> Conversation tracking</label>
           </section>
           <section id="settings-panel-display" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-display" tabindex="0" hidden>
             <label for="setting-font">Font</label>
@@ -368,6 +388,7 @@
       <h2 id="bubble-edit-title"></h2>
       <textarea id="bubble-edit-text" rows="4"></textarea>
       <div id="bubble-edit-buttons">
+        <button type="button" id="edit-intent-badge" class="intent-badge hidden" aria-live="polite"></button>
         <button id="btn-bubble-edit-send"></button>
         <button id="btn-bubble-edit-cancel"></button>
       </div>
@@ -385,6 +406,11 @@
     </div>
   </div>
 
+  <dialog id="intent-picker" aria-labelledby="intent-picker-title">
+    <h2 id="intent-picker-title">Select intent</h2>
+    <div id="intent-options"></div>
+    <form method="dialog"><button>Cancel</button></form>
+  </dialog>
   <script src="app.js"></script>
 </body>
 

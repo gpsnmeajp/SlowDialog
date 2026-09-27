@@ -872,6 +872,7 @@ body {
 }
 
 #user-input {
+  min-width: 0;
   flex: 1;
   font-family: var(--app-font);
   font-size: var(--font-size);
@@ -959,6 +960,41 @@ body {
   gap: 6px;
   min-height: 0;
 }
+
+.intent-badge {
+  height: 40px;
+  max-width: min(34vw, 220px);
+  padding: 4px 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--gb-darkest);
+  background: var(--gb-light);
+  border: 2px solid var(--gb-darkest);
+  cursor: pointer;
+}
+.intent-badge.intent-uncertain {
+  color: var(--gb-lightest);
+  background: var(--gb-darkest);
+  font-weight: bold;
+  border-style: double;
+}
+#intent-picker {
+  width: min(360px, 90vw);
+  max-height: 80dvh;
+  overflow: auto;
+  padding: 20px;
+  color: var(--gb-darkest);
+  background: var(--gb-lightest);
+  border: 3px solid var(--gb-darkest);
+  font-family: var(--app-font);
+}
+#intent-picker::backdrop { background: rgb(0 0 0 / 50%); }
+#intent-options { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+#intent-picker button { font: inherit; padding: 6px 12px; cursor: pointer; overflow-wrap: anywhere; }
 
 .settings-tabs {
   display: flex;

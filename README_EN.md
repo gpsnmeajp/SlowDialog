@@ -38,7 +38,8 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Interruption** — You can send a message even while the AI is still "speaking." The AI output is interrupted, the displayed content is finalized, and the conversation continues from there.
 - **Manual Advance Mode** — Turn off auto-advance and use the "Continue" button to read at your own pace.
 - **Pause/Resume** — Use the pause button during auto-advance to control reading pace.
-- **Quick Responses** — Register frequently used replies as buttons and send them with one click.
+- **Quick Responses** — Register common replies for one-click sending. With Intent enabled, review them in a separate send preview first.
+- **Intent Classification** — Review and adjust Jev's prediction before sending an intent tag to the AI.
 - **Mode Tags** — Select tags from dropdowns to append them to your prompt on send. Combined with your system prompt, this lets you switch AI behavior on the fly.
 - **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
@@ -104,7 +105,16 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Delay per Character | Delay display speed (ms) | 150 |
 | Minimum Delay | Minimum delay between chunks (seconds) | 2 |
 | Context Size | Number of history messages sent to API | 1000 |
-| Quick Responses | One-click replies (newline-separated) | Hold on<br>Too long<br>In a word?<br>Why?<br>Not right |
+| Quick Responses | Preset replies (newline-separated) | Hold on<br>Too long<br>In a word?<br>Why?<br>Not right |
+| Intent | Enable in the Intent tab | Off |
+| Jev Base URL | System One API endpoint | `https://openrouter.ai/api` |
+| Jev API key | Key for intent classification | — |
+| Jev model | Classification model | `jev-latest` |
+| Classification delay | Seconds after typing stops | 0.5 |
+| Minimum confidence | Lower values require send confirmation | 0.65 |
+| Intent choices | 2–255 options, one per line | 91 choices |
+| Additional question guidance | Custom classification guidance | Empty |
+| Conversation tracking | Include the last three turns | Off |
 | Mode Tags | Show mode tag dropdowns | Off |
 | Mode 1–4 | Mode choices (newline-separated) | (see defaults) |
 
@@ -221,6 +231,21 @@ When the user's message contains the following tags, respond in the correspondin
 #energetic   → Speak in a bright, upbeat tone.
 #tired       → Speak in a calm, gentle tone.
 ```
+
+## System One Intent
+
+Enable **Intent** in settings to classify drafts with Jev Choice after 0.5 seconds without typing (off by default). Select the badge to the left of Send to change or remove the tag. Wait for the result before sending. Quick responses open a separate send preview and preserve the original draft on send or cancel; editing a previous message also gets a fresh classification.
+
+- Base URL: `https://openrouter.ai/api`. Any compatible System One API is supported. `/v1/systemone` is appended; a base ending in `/v1` or the full endpoint is also accepted. Configure the Jev API key separately. Default model: `jev-latest`.
+- Delay: 0.5 seconds by default. Minimum confidence: 0.65. Below the threshold, connection failures, and invalid responses show an emphasized **Unclear intent** badge and require confirmation before sending. Confirmed unclear messages carry no tag.
+- Choices: 2–255 options, one per line. Defaults distinguish emotional conversation (listening, comfort, encouragement, reassurance), supportive discussion (processing feelings, self-exploration, coping, relationships), character chat (affection, closeness, romance, fictional conflict, out-of-character discussion), tabletop-style games and adventures (investigation, NPC dialogue, combat, rolls, branches, hints), and work (research, analysis, creation, review, planning, authorization). Additional question guidance is configurable.
+- Conversation tracking: off sends only the draft; on includes the last three turns (each user utterance and subsequent assistant replies). Intent tags, outgoing mode tags, and timestamps are excluded. Classification instructions use English, except for choices, input data, and custom guidance.
+
+The LLM receives a suffix such as `I'm tired today [Seeking empathy]`. Intent appears beside the timestamp instead of inside the message body. Tags survive reload and JSON export/import. Interruptions before any assistant output still merge user messages, retaining each utterance's tag. Editing the draft or Intent settings triggers classification again; tracking also refreshes automatic results when history changes. Manual choices and removal remain until the draft or Intent settings change. Obsolete responses are discarded.
+
+When enabled, drafts are sent to the configured Jev endpoint before sending to the chat model. Tracking also sends conversation history. The endpoint must support browser requests (CORS).
+
+Specifications: [TypeSafe Choice](https://docs.typesafe.ai/primitives/choice), [OpenRouter System One API](https://openrouter.ai/docs/guides/community/typesafe-sdk).
 
 ## File Structure
 
