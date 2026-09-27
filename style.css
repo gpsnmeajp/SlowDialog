@@ -250,6 +250,8 @@ html {
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   max-width: 800px;
   height: 100%;
   margin: 0 auto;
@@ -264,6 +266,41 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+#background-image {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+#background-image,
+#background-preview {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+}
+
+.background-preview-frame {
+  border: 1px solid var(--gb-dark);
+  background: var(--gb-lightest);
+}
+
+#background-preview {
+  height: 160px;
+}
+
+#setting-background-file {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+#settings-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ===== Pixelated Border Utility ===== */

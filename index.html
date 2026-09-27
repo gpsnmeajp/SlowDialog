@@ -10,6 +10,7 @@
 </head>
 
 <body>
+  <div id="background-image" aria-hidden="true"></div>
   <!-- ===== ツールバー ===== -->
   <header id="toolbar">
     <h1 id="app-title">SlowDialog</h1>
@@ -129,6 +130,35 @@
               <option value="dos">DOSコンソール</option>
               <option value="msx">MSXコンソール</option>
             </select>
+
+
+            <label for="setting-background-file">背景画像</label>
+            <input type="file" id="setting-background-file" accept="image/*" aria-describedby="background-help">
+            <div id="background-help" class="settings-note">最大4096 × 4096ピクセルに縮小して保存します。</div>
+            <div class="settings-button-row">
+              <button type="button" id="btn-remove-background">画像を削除</button>
+            </div>
+            <div id="background-status" class="settings-status" role="status"></div>
+            <label for="setting-background-x">横方向の配置</label>
+            <select id="setting-background-x">
+              <option value="left">左</option>
+              <option value="center" selected>中央</option>
+              <option value="right">右</option>
+            </select>
+            <label for="setting-background-y">縦方向の配置</label>
+            <select id="setting-background-y">
+              <option value="top">上</option>
+              <option value="center" selected>中央</option>
+              <option value="bottom">下</option>
+            </select>
+            <label for="setting-background-transparency">透明度（0%: 不透明 / 100%: 透明）</label>
+            <div class="slider-row">
+              <input type="range" id="setting-background-transparency" min="0" max="100" value="0">
+              <output id="background-transparency-value" for="setting-background-transparency" class="slider-value">0%</output>
+            </div>
+            <div class="background-preview-frame">
+              <div id="background-preview" role="img" aria-label="背景画像のプレビュー"></div>
+            </div>
 
             <label class="checkbox-row">
               <input type="checkbox" id="setting-show-borders" checked>

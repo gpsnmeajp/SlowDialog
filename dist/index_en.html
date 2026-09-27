@@ -260,6 +260,8 @@ html {
 }
 
 body {
+  position: relative;
+  isolation: isolate;
   max-width: 800px;
   height: 100%;
   margin: 0 auto;
@@ -274,6 +276,41 @@ body {
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+#background-image {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+#background-image,
+#background-preview {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+}
+
+.background-preview-frame {
+  border: 1px solid var(--gb-dark);
+  background: var(--gb-lightest);
+}
+
+#background-preview {
+  height: 160px;
+}
+
+#setting-background-file {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+#settings-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ===== Pixelated Border Utility ===== */
@@ -1459,6 +1496,7 @@ body.no-borders .import-divider::after {
 </head>
 
 <body>
+  <div id="background-image" aria-hidden="true"></div>
   <!-- ===== Toolbar ===== -->
   <header id="toolbar">
     <h1 id="app-title">SlowDialog</h1>
@@ -1578,6 +1616,35 @@ body.no-borders .import-divider::after {
               <option value="dos">DOS Console</option>
               <option value="msx">MSX Console</option>
             </select>
+
+
+            <label for="setting-background-file">Background image</label>
+            <input type="file" id="setting-background-file" accept="image/*" aria-describedby="background-help">
+            <div id="background-help" class="settings-note">Images are saved at up to 4096 × 4096 pixels.</div>
+            <div class="settings-button-row">
+              <button type="button" id="btn-remove-background">Remove image</button>
+            </div>
+            <div id="background-status" class="settings-status" role="status"></div>
+            <label for="setting-background-x">Horizontal alignment</label>
+            <select id="setting-background-x">
+              <option value="left">Left</option>
+              <option value="center" selected>Center</option>
+              <option value="right">Right</option>
+            </select>
+            <label for="setting-background-y">Vertical alignment</label>
+            <select id="setting-background-y">
+              <option value="top">Top</option>
+              <option value="center" selected>Center</option>
+              <option value="bottom">Bottom</option>
+            </select>
+            <label for="setting-background-transparency">Transparency (0%: visible / 100%: invisible)</label>
+            <div class="slider-row">
+              <input type="range" id="setting-background-transparency" min="0" max="100" value="0">
+              <output id="background-transparency-value" for="setting-background-transparency" class="slider-value">0%</output>
+            </div>
+            <div class="background-preview-frame">
+              <div id="background-preview" role="img" aria-label="Background preview"></div>
+            </div>
 
             <label class="checkbox-row">
               <input type="checkbox" id="setting-show-borders" checked>
@@ -1919,6 +1986,10 @@ const Settings = (() => {
         contextSize: 1000,
         font: 'NotoSansJP',
         theme: 'gb',
+        backgroundImageId: null,
+        backgroundPositionX: 'center',
+        backgroundPositionY: 'center',
+        backgroundTransparency: 0,
         autoAdvance: true,
         showPauseButton: true,
         soundEnabled: true,
@@ -1964,8 +2035,9 @@ const Settings = (() => {
     }
 
     function save(s) {
-        _settings = { ...DEFAULTS, ...s };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(_settings));
+        const next = { ...DEFAULTS, ...s };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        _settings = next;
     }
 
     function get() { return { ..._settings }; }
@@ -2007,6 +2079,205 @@ const Settings = (() => {
     }
 
     return { load, save, get, isConfigured, applyFont, applyTheme, applyScanline, applyBorders };
+})();
+
+// ────────────────────────────────────────────────────────────
+// BackgroundImage — 背景画像の保存・表示・設定プレビュー
+// ────────────────────────────────────────────────────────────
+// Background images are stored as Blobs, separately from localStorage settings.
+const BackgroundImage = (() => {
+    const el = (id) => document.getElementById(id);
+    const message = (ja, en) => Lang.current() === 'ja' ? ja : en;
+    let saved = null;
+    let draft = null;
+    let objectUrl = null;
+    let renderedBlob;
+    let revision = 0;
+    let loading = false;
+    let saving = false;
+    let ready;
+    let database;
+
+    function db() {
+        if (!database) database = new Promise((resolve, reject) => {
+            const request = indexedDB.open('slowdialog_backgrounds', 1);
+            request.onupgradeneeded = () => request.result.createObjectStore('images');
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+            request.onblocked = () => reject(new Error('Image storage is blocked'));
+        }).catch((error) => { database = null; throw error; });
+        return database;
+    }
+
+    async function store(method, key, blob) {
+        const database = await db();
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction('images', method === 'get' ? 'readonly' : 'readwrite');
+            const images = transaction.objectStore('images');
+            const request = method === 'put' ? images.put(blob, key) : images[method](key);
+            transaction.oncomplete = () => resolve(request.result);
+            transaction.onabort = () => reject(transaction.error || new Error('Image storage failed'));
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    function render(blob, settings) {
+        const layer = el('background-image');
+        const preview = el('background-preview');
+        if (blob !== renderedBlob) {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            objectUrl = blob ? URL.createObjectURL(blob) : null;
+            renderedBlob = blob;
+            for (const target of [layer, preview]) {
+                target.style.backgroundImage = objectUrl ? `url("${objectUrl}")` : 'none';
+            }
+        }
+        for (const target of [layer, preview]) {
+            target.style.backgroundPosition = `${settings.backgroundPositionX} ${settings.backgroundPositionY}`;
+        }
+        const opacity = 1 - settings.backgroundTransparency / 100;
+        layer.style.opacity = opacity;
+        preview.style.opacity = opacity;
+        el('btn-remove-background').disabled = !blob || saving;
+    }
+
+    function values() {
+        return {
+            backgroundPositionX: el('setting-background-x').value,
+            backgroundPositionY: el('setting-background-y').value,
+            backgroundTransparency: Number(el('setting-background-transparency').value),
+        };
+    }
+
+    function preview() {
+        el('background-transparency-value').textContent = `${values().backgroundTransparency}%`;
+        render(draft, values());
+    }
+
+    function status(text) { el('background-status').textContent = text; }
+
+    async function resize(file) {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        try {
+            await new Promise((resolve, reject) => {
+                image.onload = resolve;
+                image.onerror = () => reject(new Error('Invalid image'));
+                image.src = url;
+            });
+            if (!image.naturalWidth || !image.naturalHeight) throw new Error('Empty image');
+            const scale = Math.min(1, 4096 / image.naturalWidth, 4096 / image.naturalHeight);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            const context = canvas.getContext('2d');
+            context.imageSmoothingQuality = 'high';
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.92));
+            if (!blob) throw new Error('Image conversion failed');
+            return { blob, width: canvas.width, height: canvas.height };
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    function init() {
+        ready = (async () => {
+            const s = Settings.get();
+            if (s.backgroundImageId) {
+                try { saved = await store('get', s.backgroundImageId) || null; }
+                catch { status(message('背景画像を読み込めませんでした。', 'Could not load the background image.')); }
+            }
+            render(saved, s);
+        })();
+        el('setting-background-file').addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const current = ++revision;
+            loading = true;
+            status(message('画像を読み込み中…', 'Loading image…'));
+            try {
+                const result = await resize(file);
+                if (current !== revision) return;
+                draft = result.blob;
+                preview();
+                status(`${result.width} × ${result.height} px`);
+            } catch {
+                if (current === revision) status(message('画像を読み込めません。別の画像を選択してください。', 'Could not read this image. Please choose another image.'));
+            } finally {
+                if (current === revision) loading = false;
+            }
+        });
+        el('btn-remove-background').addEventListener('click', () => {
+            ++revision;
+            loading = false;
+            draft = null;
+            preview();
+            status(message('背景画像なし', 'No background image'));
+        });
+        for (const id of ['setting-background-x', 'setting-background-y']) {
+            el(id).addEventListener('input', preview);
+        }
+        el('setting-background-transparency').addEventListener('input', () => {
+            el('background-transparency-value').textContent = `${values().backgroundTransparency}%`;
+        });
+        el('setting-background-transparency').addEventListener('change', preview);
+    }
+
+    async function open() {
+        const current = ++revision;
+        loading = true;
+        await ready;
+        if (current !== revision) return;
+        loading = false;
+        draft = saved;
+        const s = Settings.get();
+        el('setting-background-x').value = s.backgroundPositionX;
+        el('setting-background-y').value = s.backgroundPositionY;
+        el('setting-background-transparency').value = s.backgroundTransparency;
+        status(draft ? message('保存済みの背景画像', 'Saved background image') : message('背景画像なし', 'No background image'));
+        preview();
+    }
+
+    function cancel() {
+        ++revision;
+        loading = false;
+        draft = saved;
+        render(saved, Settings.get());
+    }
+
+    async function save(settings) {
+        if (loading || saving) {
+            alert(message('画像の処理が終わるまでお待ちください。', 'Please wait for image processing to finish.'));
+            return false;
+        }
+        saving = true;
+        const controls = [...el('settings-form').querySelectorAll('input, select, textarea, button')];
+        const disabled = controls.map((control) => control.disabled);
+        controls.forEach((control) => { control.disabled = true; });
+        const oldId = Settings.get().backgroundImageId;
+        let newId = oldId;
+        try {
+            if (draft !== saved) {
+                newId = draft ? `background-${Date.now()}-${Math.random().toString(36).slice(2)}` : null;
+                if (draft) await store('put', newId, draft);
+            }
+            Settings.save({ ...settings, ...values(), backgroundImageId: newId });
+            saved = draft;
+            if (oldId && oldId !== newId) store('delete', oldId).catch(() => {});
+            return true;
+        } catch {
+            if (newId && newId !== oldId) store('delete', newId).catch(() => {});
+            alert(message('設定を保存できませんでした。ブラウザーの空き容量や保存の許可を確認してください。', 'Could not save settings. Check browser storage space and permissions.'));
+            return false;
+        } finally {
+            saving = false;
+            controls.forEach((control, index) => { control.disabled = disabled[index]; });
+        }
+    }
+
+    return { init, open, cancel, save, isSaving: () => saving };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -2923,6 +3194,7 @@ const UIController = (() => {
 
     function init() {
         Settings.load();
+        BackgroundImage.init();
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();
@@ -3922,6 +4194,7 @@ const UIController = (() => {
     }
 
     function openSettings() {
+        BackgroundImage.open();
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
         _originalScanline = s.scanlineEffect;
@@ -3970,6 +4243,8 @@ const UIController = (() => {
     }
 
     function closeSettings() {
+        if (BackgroundImage.isSaving()) return;
+        BackgroundImage.cancel();
         // テーマを元に戻す
         if (_originalTheme !== null) {
             const theme = _originalTheme;
@@ -4133,7 +4408,7 @@ const UIController = (() => {
         alert(Lang.t('mixedContentWarning'));
     }
 
-    function _handleSaveSettings(e) {
+    async function _handleSaveSettings(e) {
         e.preventDefault();
         const previousMode = Settings.get().appMode || 'chat';
         const nextMode = document.getElementById('setting-app-mode').value;
@@ -4141,7 +4416,7 @@ const UIController = (() => {
         if (_shouldWarnMixedContent(baseUrl)) {
             _showMixedContentWarning();
         }
-        Settings.save({
+        const saved = await BackgroundImage.save({
             appMode: nextMode,
             baseUrl,
             apiKey: document.getElementById('setting-apikey').value.trim(),
@@ -4168,6 +4443,7 @@ const UIController = (() => {
             mode3: document.getElementById('setting-mode3').value,
             mode4: document.getElementById('setting-mode4').value,
         });
+        if (!saved) return;
         Settings.applyFont();
         Settings.applyTheme();
         Settings.applyScanline();

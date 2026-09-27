@@ -86,6 +86,9 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | System Prompt | Instructions for the AI | `You are a helpful assistant.` |
 | Font | Display font | Noto Sans JP |
 | Theme | Color theme | GB Classic |
+| Background image | Select or remove an image in Display. Saved within 4096×4096 pixels and scaled to cover the screen without margins while preserving its aspect ratio. Overflow is cropped according to alignment | None |
+| Background alignment | Horizontal (left/center/right) and vertical (top/center/bottom) | Center / center |
+| Background transparency | Slider from 0% (opaque) to 100% (transparent) | 0% |
 | Auto Advance | Whether to advance automatically | On |
 | Pause Button (Auto Advance) | Show pause button during auto-advance | On |
 | Sound Effects | Whether to enable sound effects | On |

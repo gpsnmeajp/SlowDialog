@@ -10,6 +10,7 @@
 </head>
 
 <body>
+  <div id="background-image" aria-hidden="true"></div>
   <!-- ===== Toolbar ===== -->
   <header id="toolbar">
     <h1 id="app-title">SlowDialog</h1>
@@ -129,6 +130,35 @@
               <option value="dos">DOS Console</option>
               <option value="msx">MSX Console</option>
             </select>
+
+
+            <label for="setting-background-file">Background image</label>
+            <input type="file" id="setting-background-file" accept="image/*" aria-describedby="background-help">
+            <div id="background-help" class="settings-note">Images are saved at up to 4096 × 4096 pixels.</div>
+            <div class="settings-button-row">
+              <button type="button" id="btn-remove-background">Remove image</button>
+            </div>
+            <div id="background-status" class="settings-status" role="status"></div>
+            <label for="setting-background-x">Horizontal alignment</label>
+            <select id="setting-background-x">
+              <option value="left">Left</option>
+              <option value="center" selected>Center</option>
+              <option value="right">Right</option>
+            </select>
+            <label for="setting-background-y">Vertical alignment</label>
+            <select id="setting-background-y">
+              <option value="top">Top</option>
+              <option value="center" selected>Center</option>
+              <option value="bottom">Bottom</option>
+            </select>
+            <label for="setting-background-transparency">Transparency (0%: visible / 100%: invisible)</label>
+            <div class="slider-row">
+              <input type="range" id="setting-background-transparency" min="0" max="100" value="0">
+              <output id="background-transparency-value" for="setting-background-transparency" class="slider-value">0%</output>
+            </div>
+            <div class="background-preview-frame">
+              <div id="background-preview" role="img" aria-label="Background preview"></div>
+            </div>
 
             <label class="checkbox-row">
               <input type="checkbox" id="setting-show-borders" checked>
