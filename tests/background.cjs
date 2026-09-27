@@ -27,6 +27,7 @@ const path = require('node:path');
             await page.waitForFunction(() => document.querySelector('#background-status').textContent === '4096 × 1024 px');
             await page.locator('#setting-background-x').selectOption('right');
             await page.locator('#setting-background-y').selectOption('bottom');
+            // ドラッグ中はラベルのみ更新、リリース時に画像を再読み込みせず不透明度だけ適用
             // Dragging updates the label only; releasing applies opacity without reloading the image.
             const slider = page.locator('#setting-background-transparency');
             await slider.scrollIntoViewIfNeeded();
@@ -79,6 +80,7 @@ const path = require('node:path');
             assert.match(await page.locator('#background-image').evaluate(el => el.style.backgroundImage), /blob:/);
             await page.locator('#btn-settings').click();
             await page.locator('#settings-tab-display').click();
+            // 保存失敗時は直前の画像・設定を維持する
             // A storage failure must preserve the previously saved image/settings.
             await page.locator('#setting-background-file').setInputFiles(image(320, 240));
             await page.waitForFunction(() => document.querySelector('#background-status').textContent === '320 × 240 px');

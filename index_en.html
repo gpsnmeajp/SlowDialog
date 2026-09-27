@@ -406,10 +406,20 @@
     </div>
   </div>
 
+  <dialog id="intent-confirm" aria-labelledby="intent-confirm-message">
+    <p id="intent-confirm-message">Your intent is unclear. Do you really want to send?</p>
+    <form method="dialog" id="intent-confirm-buttons">
+      <button id="btn-intent-confirm-send" value="send">Send</button>
+      <button id="btn-intent-confirm-cancel" value="cancel" autofocus>Cancel</button>
+    </form>
+  </dialog>
   <dialog id="intent-picker" aria-labelledby="intent-picker-title">
-    <h2 id="intent-picker-title">Select intent</h2>
+    <div class="intent-picker-header">
+      <h2 id="intent-picker-title">Select intent</h2>
+      <form method="dialog"><button id="btn-close-intent" aria-label="Close" title="Close">×</button></form>
+    </div>
     <div id="intent-options"></div>
-    <form method="dialog"><button>Cancel</button></form>
+    <form method="dialog"><button id="btn-remove-intent" value="remove">Remove tag</button></form>
   </dialog>
   <script src="app.js"></script>
 </body>

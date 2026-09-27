@@ -122,7 +122,7 @@
             <input id="intent-Model" type="text">
             <label for="intent-Delay">判定遅延（秒）</label>
             <input id="intent-Delay" type="number" min="0" max="60" step="0.1" required>
-            <label for="intent-Confidence">Confidenceの下限</label>
+            <label for="intent-Confidence">判定不能のしきい値(Confidence)</label>
             <input id="intent-Confidence" type="number" min="0" max="1" step="0.01" required>
             <label for="intent-Choices">選択肢（改行区切り）</label>
             <textarea id="intent-Choices" rows="6"></textarea>
@@ -406,10 +406,20 @@
     </div>
   </div>
 
+  <dialog id="intent-confirm" aria-labelledby="intent-confirm-message">
+    <p id="intent-confirm-message">意図が不明確ですが、送信しますか？</p>
+    <form method="dialog" id="intent-confirm-buttons">
+      <button id="btn-intent-confirm-send" value="send">送信</button>
+      <button id="btn-intent-confirm-cancel" value="cancel" autofocus>キャンセル</button>
+    </form>
+  </dialog>
   <dialog id="intent-picker" aria-labelledby="intent-picker-title">
-    <h2 id="intent-picker-title">意図を選択</h2>
+    <div class="intent-picker-header">
+      <h2 id="intent-picker-title">意図を選択</h2>
+      <form method="dialog"><button id="btn-close-intent" aria-label="閉じる" title="閉じる">×</button></form>
+    </div>
     <div id="intent-options"></div>
-    <form method="dialog"><button>キャンセル</button></form>
+    <form method="dialog"><button id="btn-remove-intent" value="remove">タグを消去</button></form>
   </dialog>
   <script src="app.js"></script>
 </body>

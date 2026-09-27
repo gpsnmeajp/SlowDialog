@@ -88,6 +88,7 @@ const path = require('node:path');
             await page.locator('#floating-icon-lock').click();
             await waitStored(r => r[0]?.locked === false);
             await page.locator('#floating-icon-close').click();
+            // タッチの長押しと二本指ピンチを Chromium CDP で直接送信
             // Real touch long-press and two-finger pinch through Chromium's input system.
             const cdp = await context.newCDPSession(page);
             rect = await icon.boundingBox();
@@ -114,6 +115,7 @@ const path = require('node:path');
             await icon.waitFor();
             const restored = await icon.boundingBox();
             assert.ok(Math.abs(restored.x - resized.x) < 1 && Math.abs(restored.width - resized.width) < 1);
+            // 複数アイコン・不正入力は既存画像を上書きしない
             // Multiple icons and invalid input do not replace the existing image.
             await page.locator('#floating-icon-file').setInputFiles(image('blue.svg', 'blue'));
             await waitStored(r => r.length === 2);
@@ -129,6 +131,7 @@ const path = require('node:path');
             await page.reload();
             await page.waitForFunction(() => document.querySelectorAll('.floating-icon').length === 1);
             await page.locator('#btn-cancel-settings').click();
+            // CSS 表示サイズだけでなく保存された画像 Blob のリサイズ結果を検証
             // Verify the persisted image Blobs, not just the CSS display size.
             await page.locator('#floating-icon-file').setInputFiles([
                 image('wide.svg', 'green', 8192, 2048),

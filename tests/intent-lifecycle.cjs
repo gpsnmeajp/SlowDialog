@@ -25,6 +25,7 @@ const assert = require('node:assert/strict');
                 if (delayed) await new Promise(resolve => { release = resolve; });
                 await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ answers: { intent: {
                     type: 'choice', choice: delayed ? '修正要求' : '質問', confidence: 1,
+                    probabilities: { '質問': delayed ? 0 : 1, '修正要求': delayed ? 1 : 0 },
                 } } }) }).catch(() => {});
             });
             await page.route('**/chat/completions', async route => {
@@ -37,8 +38,8 @@ const assert = require('node:assert/strict');
             const waitLabel = label => page.waitForFunction(label => document.querySelector('#intent-badge').textContent === label, label);
             const choose = async label => {
                 await badge.click();
-                if (label) await page.locator('#intent-options button').filter({ hasText: new RegExp('^' + label + '$') }).click();
-                else await page.locator('#intent-options button').last().click();
+                if (label) await page.locator('#intent-options .intent-choice-label').filter({ hasText: new RegExp('^' + label + '$') }).click();
+                else await page.locator('#btn-remove-intent').click();
             };
             await input.fill('Unsent draft');
             await waitLabel('質問');
@@ -63,6 +64,7 @@ const assert = require('node:assert/strict');
                 assert.equal(await badge.textContent(), theme === 'blue' ? '修正要求' : (entry.includes('_en') ? 'No tag' : 'タグなし'));
                 if (theme === 'blue') await choose(null);
             }
+            // 分類設定の変更は手動選択を無効化する
             // A classification setting change does invalidate a manual override.
             await page.locator('#btn-settings').click();
             await page.locator('#settings-tab-intent').click();

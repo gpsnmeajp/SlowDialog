@@ -109,7 +109,7 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Intent | Enable in the Intent tab | Off |
 | Jev Base URL | System One API endpoint | `https://openrouter.ai/api` |
 | Jev API key | Key for intent classification | — |
-| Jev model | Classification model | `jev-latest` |
+| Jev model | Classification model | `~typesafe/jev-latest` |
 | Classification delay | Seconds after typing stops | 0.5 |
 | Minimum confidence | Lower values require send confirmation | 0.65 |
 | Intent choices | 2–255 options, one per line | 91 choices |
@@ -236,8 +236,8 @@ When the user's message contains the following tags, respond in the correspondin
 
 Enable **Intent** in settings to classify drafts with Jev Choice after 0.5 seconds without typing (off by default). Select the badge to the left of Send to change or remove the tag. Wait for the result before sending. Quick responses open a separate send preview and preserve the original draft on send or cancel; editing a previous message also gets a fresh classification.
 
-- Base URL: `https://openrouter.ai/api`. Any compatible System One API is supported. `/v1/systemone` is appended; a base ending in `/v1` or the full endpoint is also accepted. Configure the Jev API key separately. Default model: `jev-latest`.
-- Delay: 0.5 seconds by default. Minimum confidence: 0.65. Below the threshold, connection failures, and invalid responses show an emphasized **Unclear intent** badge and require confirmation before sending. Confirmed unclear messages carry no tag.
+- Base URL: `https://openrouter.ai/api`. Any compatible System One API is supported. `/v1/systemone` is appended; a base ending in `/v1` or the full endpoint is also accepted. Configure the Jev API key separately. Default model: `~typesafe/jev-latest`.
+- Delay: 0.5 seconds by default. Minimum confidence: 0.65. Below the threshold, the badge shows **Unclear intent(top candidate?)**. Whenever probabilities are available, the intent picker sorts choices by descending probability, preserving configured order for ties. Connection failures, timeouts, and invalid responses show **Connection error**. Both unclear intent and connection error require confirmation before sending; confirmed messages carry no tag.
 - Choices: 2–255 options, one per line. Defaults distinguish emotional conversation (listening, comfort, encouragement, reassurance), supportive discussion (processing feelings, self-exploration, coping, relationships), character chat (affection, closeness, romance, fictional conflict, out-of-character discussion), tabletop-style games and adventures (investigation, NPC dialogue, combat, rolls, branches, hints), and work (research, analysis, creation, review, planning, authorization). Additional question guidance is configurable.
 - Conversation tracking: off sends only the draft; on includes the last three turns (each user utterance and subsequent assistant replies). Intent tags, outgoing mode tags, and timestamps are excluded. Classification instructions use English, except for choices, input data, and custom guidance.
 

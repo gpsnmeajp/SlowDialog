@@ -90,9 +90,9 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `intentEnabled` | boolean | `false` | 意図判定の有効可否 |
 | `intentBaseUrl` | string | `https://openrouter.ai/api` | System One APIのBase URL |
 | `intentApiKey` | string | `""` | 意図判定用APIキー |
-| `intentModel` | string | `jev-latest` | 判定モデル |
+| `intentModel` | string | `~typesafe/jev-latest` | 判定モデル |
 | `intentDelay` | number | `0.5` | 判定遅延（秒） |
-| `intentConfidence` | number | `0.65` | Confidenceの下限 |
+| `intentConfidence` | number | `0.65` | 判定不能のしきい値(Confidence) |
 | `intentChoices` | string | 日英91種類 | 改行区切りの選択肢 |
 | `intentInstructions` | string | `""` | 共通判定指示への追加情報 |
 | `intentTracking` | boolean | `false` | 直近3ターンを含める |
@@ -329,7 +329,7 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 
 ### 10. SystemOneIntent
 
-通常入力と編集・定型入力プレビューを独立管理する。入力停止後に`/v1/systemone`へ`state`・`model`・`questions.intent`を送り、ChoiceとConfidenceを検証する。低Confidence、HTTPエラー、15秒タイムアウト、不正応答は判定不能として送信前に確認する。
+通常入力と編集・定型入力プレビューを独立管理する。入力停止後に`/v1/systemone`へ`state`・`model`・`questions.intent`を送り、Choice・Confidence・各選択肢のprobabilitiesを検証する。低Confidenceは最多確率の候補を添えた判定不能表示とする。選択画面はprobabilitiesが利用可能なら常に確率の降順に並べ、同率は設定順を保つ。HTTPエラー、15秒タイムアウト、不正応答は通信異常として区別し、いずれも送信前に確認する。クリック・タップで選択画面を閉じた際は入力欄へ、キーボード操作では判定ラベルへフォーカスを戻す。
 
 - debounce、AbortController、revisionで古い応答を破棄する。IME変換中は判定しない。
 - 意図設定の変更時だけ再判定し、テーマなど無関係な設定保存では手動選択・消去を保持する。

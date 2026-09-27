@@ -182,7 +182,18 @@ const IntentChoices = (() => {
         ['皮肉', 'Sarcasm'],
         ['からかい', 'Playful teasing'],
         ['話題転換', 'Changing the subject'],
-
+        ['怒りの表明', 'Expressing anger'],
+        ['悲しみの表明', 'Expressing sadness'],
+        ['恐れの表明', 'Expressing fear'],
+        ['驚きの表明', 'Expressing surprise'],
+        ['喜びの表明', 'Expressing joy'],
+        ['愛情の表明', 'Expressing love'],
+        ['嫉妬の表明', 'Expressing jealousy'],
+        ['軽蔑の表明', 'Expressing contempt'],
+        ['疑いの表明', 'Expressing doubt'],
+        ['不信の表明', 'Expressing doubt'],
+        ['困惑の表明', 'Expressing confusion'],
+        
         // ─────────────────────────────
         // 情緒的な応答の要求
         // ─────────────────────────────
@@ -196,7 +207,7 @@ const IntentChoices = (() => {
         ['気持ちの整理', 'Processing feelings'],
         ['喜びの共有', 'Sharing joy'],
         ['達成の共有', 'Sharing an achievement'],
-        ['緊急支援要請', 'Seeking immediate support'],
+        ['非常事態の報告', 'Reporting an emergency'],
 
         // ─────────────────────────────
         // 関係性に関する発話
@@ -252,7 +263,7 @@ const Settings = (() => {
         intentEnabled: false,
         intentBaseUrl: 'https://openrouter.ai/api',
         intentApiKey: '',
-        intentModel: 'jev-latest',
+        intentModel: '~typesafe/jev-latest',
         intentDelay: 0.5,
         intentConfidence: 0.65,
         intentChoices: IntentChoices.defaults(),
@@ -308,6 +319,7 @@ const Settings = (() => {
 
     let _settings = { ...DEFAULTS };
 
+    /** デフォルト値と保存済み値をマージして返す */
     function load() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
@@ -316,23 +328,28 @@ const Settings = (() => {
         return _settings;
     }
 
+    /** デフォルト値を補完して localStorage に保存し内部状態を更新 */
     function save(s) {
         const next = { ...DEFAULTS, ...s };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         _settings = next;
     }
 
+    /** 現在の設定のスナップショットを返す */
     function get() { return { ..._settings }; }
 
+    /** API 通信に必要な URL・APIキー・モデルの3項目が揃っているか確認 */
     function isConfigured() {
         return _settings.baseUrl && _settings.apiKey && _settings.model;
     }
 
+    /** CSS カスタムプロパティ --app-font にフォント指定を適用 */
     function applyFont() {
         const cssFont = FONT_MAP[_settings.font] || FONT_MAP[DEFAULTS.font];
         document.documentElement.style.setProperty('--app-font', cssFont);
     }
 
+    /** data-theme 属性でカラーテーマを切り替え（gb はデフォルト外観） */
     function applyTheme() {
         const theme = _settings.theme || 'gb';
         if (theme === 'gb') {
@@ -342,6 +359,7 @@ const Settings = (() => {
         }
     }
 
+    /** スキャンラインクラスと強度を CSS に適用 */
     function applyScanline() {
         if (_settings.scanlineEffect) {
             document.body.classList.add('scanline-on');
@@ -352,6 +370,7 @@ const Settings = (() => {
         document.documentElement.style.setProperty('--scanline-strength', strength);
     }
 
+    /** no-borders クラスで枠線の表示/非表示を制御 */
     function applyBorders() {
         if (_settings.showBorders) {
             document.body.classList.remove('no-borders');
@@ -380,6 +399,7 @@ const BackgroundImage = (() => {
     let ready;
     let database;
 
+    // IndexedDB を遅延初期化して Promise をキャッシュ（失敗時はキャッシュをクリアして再試行可能にする）
     function db() {
         if (!database) database = new Promise((resolve, reject) => {
             const request = indexedDB.open('slowdialog_backgrounds', 1);
@@ -391,6 +411,7 @@ const BackgroundImage = (() => {
         return database;
     }
 
+    // IndexedDB の get / put / delete を統一的に扱うヘルパー
     async function store(method, key, blob) {
         const database = await db();
         return new Promise((resolve, reject) => {
@@ -403,6 +424,7 @@ const BackgroundImage = (() => {
         });
     }
 
+    // Blob が変わった場合のみ objectUrl を再生成してレイヤーとプレビューを同時更新
     function render(blob, settings) {
         const layer = el('background-image');
         const preview = el('background-preview');
@@ -423,6 +445,7 @@ const BackgroundImage = (() => {
         el('btn-remove-background').disabled = !blob || saving;
     }
 
+    // 設定フォームから背景の現在値を取得（保存状態ではなくフォーム入力値）
     function values() {
         return {
             backgroundPositionX: el('setting-background-x').value,
@@ -431,6 +454,7 @@ const BackgroundImage = (() => {
         };
     }
 
+    // 透明度ラベルを更新してドラフト画像でプレビューを描画
     function preview() {
         el('background-transparency-value').textContent = `${values().backgroundTransparency}%`;
         render(draft, values());
@@ -620,6 +644,7 @@ const FloatingIcons = (() => {
         icon.record.y = clamp(top / Math.max(1, layer.clientHeight - height));
     }
 
+    // キューで保存順を保証し、失敗時は最後の保存済み状態にロールバック
     function persist(icon) {
         const snapshot = { ...icon.record };
         const revision = ++icon.revision;
@@ -638,6 +663,7 @@ const FloatingIcons = (() => {
         });
     }
 
+    // メニューを閑じ、focus=true のときは元のアイコンにフォーカスを戻す
     function closeMenu(focus = false) {
         const previous = menuIcon;
         menuIcon = null;
@@ -645,6 +671,7 @@ const FloatingIcons = (() => {
         if (focus && previous && icons.has(previous.record.id)) previous.element.focus();
     }
 
+    // サイズ表示とロックボタンのラベルをアイコンの現在状態に同期
     function updateMenu() {
         sizeInput.value = Math.round(menuIcon.record.size * 100);
         sizeOutput.textContent = `${sizeInput.value}%`;
@@ -663,6 +690,7 @@ const FloatingIcons = (() => {
         sizeInput.focus();
     }
 
+    // ドラッグ・ピンチ操作の基準座標・距離・サイズを記録して delta 計算に使用
     function baseline(icon) {
         const points = [...icon.pointers.values()];
         const rect = icon.element.getBoundingClientRect();
@@ -1601,6 +1629,7 @@ const TypingSimulator = (() => {
 const SoundManager = (() => {
     const _cache = {};
 
+    // Audio オブジェクトをキャッシュして同一音源の重複生成を防ぐ
     function _getAudio(name) {
         if (!_cache[name]) {
             _cache[name] = new Audio(`sound/${name}.wav`);
@@ -1640,6 +1669,7 @@ const VoiceVoxClient = (() => {
         return await res.json();
     }
 
+    // audio_query → synthesis の2段階 API 呼び出しで音声 Blob URL を生成
     async function synthesize(text, overrides = null) {
         const s = { ...Settings.get(), ...(overrides || {}) };
         if (!s.voicevoxEnabled) return null;
@@ -1713,12 +1743,14 @@ const VoiceVoxClient = (() => {
         if (Number.isFinite(n)) obj[key] = n;
     }
 
+    // 設定に応じて注釈除去を適用し読み上げ用テキストを返す
     function _normalizeSpeechText(text, s) {
         const raw = String(text || '');
         if (!s.voicevoxSkipAnnotations) return raw;
         return _stripAnnotations(raw);
     }
 
+    // HTML ルビ・縦棒ルビ・丸括弧注釈を取り除き余分な空白・句読点周りを整理
     function _stripAnnotations(text) {
         let result = text
             .replace(/<rt\b[^>]*>[\s\S]*?<\/rt>/gi, '')
@@ -1753,19 +1785,37 @@ const VoiceVoxClient = (() => {
 const SystemOneIntent = (() => {
     const text = (ja, en) => Lang.current() === 'ja' ? ja : en;
     const controllers = [];
+    let confirming = false;
+    function confirmSend(failed) {
+        if (confirming) return Promise.resolve(false);
+        confirming = true;
+        const dialog = document.getElementById('intent-confirm');
+        document.getElementById('intent-confirm-message').textContent = failed
+            ? text('通信異常により意図を判定できませんでした。本当に送信しますか？', 'Intent could not be checked due to a connection error. Do you really want to send?')
+            : text('意図が不明確ですが、送信しますか？', 'Your intent is unclear. Do you really want to send?');
+        return new Promise(resolve => {
+            dialog.returnValue = '';
+            dialog.addEventListener('close', () => {
+                confirming = false;
+                resolve(dialog.returnValue === 'send');
+            }, { once: true });
+            dialog.showModal();
+        });
+    }
     const fields = { Enabled: 'checked', BaseUrl: 'value', ApiKey: 'value', Model: 'value', Delay: 'value', Confidence: 'value', Choices: 'value', Instructions: 'value', Tracking: 'checked' };
     function options(raw) {
         return [...new Set(String(raw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean))];
     }
+    // Base URL を正規化して /v1/systemone パスを補完
     function endpoint(base) {
         const url = new URL(base.trim());
         if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('Invalid Base URL');
-        url.pathname = url.pathname.replace(/\/+$/, '');
-        if (!url.pathname.endsWith('/v1/systemone')) url.pathname += url.pathname.endsWith('/v1') ? '/systemone' : '/v1/systemone';
+        const path = url.pathname.replace(/\/+$/, '');
+        url.pathname = path.endsWith('/v1/systemone') ? path : path + (path.endsWith('/v1') ? '/systemone' : '/v1/systemone');
         return url.href;
     }
     function history(messages) {
-        // One turn starts with a user utterance and includes its assistant replies.
+        // 1ターン = ユーザー発話＋AI返答。直近3ターン分を抽出してコンテキストとして渡す
         const clean = messages.filter(m => ['user', 'assistant'].includes(m.role) && m.content && !m.content.startsWith('<SYSTEM>'));
         let start = 0, count = 0;
         for (let i = clean.length - 1; i >= 0; i--) {
@@ -1777,9 +1827,11 @@ const SystemOneIntent = (() => {
         const s = Settings.get();
         for (const [name, property] of Object.entries(fields)) document.getElementById('intent-' + name)[property] = s['intent' + name];
     }
+    // フォーム値を読み込み、意図判定が有効なときはモデル・選択肢・数値範囲を検証
     function readSettings() {
         const result = {};
         for (const [name, property] of Object.entries(fields)) result['intent' + name] = document.getElementById('intent-' + name)[property];
+        if (!result.intentChoices.trim()) result.intentChoices = IntentChoices.defaults();
         result.intentDelay = Number(result.intentDelay);
         result.intentConfidence = Number(result.intentConfidence);
         if (result.intentEnabled) {
@@ -1797,11 +1849,13 @@ const SystemOneIntent = (() => {
     function attach(input, badge, getMessages = () => ChatHistory.getAll()) {
         let revision = 0, timer, abort, state = 'idle', label = null, draft = '', composing = false;
         let manual = false, contextKey = '';
+        let rankedChoices = [];
+        let choiceProbabilities = null;
         const dialog = document.getElementById('intent-picker');
         function render() {
             badge.classList.toggle('hidden', state === 'idle');
-            badge.classList.toggle('intent-uncertain', state === 'unknown');
-            badge.textContent = state === 'pending' ? text('判定中…', 'Checking…') : state === 'unknown' ? text('判定不能', 'Unclear intent') : state === 'removed' ? text('タグなし', 'No tag') : label || '';
+            badge.classList.toggle('intent-uncertain', state === 'unknown' || state === 'error');
+            badge.textContent = state === 'pending' ? text('判定中…', 'Checking…') : state === 'unknown' ? text('判定不能', 'Unclear intent') + '(' + rankedChoices[0] + '?)' : state === 'error' ? text('通信異常', 'Connection error') : state === 'removed' ? text('タグなし', 'No tag') : label || '';
             badge.title = text('タップして意図を変更・消去', 'Select to change or remove intent');
             badge.setAttribute('aria-label', badge.textContent + ': ' + badge.title);
         }
@@ -1815,6 +1869,8 @@ const SystemOneIntent = (() => {
             cancel();
             draft = input.value.trim();
             label = null;
+            rankedChoices = [];
+            choiceProbabilities = null;
             manual = false;
             state = 'idle';
             render();
@@ -1841,13 +1897,20 @@ const SystemOneIntent = (() => {
                 if (!response.ok) throw new Error('HTTP ' + response.status);
                 const answer = (await response.json()).answers?.intent;
                 if (answer?.type !== 'choice' || !choices.includes(answer.choice) || typeof answer.confidence !== 'number' || !Number.isFinite(answer.confidence) || answer.confidence < 0 || answer.confidence > 1) throw new Error('Invalid Choice response');
+                const probabilities = answer.probabilities;
+                if (!probabilities || typeof probabilities !== 'object' || Array.isArray(probabilities)
+                    || choices.some(c => !Object.hasOwn(probabilities, c) || !Number.isFinite(probabilities[c]) || probabilities[c] < 0 || probabilities[c] > 1)) throw new Error('Invalid Choice probabilities');
                 if (token !== revision) return;
+                rankedChoices = [...choices].sort((a, b) => probabilities[b] - probabilities[a]);
+                choiceProbabilities = probabilities;
                 label = answer.confidence >= s.intentConfidence ? answer.choice : null;
                 state = label ? 'ready' : 'unknown';
             } catch {
                 if (token !== revision) return;
                 label = null;
-                state = 'unknown';
+                rankedChoices = [];
+                choiceProbabilities = null;
+                state = 'error';
             } finally {
                 clearTimeout(timeout);
                 if (token === revision) { abort = null; render(); }
@@ -1870,38 +1933,61 @@ const SystemOneIntent = (() => {
                 && contextKey !== JSON.stringify(history(getMessages()))) schedule();
         }
         ChatHistory.subscribe(refreshContext);
-        badge.addEventListener('click', () => {
+        badge.addEventListener('pointerdown', event => {
+            if (event.button === 0) event.preventDefault();
+        });
+        badge.addEventListener('click', event => {
             const list = document.getElementById('intent-options');
             list.replaceChildren();
             const token = revision;
-            for (const choice of [...options(Settings.get().intentChoices), null]) {
+            const choices = choiceProbabilities ? rankedChoices : options(Settings.get().intentChoices);
+            function selectChoice(choice) {
+                if (token !== revision) return;
+                cancel();
+                label = choice;
+                manual = true;
+                state = choice ? 'ready' : 'removed';
+                render();
+            }
+            for (const choice of choices) {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.textContent = choice || text('タグを消去', 'Remove tag');
+                const name = document.createElement('span');
+                name.className = 'intent-choice-label';
+                name.textContent = choice;
+                button.appendChild(name);
+                if (choiceProbabilities && Object.hasOwn(choiceProbabilities, choice)) {
+                    const probability = document.createElement('small');
+                    probability.className = 'intent-choice-probability';
+                    probability.textContent = (choiceProbabilities[choice] * 100).toFixed(1) + '%';
+                    button.appendChild(probability);
+                }
                 button.addEventListener('click', () => {
-                    if (token === revision) {
-                        cancel();
-                        label = choice;
-                        manual = true;
-                        state = choice ? 'ready' : 'removed';
-                        render();
-                    }
+                    selectChoice(choice);
                     dialog.close();
-                    badge.focus();
                 });
                 list.appendChild(button);
             }
+            dialog.addEventListener('close', () => {
+                if (dialog.returnValue === 'remove') selectChoice(null);
+                if (event.detail > 0) input.focus();
+                else badge.focus();
+            }, { once: true });
+            dialog.returnValue = '';
             dialog.showModal();
         });
-        function forSend() {
+        async function forSend() {
             if (!Settings.get().intentEnabled) return { allowed: true, label: null };
             refreshContext();
             if (input.value.trim() !== draft || state === 'idle') schedule();
             if (state === 'pending' || composing) {
-                badge.focus();
                 return { allowed: false };
             }
-            if (state === 'unknown' && !confirm(text('意図が不明確ですが、本当に送信しますか？', 'Your intent is unclear. Do you really want to send?'))) return { allowed: false };
+            if (state === 'unknown' || state === 'error') {
+                const token = revision;
+                const approved = await confirmSend(state === 'error');
+                if (!approved || token !== revision || input.value.trim() !== draft) return { allowed: false };
+            }
             return { allowed: true, label };
         }
         const api = { schedule, reset, forSend };
@@ -2124,7 +2210,7 @@ const UIController = (() => {
     }
 
     // ─── Send Message ───
-    function _handleSend() {
+    async function _handleSend() {
         const text = userInput.value.trim();
         if (!text) return;
 
@@ -2133,7 +2219,7 @@ const UIController = (() => {
             return;
         }
 
-        const intent = _intentPreview.forSend();
+        const intent = await _intentPreview.forSend();
         if (!intent.allowed) return;
         userInput.value = '';
         _intentPreview.reset();
@@ -2148,6 +2234,7 @@ const UIController = (() => {
         }
     }
 
+    // 履歴に追記・バブルを描画してストリーミングを開始
     function _sendNewMessage(text, intent = null) {
         ChatHistory.push('user', text, intent);
         const messages = ChatHistory.getAll();
@@ -2366,6 +2453,7 @@ const UIController = (() => {
         _hideRetryBar();
     }
 
+    // モード変更時にストリームを中断し、表示済みテキストで履歴を確定する
     function _stopStreamingForModeChange() {
         if (!_isStreaming) return;
         ApiClient.abort();
@@ -2478,6 +2566,7 @@ const UIController = (() => {
         return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
     }
 
+    // 意図ラベルを先頭に付けてタイムスタンプ行を追加
     function _appendTimestamp(role, timestamp, intent = null) {
         if (!timestamp) return;
         const timeDiv = document.createElement('div');
@@ -2487,6 +2576,7 @@ const UIController = (() => {
     }
 
     // ─── DOM Helpers ───
+    // ロールに応じてバブルを生成（assistant は Markdown レンダリング、user はテキスト）
     function _appendBubble(role, text, historyIndex, chunkIndex, timestamp) {
         const div = document.createElement('div');
         div.className = `msg ${role}`;
@@ -2522,6 +2612,7 @@ const UIController = (() => {
         }
     }
 
+    // 割り込み連結後に最後のユーザーバブルのテキストを上書き
     function _updateLastBubbleText(text) {
         const bubbles = chatMessages.querySelectorAll('.msg.user');
         if (bubbles.length > 0) {
@@ -2621,6 +2712,7 @@ const UIController = (() => {
     }
 
     // ─── Quick Responses ───
+    // 設定のクイックレスポンス文字列からボタンを再生成（空の場合はコンテナを非表示）
     function _renderQuickResponses() {
         quickResponsesContainer.innerHTML = '';
         const raw = Settings.get().quickResponses || '';
@@ -2639,6 +2731,7 @@ const UIController = (() => {
         }
     }
 
+    // 意図判定が有効なら編集プレビューを経由、無効なら直接送信
     function _handleQuickResponse(text) {
         if (!Settings.isConfigured()) {
             openSettings();
@@ -2664,6 +2757,7 @@ const UIController = (() => {
         }
     }
 
+    // appMode と通話状態に応じてスタンバイ画面・入力欄・通話ボタンを切り替え
     function _applyInteractionMode() {
         const isTextCall = Settings.get().appMode === 'textCall';
         const isStandby = isTextCall && !_isCallActive;
@@ -2690,6 +2784,7 @@ const UIController = (() => {
         _callTimerId = setInterval(_updateCallDuration, 1000);
     }
 
+    // 通話終了時に経過時間を確定してからタイマーを停止
     function _finishCallTimer() {
         if (_callStartedAt !== null) {
             _lastCallDurationMs = Date.now() - _callStartedAt;
@@ -2726,6 +2821,7 @@ const UIController = (() => {
         if (_isCallActive || _lastCallDurationMs !== null) _updateCallDuration();
     }
 
+    // ミリ秒を MM:SS 形式に変換（0 未満はクランプ）
     function _formatDuration(ms) {
         const totalSeconds = Math.max(0, Math.floor(ms / 1000));
         const minutes = Math.floor(totalSeconds / 60);
@@ -2771,6 +2867,7 @@ const UIController = (() => {
         }
     }
 
+    // 各モードドロップダウンの選択値を配列で返す（API リクエストのモードタグに使用）
     function _getSelectedModeValues() {
         const selects = modeDropdownsContainer.querySelectorAll('.mode-dropdown');
         const values = [];
@@ -2847,6 +2944,7 @@ const UIController = (() => {
     }
 
     // ─── Bubble Tap ───
+    // バブルのロールに応じてアクションダイアログまたは削除確認ダイアログを表示
     function _handleBubbleTap(e) {
         // ストリーミング中はタップ無効
         // if (_isStreaming) return;
@@ -2945,12 +3043,12 @@ const UIController = (() => {
     }
 
     /** ユーザーバブル: 編集したテキストを送信 */
-    function _handleBubbleEditSend() {
+    async function _handleBubbleEditSend() {
         if (_bubbleTapIndex === null && !_isQuickResponsePreview) return;
         const idx = _bubbleTapIndex;
         const newText = bubbleEditText.value.trim();
         if (!newText) return;
-        const decision = _editIntentPreview.forSend();
+        const decision = await _editIntentPreview.forSend();
         if (!decision.allowed) return;
         const intent = decision.label;
         if (_isQuickResponsePreview) {
@@ -3023,6 +3121,7 @@ const UIController = (() => {
     }
 
     // ─── Settings Dialog ───
+    // 指定タブをアクティブにして対応パネルを表示し、他タブをタブインデックスから除外
     function _selectSettingsTab(selectedTab) {
         settingsForm.querySelectorAll('[role="tab"]').forEach((tab) => {
             const selected = tab === selectedTab;
@@ -3033,8 +3132,8 @@ const UIController = (() => {
         settingsForm.querySelector('.settings-panels').scrollTop = 0;
     }
 
+    // 現在の設定値を全フォームフィールドに転記して設定ダイアログを開く
     function openSettings() {
-        BackgroundImage.open();
         SystemOneIntent.openSettings();
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
@@ -3083,8 +3182,8 @@ const UIController = (() => {
         firstTab.focus();
     }
 
+    // プレビュー変更（テーマ・スキャンライン）を元に戻して設定ダイアログを閉じる
     function closeSettings() {
-        if (BackgroundImage.isSaving()) return;
         BackgroundImage.cancel();
         // テーマを元に戻す
         if (_originalTheme !== null) {
@@ -3190,6 +3289,7 @@ const UIController = (() => {
         return document.getElementById('setting-voicevox-url').value.trim() || 'http://localhost:50021';
     }
 
+    // 話者オブジェクトのスタイルを平坦化してセレクトボックスに展開
     function _populateVoiceVoxSpeakers(speakers, selectedId) {
         const select = document.getElementById('setting-voicevox-speaker');
         select.innerHTML = '';
@@ -3237,6 +3337,7 @@ const UIController = (() => {
         };
     }
 
+    // HTTPS ページから HTTP API へのアクセスはブラウザにブロックされるため警告
     function _shouldWarnMixedContent(baseUrl) {
         try {
             return window.location.protocol === 'https:' && new URL(baseUrl).protocol === 'http:';
