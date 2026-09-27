@@ -94,7 +94,9 @@ const Lang = (() => {
         },
     };
 
+    /** 現在の言語コード（'ja' または 'en'）を返す */
     function current() { return _lang; }
+    /** キーに対応する UI テキストを返す（未定義時は ja フォールバック → キー名）*/
     function t(key) { return _strings[_lang][key] || _strings['ja'][key] || key; }
 
     return { current, t };
@@ -191,7 +193,7 @@ const IntentChoices = (() => {
         ['嫉妬の表明', 'Expressing jealousy'],
         ['軽蔑の表明', 'Expressing contempt'],
         ['疑いの表明', 'Expressing doubt'],
-        ['不信の表明', 'Expressing doubt'],
+        ['不信の表明', 'Expressing distrust'],
         ['困惑の表明', 'Expressing confusion'],
         
         // ─────────────────────────────
@@ -253,6 +255,7 @@ const IntentChoices = (() => {
 
         ['その他', 'Other'],
     ];
+    /** 現在の言語でローカライズされたデフォルト選択肢を改行区切りで返す */
     function defaults() { return entries.map(e => e[Lang.current() === 'ja' ? 0 : 1]).join('\n'); }
     return { defaults };
 })();
@@ -460,8 +463,10 @@ const BackgroundImage = (() => {
         render(draft, values());
     }
 
+    /** ステータステキストを表示 */
     function status(text) { el('background-status').textContent = text; }
 
+    /** 4096px 以内にダウンスケールして WebP Blob に変換 */
     async function resize(file) {
         const url = URL.createObjectURL(file);
         const image = new Image();
@@ -487,6 +492,7 @@ const BackgroundImage = (() => {
         }
     }
 
+    /** 保存済み背景を読み込み、ファイル選択・スライダーのイベントを設定 */
     function init() {
         ready = (async () => {
             const s = Settings.get();
@@ -531,6 +537,7 @@ const BackgroundImage = (() => {
         el('setting-background-transparency').addEventListener('change', preview);
     }
 
+    /** 設定ダイアログを開くときドラフト状態をリセットして現在値を表示 */
     async function open() {
         const current = ++revision;
         loading = true;
@@ -546,6 +553,7 @@ const BackgroundImage = (() => {
         preview();
     }
 
+    /** 変更を破棄して保存済み画像に戻す */
     function cancel() {
         ++revision;
         loading = false;
@@ -553,6 +561,7 @@ const BackgroundImage = (() => {
         render(saved, Settings.get());
     }
 
+    /** IndexedDB に画像を保存し localStorage に設定を書き込む（失敗時はロールバック）*/
     async function save(settings) {
         if (loading || saving) {
             alert(message('画像の処理が終わるまでお待ちください。', 'Please wait for image processing to finish.'));
@@ -1369,10 +1378,12 @@ const TypingSimulator = (() => {
         return _displayedText;
     }
 
+    /** 表示済みテキスト全体を返す */
     function getDisplayedText() {
         return _displayedText;
     }
 
+    /** バッファとキューを手での状態に応じて次の処理を分岐 */
     function _tryFlush() {
         if (_timer || _isPreparingDisplay) return;
 
@@ -1405,6 +1416,7 @@ const TypingSimulator = (() => {
         }
     }
 
+    /** バッファ先頭から次の区切りを探しチャンク文字列を返す */
     function _extractNextChunk() {
         let idx = -1;
         for (let i = 0; i < _buffer.length; i++) {
@@ -1439,10 +1451,12 @@ const TypingSimulator = (() => {
         return chunk;
     }
 
+    /** チャンク文字列をアイテム化して表示スケジュールに渡す */
     function _scheduleDisplay(chunk) {
         _scheduleDisplayItem(_createChunkItem(chunk));
     }
 
+    /** autoAdvance/手動モードに応じてアイテムを表示またはキューに劙積 」*/
     function _scheduleDisplayItem(item) {
         const s = Settings.get();
         if (!s.autoAdvance) {
@@ -1488,6 +1502,7 @@ const TypingSimulator = (() => {
         });
     }
 
+    /** バッファ内の全区切りを抽出して手動キューに追加 */
     function _queueBufferedChunks() {
         let chunk = _extractNextChunk();
         while (chunk !== null) {
@@ -1500,6 +1515,7 @@ const TypingSimulator = (() => {
         }
     }
 
+    /** チャンク文字列を音声合成準備（Promise）とセットにしたアイテムを作成 */
     function _createChunkItem(chunk) {
         const prepared = _onPrepareChunk
             ? Promise.resolve(_onPrepareChunk(chunk)).catch((err) => {
@@ -1510,6 +1526,7 @@ const TypingSimulator = (() => {
         return { text: chunk, prepared };
     }
 
+    /** 合成準備完了を待って onDisplayChunk を呼び再生効果を afterDisplay に渡す */
     function _displayChunkItem(item, afterDisplay) {
         const seq = _scheduleSeq;
         _isPreparingDisplay = true;
@@ -1846,11 +1863,13 @@ const SystemOneIntent = (() => {
         }
         return result;
     }
+    /** 入力要素にバッジを連結して意図判定コントローラーを返す */
     function attach(input, badge, getMessages = () => ChatHistory.getAll()) {
         let revision = 0, timer, abort, state = 'idle', label = null, draft = '', composing = false;
         let manual = false, contextKey = '';
         let rankedChoices = [];
         let choiceProbabilities = null;
+        let updatePicker = null;
         const dialog = document.getElementById('intent-picker');
         function render() {
             badge.classList.toggle('hidden', state === 'idle');
@@ -1858,6 +1877,7 @@ const SystemOneIntent = (() => {
             badge.textContent = state === 'pending' ? text('判定中…', 'Checking…') : state === 'unknown' ? text('判定不能', 'Unclear intent') + '(' + rankedChoices[0] + '?)' : state === 'error' ? text('通信異常', 'Connection error') : state === 'removed' ? text('タグなし', 'No tag') : label || '';
             badge.title = text('タップして意図を変更・消去', 'Select to change or remove intent');
             badge.setAttribute('aria-label', badge.textContent + ': ' + badge.title);
+            if (dialog.open && updatePicker) updatePicker();
         }
         function cancel() {
             revision++;
@@ -1938,39 +1958,53 @@ const SystemOneIntent = (() => {
         });
         badge.addEventListener('click', event => {
             const list = document.getElementById('intent-options');
-            list.replaceChildren();
-            const token = revision;
-            const choices = choiceProbabilities ? rankedChoices : options(Settings.get().intentChoices);
             function selectChoice(choice) {
-                if (token !== revision) return;
                 cancel();
                 label = choice;
                 manual = true;
                 state = choice ? 'ready' : 'removed';
                 render();
             }
-            for (const choice of choices) {
-                const button = document.createElement('button');
-                button.type = 'button';
-                const name = document.createElement('span');
-                name.className = 'intent-choice-label';
-                name.textContent = choice;
-                button.appendChild(name);
-                if (choiceProbabilities && Object.hasOwn(choiceProbabilities, choice)) {
-                    const probability = document.createElement('small');
-                    probability.className = 'intent-choice-probability';
-                    probability.textContent = (choiceProbabilities[choice] * 100).toFixed(1) + '%';
-                    button.appendChild(probability);
+            updatePicker = () => {
+                const focusedChoice = list.contains(document.activeElement)
+                    ? document.activeElement.querySelector('.intent-choice-label')?.textContent : null;
+                list.replaceChildren();
+                const token = revision;
+                const choices = choiceProbabilities ? rankedChoices : options(Settings.get().intentChoices);
+                for (const choice of choices) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    const name = document.createElement('span');
+                    name.className = 'intent-choice-label';
+                    name.textContent = choice;
+                    button.appendChild(name);
+                    if (choiceProbabilities && Object.hasOwn(choiceProbabilities, choice)) {
+                        const probability = document.createElement('small');
+                        probability.className = 'intent-choice-probability';
+                        probability.textContent = (choiceProbabilities[choice] * 100).toFixed(1) + '%';
+                        button.appendChild(probability);
+                    }
+                    button.addEventListener('click', () => {
+                        if (token !== revision) return;
+                        selectChoice(choice);
+                        dialog.close();
+                    });
+                    list.appendChild(button);
+                    if (choice === focusedChoice) button.focus({ preventScroll: true });
                 }
-                button.addEventListener('click', () => {
-                    selectChoice(choice);
-                    dialog.close();
-                });
-                list.appendChild(button);
-            }
+            };
+            updatePicker();
+            let closeWithPointer = event.detail > 0;
+            const trackClick = event => { closeWithPointer = event.detail > 0; };
+            const trackKey = () => { closeWithPointer = false; };
+            dialog.addEventListener('click', trackClick, true);
+            dialog.addEventListener('keydown', trackKey, true);
             dialog.addEventListener('close', () => {
+                updatePicker = null;
+                dialog.removeEventListener('click', trackClick, true);
+                dialog.removeEventListener('keydown', trackKey, true);
                 if (dialog.returnValue === 'remove') selectChoice(null);
-                if (event.detail > 0) input.focus();
+                if (closeWithPointer) input.focus();
                 else badge.focus();
             }, { once: true });
             dialog.returnValue = '';
@@ -2483,6 +2517,7 @@ const UIController = (() => {
     }
 
     // ─── Import ───
+    /** インポートダイアログを初期化して表示 */
     function _openImportDialog() {
         importFileInput.value = '';
         importJsonArea.value = '';
@@ -2491,10 +2526,12 @@ const UIController = (() => {
         importOverlay.classList.remove('hidden');
     }
 
+    /** インポートダイアログを閉じる */
     function _closeImportDialog() {
         importOverlay.classList.add('hidden');
     }
 
+    /** 選択ファイルを読み込んでテキストエリアに展開 */
     function _handleImportFile() {
         const file = importFileInput.files[0];
         if (!file) return;
@@ -2505,6 +2542,7 @@ const UIController = (() => {
         reader.readAsText(file);
     }
 
+    /** JSON を検証してチャット履歴に取り込む */
     function _handleImport() {
         importError.classList.add('hidden');
         const raw = importJsonArea.value.trim();
@@ -2555,12 +2593,14 @@ const UIController = (() => {
         _closeImportDialog();
     }
 
+    /** インポートエラーメッセージを表示 */
     function _showImportError(msg) {
         importError.textContent = msg;
         importError.classList.remove('hidden');
     }
 
     // ─── Time Format Helper ───
+    /** ISO 文字列を HH:MM 形式に変換 */
     function _formatTime(isoString) {
         const d = new Date(isoString);
         return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
@@ -2605,6 +2645,7 @@ const UIController = (() => {
         return div;
     }
 
+    /** 最後のバブル要素を削除 */
     function _removeLastBubble() {
         const bubbles = chatMessages.querySelectorAll('.msg');
         if (bubbles.length > 0) {
@@ -2620,6 +2661,7 @@ const UIController = (() => {
         }
     }
 
+    /** タイピングインジケーター（「...」アニメ）を追加 */
     function _showTypingIndicator() {
         if (_typingIndicator) return;
         _typingIndicator = document.createElement('div');
@@ -2629,6 +2671,7 @@ const UIController = (() => {
         _scrollToBottom();
     }
 
+    /** タイピングインジケーターを削除 */
     function _removeTypingIndicator() {
         if (_typingIndicator) {
             _typingIndicator.remove();
@@ -2639,6 +2682,7 @@ const UIController = (() => {
     // ─── Continue Button (手動モード) ───
     let _continueBtn = null;
 
+    /** 手動モードの「続きを読む」ボタンを追加 */
     function _showContinueButton() {
         if (_continueBtn) return;
         _continueBtn = document.createElement('button');
@@ -2656,6 +2700,7 @@ const UIController = (() => {
         _scrollToBottom();
     }
 
+    /** 「続きを読む」ボタンを削除 */
     function _removeContinueButton() {
         if (_continueBtn) {
             _continueBtn.remove();
@@ -2666,6 +2711,7 @@ const UIController = (() => {
     // ─── Pause Button (自動進行中の一時停止/再開) ───
     let _pauseBtn = null;
 
+    /** 自動進行の一時停止ボタンを追加 */
     function _showPauseButton() {
         if (_pauseBtn) return;
         if (!Settings.get().showPauseButton) return;
@@ -2677,6 +2723,7 @@ const UIController = (() => {
         _scrollToBottom();
     }
 
+    /** 一時停止ボタンを削除 */
     function _removePauseButton() {
         if (_pauseBtn) {
             _pauseBtn.remove();
@@ -2684,6 +2731,7 @@ const UIController = (() => {
         }
     }
 
+    /** 一時停止と再開を切り替え */
     function _togglePause() {
         if (TypingSimulator.isPaused()) {
             TypingSimulator.resume();
@@ -2692,20 +2740,24 @@ const UIController = (() => {
         }
     }
 
+    /** 再試行バーを表示 */
     function _showRetryBar() {
         retryBar.classList.remove('hidden');
     }
 
+    /** 再試行バーを非表示 */
     function _hideRetryBar() {
         retryBar.classList.add('hidden');
     }
 
+    /** チャット領域を最下部にスクロール */
     function _scrollToBottom() {
         requestAnimationFrame(() => {
             chatArea.scrollTop = chatArea.scrollHeight;
         });
     }
 
+    /** テキストエリアを内容の高さに合わせてリサイズ */
     function _autoResize() {
         userInput.style.height = 'auto';
         userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
@@ -2778,6 +2830,7 @@ const UIController = (() => {
         }
     }
 
+    /** 通話時間カウンターを開始 */
     function _startCallTimer() {
         _stopCallTimer();
         _updateCallDuration();
@@ -2794,6 +2847,7 @@ const UIController = (() => {
         _updateCallDuration();
     }
 
+    /** 通話時間カウンターを停止 */
     function _stopCallTimer() {
         if (_callTimerId !== null) {
             clearInterval(_callTimerId);
@@ -2801,6 +2855,7 @@ const UIController = (() => {
         }
     }
 
+    /** 通話時間の表示を更新 */
     function _updateCallDuration() {
         const durationMs = _isCallActive && _callStartedAt !== null
             ? Date.now() - _callStartedAt
@@ -2810,6 +2865,7 @@ const UIController = (() => {
         lastCallDurationValue.textContent = text;
     }
 
+    /** 状態に応じて通話時間の表示/非表示を制御 */
     function _renderCallDuration(isTextCall, isStandby) {
         if (!isTextCall) {
             callDuration.classList.add('hidden');
@@ -2830,6 +2886,7 @@ const UIController = (() => {
     }
 
     // ─── Mode Dropdowns ───
+    /** モードタグのドロップダウンを設定から再構築 */
     function _renderModeDropdowns() {
         modeDropdownsContainer.innerHTML = '';
         const s = Settings.get();
@@ -2900,6 +2957,7 @@ const UIController = (() => {
         _scrollToBottom();
     }
 
+    /** CALL_START_PROMPT を UI 表示用テキストに置換 */
     function _getDisplayText(role, content) {
         if (role === 'user' && content === CALL_START_PROMPT) {
             return Lang.t('callStarted');
@@ -2910,6 +2968,7 @@ const UIController = (() => {
         return content;
     }
 
+    /** 内容が通話開始プロンプトで始まるか判定 */
     function _isCallStartMessage(content) {
         return content === CALL_START_PROMPT || content.startsWith(CALL_START_PROMPT + '\n');
     }
@@ -2978,12 +3037,14 @@ const UIController = (() => {
         }
     }
 
+    /** バブルアクションダイアログを閉じてタップ状態をリセット */
     function _closeBubbleActionDialog() {
         bubbleActionOverlay.classList.add('hidden');
         _bubbleTapIndex = null;
         _bubbleTapChunkIndex = null;
     }
 
+    /** 編集ダイアログを閉じて意図バッジをリセット */
     function _closeBubbleEditDialog() {
         bubbleEditOverlay.classList.add('hidden');
         _editIntentPreview.reset();
@@ -2992,6 +3053,7 @@ const UIController = (() => {
         _bubbleTapChunkIndex = null;
     }
 
+    /** 削除確認ダイアログを閉じてタップ状態をリセット */
     function _closeBubbleDeleteDialog() {
         bubbleDeleteOverlay.classList.add('hidden');
         _bubbleTapIndex = null;
@@ -3210,6 +3272,7 @@ const UIController = (() => {
         settingsOverlay.classList.add('hidden');
     }
 
+    /** テーマ選択変更をリアルタイムにプレビュー */
     function _handleThemePreview() {
         const theme = document.getElementById('setting-theme').value;
         if (theme === 'gb') {
@@ -3219,6 +3282,7 @@ const UIController = (() => {
         }
     }
 
+    /** スキャンライン ON/OFF をリアルタイムにプレビュー */
     function _handleScanlinePreview() {
         const checked = document.getElementById('setting-scanline').checked;
         if (checked) {
@@ -3228,12 +3292,14 @@ const UIController = (() => {
         }
     }
 
+    /** スキャンライン強度をリアルタイムにプレビュー */
     function _handleScanlineStrengthPreview() {
         const val = document.getElementById('setting-scanline-strength').value;
         document.getElementById('scanline-strength-value').textContent = val + '%';
         document.documentElement.style.setProperty('--scanline-strength', val / 100);
     }
 
+    /** 接続テストを実行して結果をステータスに表示 */
     async function _handleVoiceVoxTest() {
         voiceVoxStatus.textContent = Lang.t('voicevoxTesting');
         try {
@@ -3245,19 +3311,23 @@ const UIController = (() => {
         }
     }
 
+    /** VOICEVOX 有効/無効切り替えで設定欄の表示を制御 */
     function _handleVoiceVoxEnabledChange() {
         _toggleVoiceVoxSettings(document.getElementById('setting-voicevox-enabled').checked);
     }
 
+    /** VOICEVOX 設定欄の表示を切り替え */
     function _toggleVoiceVoxSettings(enabled) {
         voiceVoxSettings.classList.toggle('hidden', !enabled);
     }
 
+    /** VOICEVOX の設定ページをブラウザで開く */
     function _handleVoiceVoxOpenSettings() {
         const url = _getVoiceVoxUrlFromForm().replace(/\/+$/, '') + '/setting';
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
+    /** 発話テストを合成・再生してステータスを更新 */
     async function _handleVoiceVoxSpeakTest() {
         const text = document.getElementById('setting-voicevox-test-text').value.trim()
             || (Lang.current() === 'en' ? 'Hello.' : 'こんにちは。');
@@ -3272,6 +3342,7 @@ const UIController = (() => {
         }
     }
 
+    /** 話者リストを取得しセレクトボックスに反映 */
     async function _handleVoiceVoxLoadSpeakers() {
         voiceVoxStatus.textContent = Lang.t('voicevoxLoadingSpeakers');
         try {
@@ -3285,6 +3356,7 @@ const UIController = (() => {
         }
     }
 
+    /** フォームから VOICEVOX の URL を取得 */
     function _getVoiceVoxUrlFromForm() {
         return document.getElementById('setting-voicevox-url').value.trim() || 'http://localhost:50021';
     }
@@ -3317,11 +3389,13 @@ const UIController = (() => {
         select.value = hasSelected ? selected : String(flat[0].id);
     }
 
+    /** フォーム入力を数値で読み込み（無効値はフォールバック）*/
     function _readNumber(id, fallback) {
         const n = parseFloat(document.getElementById(id).value);
         return Number.isFinite(n) ? n : fallback;
     }
 
+    /** フォームから全 VOICEVOX 設定を収集 */
     function _getVoiceVoxSettingsFromForm(forceEnabled = false) {
         return {
             voicevoxEnabled: forceEnabled || document.getElementById('setting-voicevox-enabled').checked,
@@ -3346,10 +3420,12 @@ const UIController = (() => {
         }
     }
 
+    /** 混合コンテンツ警告アラートを表示 */
     function _showMixedContentWarning() {
         alert(Lang.t('mixedContentWarning'));
     }
 
+    /** 検証・保存・各モジュールへの反映をまとめて処理 */
     async function _handleSaveSettings(e) {
         e.preventDefault();
         let intentSettings;
