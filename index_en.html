@@ -76,169 +76,183 @@
   <div id="settings-overlay" class="hidden">
     <div id="settings-dialog">
       <h2>Settings</h2>
-      <p class="settings-hint">Save button is at the bottom<br>All your data is stored locally in your browser.</p>
+      <p class="settings-hint">Save applies changes from all tabs.<br>All your data is stored locally in your browser.</p>
       <form id="settings-form">
-        <label for="setting-app-mode">Mode</label>
-        <select id="setting-app-mode">
-          <option value="chat">Chat</option>
-          <option value="textCall">Text Call</option>
-        </select>
-
-        <label for="setting-baseurl">Base URL</label>
-        <input type="url" id="setting-baseurl" placeholder="https://api.openai.com/v1">
-
-        <label for="setting-apikey">API Key</label>
-        <input type="password" id="setting-apikey" placeholder="sk-...">
-
-        <label for="setting-model">Model Name</label>
-        <input type="text" id="setting-model" placeholder="gpt-4o-mini">
-
-        <label for="setting-systemprompt">System Prompt</label>
-        <textarea id="setting-systemprompt" rows="3" placeholder="You are a helpful assistant."></textarea>
-
-        <label for="setting-font">Font</label>
-        <select id="setting-font">
-          <option value="k8x12S">k8x12S</option>
-          <option value="k8x12">k8x12</option>
-          <option value="k8x12L">k8x12L</option>
-          <option value="MisakiGothic">Misaki Gothic</option>
-          <option value="NotoSansJP" selected>Noto Sans JP</option>
-        </select>
-
-        <label for="setting-theme">Color Theme</label>
-        <select id="setting-theme">
-          <option value="gb">GB Classic</option>
-          <option value="gb-inv">GB Classic (Inverted)</option>
-          <option value="red">Red</option>
-          <option value="red-inv">Red (Inverted)</option>
-          <option value="amber">Amber</option>
-          <option value="amber-inv">Amber (Inverted)</option>
-          <option value="green">Green</option>
-          <option value="green-inv">Green (Inverted)</option>
-          <option value="blue">Blue</option>
-          <option value="blue-inv">Blue (Inverted)</option>
-          <option value="mono">Mono</option>
-          <option value="mono-inv">Mono (Inverted)</option>
-          <option value="dos">DOS Console</option>
-          <option value="msx">MSX Console</option>
-        </select>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-autoadvance" checked>
-          Auto Advance
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-show-pause-button" checked>
-          Pause Button (Auto Advance)
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-sound" checked>
-          Sound Effects
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-voicevox-enabled">
-          VOICEVOX Speech Synthesis
-        </label>
-
-        <div id="voicevox-settings" class="settings-subsection hidden">
-          <label for="setting-voicevox-url">VOICEVOX URL</label>
-          <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
-          <div class="settings-note">Set CORS Policy Mode to all in VOICEVOX Engine settings.</div>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-open-settings">Open Engine Settings</button>
-          </div>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-test">Test Connection</button>
-            <button type="button" id="btn-voicevox-load-speakers">Load Speakers</button>
-          </div>
-          <div id="voicevox-status" class="settings-status"></div>
-
-          <label for="setting-voicevox-speaker">VOICEVOX Speaker</label>
-          <select id="setting-voicevox-speaker">
-            <option value="3">Speaker ID 3</option>
-          </select>
-
-          <label for="setting-voicevox-speed">Speed</label>
-          <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-pitch">Pitch</label>
-          <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
-
-          <label for="setting-voicevox-intonation">Intonation</label>
-          <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-volume">Volume</label>
-          <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-pre-phoneme">Pre-phoneme Length (sec)</label>
-          <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
-
-          <label for="setting-voicevox-post-phoneme">Post-phoneme Length (sec)</label>
-          <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
-
-          <label class="checkbox-row">
-            <input type="checkbox" id="setting-voicevox-skip-annotations" checked>
-            Skip ruby and notes in speech
-          </label>
-
-          <label for="setting-voicevox-test-text">Test Text</label>
-          <textarea id="setting-voicevox-test-text" rows="2" placeholder="Hello"></textarea>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-speak-test">Test Speech</button>
-          </div>
+        <div class="settings-tabs" role="tablist" aria-label="Settings categories">
+          <button type="button" id="settings-tab-setup" role="tab" aria-controls="settings-panel-setup" aria-selected="true" tabindex="0">Setup</button>
+          <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-panel-display" aria-selected="false" tabindex="-1">Display</button>
+          <button type="button" id="settings-tab-speech" role="tab" aria-controls="settings-panel-speech" aria-selected="false" tabindex="-1">Speech</button>
+          <button type="button" id="settings-tab-conversation" role="tab" aria-controls="settings-panel-conversation" aria-selected="false" tabindex="-1">Conversation</button>
+          <button type="button" id="settings-tab-shortcuts" role="tab" aria-controls="settings-panel-shortcuts" aria-selected="false" tabindex="-1">Shortcuts</button>
         </div>
+        <div class="settings-panels">
+          <section id="settings-panel-setup" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-setup" tabindex="0">
+            <label for="setting-app-mode">Mode</label>
+            <select id="setting-app-mode">
+              <option value="chat">Chat</option>
+              <option value="textCall">Text Call</option>
+            </select>
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-show-borders" checked>
-          Borders
-        </label>
+            <label for="setting-baseurl">Base URL</label>
+            <input type="url" id="setting-baseurl" placeholder="https://api.openai.com/v1">
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-send-timestamp">
-          Send Time to AI
-        </label>
+            <label for="setting-apikey">API Key</label>
+            <input type="password" id="setting-apikey" placeholder="sk-...">
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-scanline">
-          Scanline Effect
-        </label>
-        <div class="slider-row">
-          <input type="range" id="setting-scanline-strength" min="1" max="50" value="2">
-          <span id="scanline-strength-value" class="slider-value">2%</span>
+            <label for="setting-model">Model Name</label>
+            <input type="text" id="setting-model" placeholder="gpt-4o-mini">
+          </section>
+          <section id="settings-panel-display" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-display" tabindex="0" hidden>
+            <label for="setting-font">Font</label>
+            <select id="setting-font">
+              <option value="k8x12S">k8x12S</option>
+              <option value="k8x12">k8x12</option>
+              <option value="k8x12L">k8x12L</option>
+              <option value="MisakiGothic">Misaki Gothic</option>
+              <option value="NotoSansJP" selected>Noto Sans JP</option>
+            </select>
+
+            <label for="setting-theme">Color Theme</label>
+            <select id="setting-theme">
+              <option value="gb">GB Classic</option>
+              <option value="gb-inv">GB Classic (Inverted)</option>
+              <option value="red">Red</option>
+              <option value="red-inv">Red (Inverted)</option>
+              <option value="amber">Amber</option>
+              <option value="amber-inv">Amber (Inverted)</option>
+              <option value="green">Green</option>
+              <option value="green-inv">Green (Inverted)</option>
+              <option value="blue">Blue</option>
+              <option value="blue-inv">Blue (Inverted)</option>
+              <option value="mono">Mono</option>
+              <option value="mono-inv">Mono (Inverted)</option>
+              <option value="dos">DOS Console</option>
+              <option value="msx">MSX Console</option>
+            </select>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-show-borders" checked>
+              Borders
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-scanline">
+              Scanline Effect
+            </label>
+            <div class="slider-row">
+              <input type="range" id="setting-scanline-strength" min="1" max="50" value="2">
+              <span id="scanline-strength-value" class="slider-value">2%</span>
+            </div>
+          </section>
+          <section id="settings-panel-speech" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-speech" tabindex="0" hidden>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-voicevox-enabled">
+              VOICEVOX Speech Synthesis
+            </label>
+
+            <div id="voicevox-settings" class="settings-subsection hidden">
+              <label for="setting-voicevox-url">VOICEVOX URL</label>
+              <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
+              <div class="settings-note">Set CORS Policy Mode to all in VOICEVOX Engine settings.</div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-open-settings">Open Engine Settings</button>
+              </div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-test">Test Connection</button>
+                <button type="button" id="btn-voicevox-load-speakers">Load Speakers</button>
+              </div>
+              <div id="voicevox-status" class="settings-status"></div>
+
+              <label for="setting-voicevox-speaker">VOICEVOX Speaker</label>
+              <select id="setting-voicevox-speaker">
+                <option value="3">Speaker ID 3</option>
+              </select>
+
+              <label for="setting-voicevox-speed">Speed</label>
+              <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-pitch">Pitch</label>
+              <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
+
+              <label for="setting-voicevox-intonation">Intonation</label>
+              <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-volume">Volume</label>
+              <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-pre-phoneme">Pre-phoneme Length (sec)</label>
+              <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+              <label for="setting-voicevox-post-phoneme">Post-phoneme Length (sec)</label>
+              <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-voicevox-skip-annotations" checked>
+                Skip ruby and notes in speech
+              </label>
+
+              <label for="setting-voicevox-test-text">Test Text</label>
+              <textarea id="setting-voicevox-test-text" rows="2" placeholder="Hello"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-speak-test">Test Speech</button>
+              </div>
+            </div>
+          </section>
+          <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
+            <label for="setting-systemprompt">System Prompt</label>
+            <textarea id="setting-systemprompt" rows="3" placeholder="You are a helpful assistant."></textarea>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-autoadvance" checked>
+              Auto Advance
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-show-pause-button" checked>
+              Pause Button (Auto Advance)
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-sound" checked>
+              Sound Effects
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-send-timestamp">
+              Send Time to AI
+            </label>
+
+            <label for="setting-chardelay">Delay per Character (ms)</label>
+            <input type="number" id="setting-chardelay" min="0" max="1000" value="150">
+
+            <label for="setting-mindelay">Minimum Delay (sec)</label>
+            <input type="number" id="setting-mindelay" min="0" max="30" step="0.1" value="2">
+
+            <label for="setting-contextsize">Context Size (messages)</label>
+            <input type="number" id="setting-contextsize" min="2" value="1000">
+          </section>
+          <section id="settings-panel-shortcuts" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-shortcuts" tabindex="0" hidden>
+            <label for="setting-quickresponses">Quick Responses (one per line)</label>
+            <textarea id="setting-quickresponses" rows="3" placeholder="I see&#10;Hold on&#10;That's not right"></textarea>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-mode-tag-enabled">
+              Mode Tags
+            </label>
+
+            <label for="setting-mode1">Mode 1 (one per line)</label>
+            <textarea id="setting-mode1" rows="2" placeholder="#short only&#10;#long allowed"></textarea>
+
+            <label for="setting-mode2">Mode 2 (one per line)</label>
+            <textarea id="setting-mode2" rows="2" placeholder="#task&#10;#chat&#10;#socrates"></textarea>
+
+            <label for="setting-mode3">Mode 3 (one per line)</label>
+            <textarea id="setting-mode3" rows="2" placeholder="#energetic&#10;#tired"></textarea>
+
+            <label for="setting-mode4">Mode 4 (one per line)</label>
+            <textarea id="setting-mode4" rows="2" placeholder="#reality&#10;#story&#10;#philosophy"></textarea>
+          </section>
         </div>
-
-        <label for="setting-chardelay">Delay per Character (ms)</label>
-        <input type="number" id="setting-chardelay" min="0" max="1000" value="150">
-
-        <label for="setting-mindelay">Minimum Delay (sec)</label>
-        <input type="number" id="setting-mindelay" min="0" max="30" step="0.1" value="2">
-
-        <label for="setting-contextsize">Context Size (messages)</label>
-        <input type="number" id="setting-contextsize" min="2" value="1000">
-
-        <label for="setting-quickresponses">Quick Responses (one per line)</label>
-        <textarea id="setting-quickresponses" rows="3" placeholder="I see&#10;Hold on&#10;That's not right"></textarea>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-mode-tag-enabled">
-          Mode Tags
-        </label>
-
-        <label for="setting-mode1">Mode 1 (one per line)</label>
-        <textarea id="setting-mode1" rows="2" placeholder="#short only&#10;#long allowed"></textarea>
-
-        <label for="setting-mode2">Mode 2 (one per line)</label>
-        <textarea id="setting-mode2" rows="2" placeholder="#task&#10;#chat&#10;#socrates"></textarea>
-
-        <label for="setting-mode3">Mode 3 (one per line)</label>
-        <textarea id="setting-mode3" rows="2" placeholder="#energetic&#10;#tired"></textarea>
-
-        <label for="setting-mode4">Mode 4 (one per line)</label>
-        <textarea id="setting-mode4" rows="2" placeholder="#reality&#10;#story&#10;#philosophy"></textarea>
-
         <a href="https://github.com/gpsnmeajp/SlowDialog" target="_blank" rel="noopener noreferrer" id="btn-github-link">GitHub Repository</a>
 
         <div id="settings-buttons">

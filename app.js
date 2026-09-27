@@ -1157,6 +1157,26 @@ const UIController = (() => {
         btnSettings.addEventListener('click', openSettings);
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
+        const settingsTabs = [...settingsForm.querySelectorAll('[role="tab"]')];
+        settingsTabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => _selectSettingsTab(tab));
+            tab.addEventListener('keydown', (e) => {
+                let nextIndex;
+                if (e.key === 'ArrowRight') nextIndex = (index + 1) % settingsTabs.length;
+                else if (e.key === 'ArrowLeft') nextIndex = (index - 1 + settingsTabs.length) % settingsTabs.length;
+                else if (e.key === 'Home') nextIndex = 0;
+                else if (e.key === 'End') nextIndex = settingsTabs.length - 1;
+                else return;
+                e.preventDefault();
+                _selectSettingsTab(settingsTabs[nextIndex]);
+                settingsTabs[nextIndex].focus();
+            });
+        });
+        // Reveal invalid fields before the browser tries to focus them.
+        settingsForm.addEventListener('invalid', (e) => {
+            const panel = e.target.closest('[role="tabpanel"]');
+            if (panel) _selectSettingsTab(document.getElementById(panel.getAttribute('aria-labelledby')));
+        }, true);
         btnVoiceVoxOpenSettings.addEventListener('click', _handleVoiceVoxOpenSettings);
         btnVoiceVoxTest.addEventListener('click', _handleVoiceVoxTest);
         btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
@@ -1167,8 +1187,7 @@ const UIController = (() => {
         document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
         settingsOverlay.addEventListener('click', (e) => {
             if (e.target === settingsOverlay) {
-                const dialog = document.getElementById('settings-dialog');
-                dialog.scrollTo({ top: dialog.scrollHeight, behavior: 'smooth' });
+                btnCancel.focus();
             }
         });
 
@@ -2089,6 +2108,16 @@ const UIController = (() => {
     }
 
     // ─── Settings Dialog ───
+    function _selectSettingsTab(selectedTab) {
+        settingsForm.querySelectorAll('[role="tab"]').forEach((tab) => {
+            const selected = tab === selectedTab;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
+        });
+        settingsForm.querySelector('.settings-panels').scrollTop = 0;
+    }
+
     function openSettings() {
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
@@ -2132,6 +2161,9 @@ const UIController = (() => {
         document.getElementById('setting-mode3').value = s.mode3 || '';
         document.getElementById('setting-mode4').value = s.mode4 || '';
         settingsOverlay.classList.remove('hidden');
+        const firstTab = document.getElementById('settings-tab-setup');
+        _selectSettingsTab(firstTab);
+        firstTab.focus();
     }
 
     function closeSettings() {

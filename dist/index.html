@@ -216,6 +216,44 @@
   padding: 0;
 }
 
+/* ===== Shared Theme Scrollbars ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gb-dark) var(--gb-light);
+}
+
+/* Use square thumbs where pseudo-element styling is available. */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: var(--gb-light);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--gb-dark);
+    border-radius: 0;
+  }
+
+  *::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:active {
+    background: var(--gb-darkest);
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+  }
+}
+
 html {
   height: 100%;
   background: #0a2a0a;
@@ -331,20 +369,6 @@ body {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gb-dark) var(--gb-light);
-}
-
-#chat-area::-webkit-scrollbar {
-  width: 8px;
-}
-
-#chat-area::-webkit-scrollbar-track {
-  background: var(--gb-light);
-}
-
-#chat-area::-webkit-scrollbar-thumb {
-  background: var(--gb-dark);
 }
 
 #chat-messages {
@@ -822,8 +846,10 @@ body {
   padding: 20px;
   width: 90%;
   max-width: 420px;
-  max-height: 85vh;
-  overflow-y: auto;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #settings-dialog h2 {
@@ -846,7 +872,64 @@ body {
 #settings-form {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 6px;
+  min-height: 0;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--gb-darkest);
+}
+
+.settings-tabs button {
+  flex: 1 0 auto;
+  padding: 7px 8px;
+  font-family: var(--app-font);
+  font-size: 13px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  cursor: pointer;
+}
+
+.settings-tabs button[aria-selected="true"] {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+}
+
+.settings-tabs button:focus-visible,
+.settings-panel:focus-visible {
+  outline: 2px dashed var(--gb-darkest);
+  outline-offset: -4px;
+}
+
+.settings-panels {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 4px 8px;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel[hidden] {
+  display: none;
+}
+
+#settings-dialog h2,
+.settings-hint,
+#settings-buttons,
+#btn-github-link {
+  flex-shrink: 0;
 }
 
 #settings-form label {
@@ -1442,169 +1525,183 @@ body.no-borders .import-divider::after {
   <div id="settings-overlay" class="hidden">
     <div id="settings-dialog">
       <h2>設定</h2>
-      <p class="settings-hint">保存ボタンは最下部にあります。<br>すべての情報はブラウザ上に保存されます。</p>
+      <p class="settings-hint">すべてのタブの変更を「保存」で反映します。<br>すべての情報はブラウザ上に保存されます。</p>
       <form id="settings-form">
-        <label for="setting-app-mode">モード切替</label>
-        <select id="setting-app-mode">
-          <option value="chat">チャット</option>
-          <option value="textCall">文字通話</option>
-        </select>
-
-        <label for="setting-baseurl">Base URL</label>
-        <input type="url" id="setting-baseurl" placeholder="https://api.openai.com/v1">
-
-        <label for="setting-apikey">API Key</label>
-        <input type="password" id="setting-apikey" placeholder="sk-...">
-
-        <label for="setting-model">モデル名</label>
-        <input type="text" id="setting-model" placeholder="gpt-4o-mini">
-
-        <label for="setting-systemprompt">システムプロンプト</label>
-        <textarea id="setting-systemprompt" rows="3" placeholder="あなたは親切なアシスタントです。"></textarea>
-
-        <label for="setting-font">フォント</label>
-        <select id="setting-font">
-          <option value="k8x12S">k8x12S</option>
-          <option value="k8x12">k8x12</option>
-          <option value="k8x12L">k8x12L</option>
-          <option value="MisakiGothic">美咲ゴシック</option>
-          <option value="NotoSansJP" selected>Noto Sans JP</option>
-        </select>
-
-        <label for="setting-theme">カラーテーマ</label>
-        <select id="setting-theme">
-          <option value="gb">GBクラシック</option>
-          <option value="gb-inv">GBクラシック (反転)</option>
-          <option value="red">レッド</option>
-          <option value="red-inv">レッド (反転)</option>
-          <option value="amber">アンバー</option>
-          <option value="amber-inv">アンバー (反転)</option>
-          <option value="green">グリーン</option>
-          <option value="green-inv">グリーン (反転)</option>
-          <option value="blue">ブルー</option>
-          <option value="blue-inv">ブルー (反転)</option>
-          <option value="mono">モノクロ</option>
-          <option value="mono-inv">モノクロ (反転)</option>
-          <option value="dos">DOSコンソール</option>
-          <option value="msx">MSXコンソール</option>
-        </select>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-autoadvance" checked>
-          自動進行
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-show-pause-button" checked>
-          一時停止ボタン(自動進行中)
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-sound" checked>
-          効果音
-        </label>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-voicevox-enabled">
-          VOICEVOX音声合成
-        </label>
-
-        <div id="voicevox-settings" class="settings-subsection hidden">
-          <label for="setting-voicevox-url">VOICEVOX接続先URL</label>
-          <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
-          <div class="settings-note">VOICEVOX Engine の設定で CORS Policy Mode を all にしてください。</div>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-open-settings">エンジン設定を開く</button>
-          </div>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-test">接続テスト</button>
-            <button type="button" id="btn-voicevox-load-speakers">話者リスト取得</button>
-          </div>
-          <div id="voicevox-status" class="settings-status"></div>
-
-          <label for="setting-voicevox-speaker">VOICEVOX話者</label>
-          <select id="setting-voicevox-speaker">
-            <option value="3">話者ID 3</option>
-          </select>
-
-          <label for="setting-voicevox-speed">話速</label>
-          <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-pitch">音高</label>
-          <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
-
-          <label for="setting-voicevox-intonation">抑揚</label>
-          <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-volume">音量</label>
-          <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
-
-          <label for="setting-voicevox-pre-phoneme">開始無音 (秒)</label>
-          <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
-
-          <label for="setting-voicevox-post-phoneme">終了無音 (秒)</label>
-          <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
-
-          <label class="checkbox-row">
-            <input type="checkbox" id="setting-voicevox-skip-annotations" checked>
-            ルビ・補足を読み上げない
-          </label>
-
-          <label for="setting-voicevox-test-text">テスト用テキスト</label>
-          <textarea id="setting-voicevox-test-text" rows="2" placeholder="こんにちは"></textarea>
-          <div class="settings-button-row">
-            <button type="button" id="btn-voicevox-speak-test">発話テスト</button>
-          </div>
+        <div class="settings-tabs" role="tablist" aria-label="設定の区分">
+          <button type="button" id="settings-tab-setup" role="tab" aria-controls="settings-panel-setup" aria-selected="true" tabindex="0">初期設定</button>
+          <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-panel-display" aria-selected="false" tabindex="-1">表示</button>
+          <button type="button" id="settings-tab-speech" role="tab" aria-controls="settings-panel-speech" aria-selected="false" tabindex="-1">音声合成</button>
+          <button type="button" id="settings-tab-conversation" role="tab" aria-controls="settings-panel-conversation" aria-selected="false" tabindex="-1">会話</button>
+          <button type="button" id="settings-tab-shortcuts" role="tab" aria-controls="settings-panel-shortcuts" aria-selected="false" tabindex="-1">定型入力</button>
         </div>
+        <div class="settings-panels">
+          <section id="settings-panel-setup" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-setup" tabindex="0">
+            <label for="setting-app-mode">モード切替</label>
+            <select id="setting-app-mode">
+              <option value="chat">チャット</option>
+              <option value="textCall">文字通話</option>
+            </select>
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-show-borders" checked>
-          枠線
-        </label>
+            <label for="setting-baseurl">Base URL</label>
+            <input type="url" id="setting-baseurl" placeholder="https://api.openai.com/v1">
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-send-timestamp">
-          AIに時刻を送信する
-        </label>
+            <label for="setting-apikey">API Key</label>
+            <input type="password" id="setting-apikey" placeholder="sk-...">
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-scanline">
-          スキャンラインエフェクト
-        </label>
-        <div class="slider-row">
-          <input type="range" id="setting-scanline-strength" min="1" max="50" value="2">
-          <span id="scanline-strength-value" class="slider-value">2%</span>
+            <label for="setting-model">モデル名</label>
+            <input type="text" id="setting-model" placeholder="gpt-4o-mini">
+          </section>
+          <section id="settings-panel-display" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-display" tabindex="0" hidden>
+            <label for="setting-font">フォント</label>
+            <select id="setting-font">
+              <option value="k8x12S">k8x12S</option>
+              <option value="k8x12">k8x12</option>
+              <option value="k8x12L">k8x12L</option>
+              <option value="MisakiGothic">美咲ゴシック</option>
+              <option value="NotoSansJP" selected>Noto Sans JP</option>
+            </select>
+
+            <label for="setting-theme">カラーテーマ</label>
+            <select id="setting-theme">
+              <option value="gb">GBクラシック</option>
+              <option value="gb-inv">GBクラシック (反転)</option>
+              <option value="red">レッド</option>
+              <option value="red-inv">レッド (反転)</option>
+              <option value="amber">アンバー</option>
+              <option value="amber-inv">アンバー (反転)</option>
+              <option value="green">グリーン</option>
+              <option value="green-inv">グリーン (反転)</option>
+              <option value="blue">ブルー</option>
+              <option value="blue-inv">ブルー (反転)</option>
+              <option value="mono">モノクロ</option>
+              <option value="mono-inv">モノクロ (反転)</option>
+              <option value="dos">DOSコンソール</option>
+              <option value="msx">MSXコンソール</option>
+            </select>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-show-borders" checked>
+              枠線
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-scanline">
+              スキャンラインエフェクト
+            </label>
+            <div class="slider-row">
+              <input type="range" id="setting-scanline-strength" min="1" max="50" value="2">
+              <span id="scanline-strength-value" class="slider-value">2%</span>
+            </div>
+          </section>
+          <section id="settings-panel-speech" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-speech" tabindex="0" hidden>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-voicevox-enabled">
+              VOICEVOX音声合成
+            </label>
+
+            <div id="voicevox-settings" class="settings-subsection hidden">
+              <label for="setting-voicevox-url">VOICEVOX接続先URL</label>
+              <input type="url" id="setting-voicevox-url" placeholder="http://localhost:50021">
+              <div class="settings-note">VOICEVOX Engine の設定で CORS Policy Mode を all にしてください。</div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-open-settings">エンジン設定を開く</button>
+              </div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-test">接続テスト</button>
+                <button type="button" id="btn-voicevox-load-speakers">話者リスト取得</button>
+              </div>
+              <div id="voicevox-status" class="settings-status"></div>
+
+              <label for="setting-voicevox-speaker">VOICEVOX話者</label>
+              <select id="setting-voicevox-speaker">
+                <option value="3">話者ID 3</option>
+              </select>
+
+              <label for="setting-voicevox-speed">話速</label>
+              <input type="number" id="setting-voicevox-speed" min="0.5" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-pitch">音高</label>
+              <input type="number" id="setting-voicevox-pitch" min="-0.15" max="0.15" step="0.01" value="0">
+
+              <label for="setting-voicevox-intonation">抑揚</label>
+              <input type="number" id="setting-voicevox-intonation" min="0" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-volume">音量</label>
+              <input type="number" id="setting-voicevox-volume" min="0" max="2" step="0.1" value="1">
+
+              <label for="setting-voicevox-pre-phoneme">開始無音 (秒)</label>
+              <input type="number" id="setting-voicevox-pre-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+              <label for="setting-voicevox-post-phoneme">終了無音 (秒)</label>
+              <input type="number" id="setting-voicevox-post-phoneme" min="0" max="2" step="0.05" value="0.1">
+
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-voicevox-skip-annotations" checked>
+                ルビ・補足を読み上げない
+              </label>
+
+              <label for="setting-voicevox-test-text">テスト用テキスト</label>
+              <textarea id="setting-voicevox-test-text" rows="2" placeholder="こんにちは"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-voicevox-speak-test">発話テスト</button>
+              </div>
+            </div>
+          </section>
+          <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
+            <label for="setting-systemprompt">システムプロンプト</label>
+            <textarea id="setting-systemprompt" rows="3" placeholder="あなたは親切なアシスタントです。"></textarea>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-autoadvance" checked>
+              自動進行
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-show-pause-button" checked>
+              一時停止ボタン(自動進行中)
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-sound" checked>
+              効果音
+            </label>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-send-timestamp">
+              AIに時刻を送信する
+            </label>
+
+            <label for="setting-chardelay">1文字あたりの待ち時間 (ms)</label>
+            <input type="number" id="setting-chardelay" min="0" max="1000" value="150">
+
+            <label for="setting-mindelay">最低待機時間 (秒)</label>
+            <input type="number" id="setting-mindelay" min="0" max="30" step="0.1" value="2">
+
+            <label for="setting-contextsize">コンテキストサイズ (メッセージ数)</label>
+            <input type="number" id="setting-contextsize" min="2" value="1000">
+          </section>
+          <section id="settings-panel-shortcuts" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-shortcuts" tabindex="0" hidden>
+            <label for="setting-quickresponses">クイックレスポンス (改行区切り)</label>
+            <textarea id="setting-quickresponses" rows="3" placeholder="なるほど&#10;ちょっと待って&#10;そうじゃない"></textarea>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-mode-tag-enabled">
+              モードタグ有効
+            </label>
+
+            <label for="setting-mode1">モード1 (改行区切り)</label>
+            <textarea id="setting-mode1" rows="2" placeholder="#短文のみ&#10;#長文許可"></textarea>
+
+            <label for="setting-mode2">モード2 (改行区切り)</label>
+            <textarea id="setting-mode2" rows="2" placeholder="#タスク&#10;#雑談&#10;#ソクラテス"></textarea>
+
+            <label for="setting-mode3">モード3 (改行区切り)</label>
+            <textarea id="setting-mode3" rows="2" placeholder="#元気&#10;#疲れている"></textarea>
+
+            <label for="setting-mode4">モード4 (改行区切り)</label>
+            <textarea id="setting-mode4" rows="2" placeholder="#現実&#10;#物語&#10;#哲学"></textarea>
+          </section>
         </div>
-
-        <label for="setting-chardelay">1文字あたりの待ち時間 (ms)</label>
-        <input type="number" id="setting-chardelay" min="0" max="1000" value="150">
-
-        <label for="setting-mindelay">最低待機時間 (秒)</label>
-        <input type="number" id="setting-mindelay" min="0" max="30" step="0.1" value="2">
-
-        <label for="setting-contextsize">コンテキストサイズ (メッセージ数)</label>
-        <input type="number" id="setting-contextsize" min="2" value="1000">
-
-        <label for="setting-quickresponses">クイックレスポンス (改行区切り)</label>
-        <textarea id="setting-quickresponses" rows="3" placeholder="なるほど&#10;ちょっと待って&#10;そうじゃない"></textarea>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="setting-mode-tag-enabled">
-          モードタグ有効
-        </label>
-
-        <label for="setting-mode1">モード1 (改行区切り)</label>
-        <textarea id="setting-mode1" rows="2" placeholder="#短文のみ&#10;#長文許可"></textarea>
-
-        <label for="setting-mode2">モード2 (改行区切り)</label>
-        <textarea id="setting-mode2" rows="2" placeholder="#タスク&#10;#雑談&#10;#ソクラテス"></textarea>
-
-        <label for="setting-mode3">モード3 (改行区切り)</label>
-        <textarea id="setting-mode3" rows="2" placeholder="#元気&#10;#疲れている"></textarea>
-
-        <label for="setting-mode4">モード4 (改行区切り)</label>
-        <textarea id="setting-mode4" rows="2" placeholder="#現実&#10;#物語&#10;#哲学"></textarea>
-
         <a href="https://github.com/gpsnmeajp/SlowDialog" target="_blank" rel="noopener noreferrer" id="btn-github-link">GitHub リポジトリ</a>
 
         <div id="settings-buttons">
@@ -2863,6 +2960,26 @@ const UIController = (() => {
         btnSettings.addEventListener('click', openSettings);
         btnCancel.addEventListener('click', closeSettings);
         settingsForm.addEventListener('submit', _handleSaveSettings);
+        const settingsTabs = [...settingsForm.querySelectorAll('[role="tab"]')];
+        settingsTabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => _selectSettingsTab(tab));
+            tab.addEventListener('keydown', (e) => {
+                let nextIndex;
+                if (e.key === 'ArrowRight') nextIndex = (index + 1) % settingsTabs.length;
+                else if (e.key === 'ArrowLeft') nextIndex = (index - 1 + settingsTabs.length) % settingsTabs.length;
+                else if (e.key === 'Home') nextIndex = 0;
+                else if (e.key === 'End') nextIndex = settingsTabs.length - 1;
+                else return;
+                e.preventDefault();
+                _selectSettingsTab(settingsTabs[nextIndex]);
+                settingsTabs[nextIndex].focus();
+            });
+        });
+        // Reveal invalid fields before the browser tries to focus them.
+        settingsForm.addEventListener('invalid', (e) => {
+            const panel = e.target.closest('[role="tabpanel"]');
+            if (panel) _selectSettingsTab(document.getElementById(panel.getAttribute('aria-labelledby')));
+        }, true);
         btnVoiceVoxOpenSettings.addEventListener('click', _handleVoiceVoxOpenSettings);
         btnVoiceVoxTest.addEventListener('click', _handleVoiceVoxTest);
         btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
@@ -2873,8 +2990,7 @@ const UIController = (() => {
         document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
         settingsOverlay.addEventListener('click', (e) => {
             if (e.target === settingsOverlay) {
-                const dialog = document.getElementById('settings-dialog');
-                dialog.scrollTo({ top: dialog.scrollHeight, behavior: 'smooth' });
+                btnCancel.focus();
             }
         });
 
@@ -3795,6 +3911,16 @@ const UIController = (() => {
     }
 
     // ─── Settings Dialog ───
+    function _selectSettingsTab(selectedTab) {
+        settingsForm.querySelectorAll('[role="tab"]').forEach((tab) => {
+            const selected = tab === selectedTab;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
+        });
+        settingsForm.querySelector('.settings-panels').scrollTop = 0;
+    }
+
     function openSettings() {
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
@@ -3838,6 +3964,9 @@ const UIController = (() => {
         document.getElementById('setting-mode3').value = s.mode3 || '';
         document.getElementById('setting-mode4').value = s.mode4 || '';
         settingsOverlay.classList.remove('hidden');
+        const firstTab = document.getElementById('settings-tab-setup');
+        _selectSettingsTab(firstTab);
+        firstTab.focus();
     }
 
     function closeSettings() {

@@ -206,6 +206,44 @@
   padding: 0;
 }
 
+/* ===== Shared Theme Scrollbars ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gb-dark) var(--gb-light);
+}
+
+/* Use square thumbs where pseudo-element styling is available. */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: var(--gb-light);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--gb-dark);
+    border-radius: 0;
+  }
+
+  *::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:active {
+    background: var(--gb-darkest);
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none;
+  }
+}
+
 html {
   height: 100%;
   background: #0a2a0a;
@@ -321,20 +359,6 @@ body {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gb-dark) var(--gb-light);
-}
-
-#chat-area::-webkit-scrollbar {
-  width: 8px;
-}
-
-#chat-area::-webkit-scrollbar-track {
-  background: var(--gb-light);
-}
-
-#chat-area::-webkit-scrollbar-thumb {
-  background: var(--gb-dark);
 }
 
 #chat-messages {
@@ -812,8 +836,10 @@ body {
   padding: 20px;
   width: 90%;
   max-width: 420px;
-  max-height: 85vh;
-  overflow-y: auto;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #settings-dialog h2 {
@@ -836,7 +862,64 @@ body {
 #settings-form {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 6px;
+  min-height: 0;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--gb-darkest);
+}
+
+.settings-tabs button {
+  flex: 1 0 auto;
+  padding: 7px 8px;
+  font-family: var(--app-font);
+  font-size: 13px;
+  border: 2px solid var(--gb-darkest);
+  background: var(--gb-light);
+  color: var(--gb-darkest);
+  cursor: pointer;
+}
+
+.settings-tabs button[aria-selected="true"] {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+}
+
+.settings-tabs button:focus-visible,
+.settings-panel:focus-visible {
+  outline: 2px dashed var(--gb-darkest);
+  outline-offset: -4px;
+}
+
+.settings-panels {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 4px 8px;
+}
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel[hidden] {
+  display: none;
+}
+
+#settings-dialog h2,
+.settings-hint,
+#settings-buttons,
+#btn-github-link {
+  flex-shrink: 0;
 }
 
 #settings-form label {
