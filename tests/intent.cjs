@@ -184,16 +184,16 @@ const path = require('node:path');
             malformed = true;
             await input.fill('invalid response');
             await page.waitForFunction(() => document.querySelector('#intent-badge').classList.contains('intent-uncertain'));
-            assert.equal(await badge.textContent(), ja ? '通信異常' : 'Connection error');
+            assert.equal(await badge.textContent(), ja ? '通信異常(Invalid )' : 'Connection error(Invalid )');
             await page.locator('#btn-send').click();
-            assert.equal(await page.locator('#intent-confirm-message').textContent(), ja ? '通信異常により意図を判定できませんでした。本当に送信しますか？' : 'Intent could not be checked due to a connection error. Do you really want to send?');
+            assert.equal(await page.locator('#intent-confirm-message').textContent(), ja ? '通信異常(Invalid )により意図を判定できませんでした。本当に送信しますか？' : 'Intent could not be checked due to a connection error(Invalid ). Do you really want to send?');
             await page.locator('#btn-intent-confirm-send').click();
             await page.waitForTimeout(100);
             assert.equal(chats.at(-1).messages.filter(m => m.role === 'user').at(-1).content, 'invalid response');
             malformed = false; fail = true;
             await input.fill('network failure');
             await page.waitForFunction(() => document.querySelector('#intent-badge').classList.contains('intent-uncertain'));
-            assert.equal(await badge.textContent(), ja ? '通信異常' : 'Connection error');
+            assert.equal(await badge.textContent(), ja ? '通信異常(500)' : 'Connection error(500)');
             await badge.click();
             assert.equal(await page.locator('.intent-choice-probability').count(), 0);
             assert.deepEqual(await page.locator('#intent-options .intent-choice-label').allTextContents(), ['質問', '修正要求', '要共感', '怒り', '独自の選択肢']);
@@ -235,6 +235,7 @@ const path = require('node:path');
             assert.deepEqual(await page.locator('.intent-choice-probability').allTextContents(), ['100.0%', '0.0%', '0.0%']);
             assert.equal(await page.evaluate(() => document.activeElement.textContent), '質問0.0%');
             await page.locator('#btn-close-intent').click();
+            await page.waitForFunction(() => document.activeElement.id === 'user-input');
             // The closing interaction controls focus, even when opened with a different input method.
             for (const closeSelector of ['#btn-close-intent', '#btn-remove-intent', '#intent-options button']) {
                 await badge.focus();

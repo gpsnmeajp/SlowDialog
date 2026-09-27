@@ -53,16 +53,18 @@
   </header>
 
   <!-- ===== Chat Area ===== -->
-  <main id="chat-area">
-    <div id="call-standby" class="hidden">
-      <div id="last-call-duration" class="hidden">
-        <div class="call-duration-caption">Previous Call Duration</div>
-        <div id="last-call-duration-value">00:00</div>
+  <div id="chat-layout">
+    <main id="chat-area">
+      <div id="call-standby" class="hidden">
+        <div id="last-call-duration" class="hidden">
+          <div class="call-duration-caption">Previous Call Duration</div>
+          <div id="last-call-duration-value">00:00</div>
+        </div>
+        <button id="btn-start-call">Start Call</button>
       </div>
-      <button id="btn-start-call">Start Call</button>
-    </div>
-    <div id="chat-messages"></div>
-  </main>
+      <div id="chat-messages"></div>
+    </main>
+  </div>
 
   <!-- ===== Quick Responses ===== -->
   <div id="quick-responses"></div>
@@ -175,25 +177,24 @@
               <button type="button" id="btn-remove-background">Remove image</button>
             </div>
             <div id="background-status" class="settings-status" role="status"></div>
-            <label for="setting-background-x">Horizontal alignment</label>
-            <select id="setting-background-x">
-              <option value="left">Left</option>
-              <option value="center" selected>Center</option>
-              <option value="right">Right</option>
-            </select>
-            <label for="setting-background-y">Vertical alignment</label>
-            <select id="setting-background-y">
-              <option value="top">Top</option>
-              <option value="center" selected>Center</option>
-              <option value="bottom">Bottom</option>
-            </select>
+            <label for="background-crop-box">Crop position</label>
+            <div id="background-crop-help" class="settings-note">Drag the box on the image to adjust the visible area. Arrow keys also move it (hold Shift for larger steps).</div>
+            <div class="background-preview-frame">
+              <div id="background-preview" role="img" aria-label="Full background image preview"></div>
+              <div id="background-crop-area" hidden>
+                <button type="button" id="background-crop-box" aria-label="Crop position" aria-describedby="background-crop-help"></button>
+              </div>
+            </div>
             <label for="setting-background-transparency">Transparency (0%: visible / 100%: invisible)</label>
             <div class="slider-row">
               <input type="range" id="setting-background-transparency" min="0" max="100" value="0">
               <output id="background-transparency-value" for="setting-background-transparency" class="slider-value">0%</output>
             </div>
-            <div class="background-preview-frame">
-              <div id="background-preview" role="img" aria-label="Background preview"></div>
+
+            <label for="setting-chat-area">Chat area</label>
+            <div class="slider-row">
+              <input type="range" id="setting-chat-area" min="0" max="95" step="1" value="0">
+              <output id="chat-area-value" for="setting-chat-area" class="slider-value">0%</output>
             </div>
 
             <label class="checkbox-row">

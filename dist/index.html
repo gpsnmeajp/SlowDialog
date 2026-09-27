@@ -294,12 +294,45 @@ body {
 }
 
 .background-preview-frame {
+  position: relative;
+  flex-shrink: 0;
   border: 1px solid var(--gb-dark);
   background: var(--gb-lightest);
 }
 
 #background-preview {
-  height: 160px;
+  height: 220px;
+  background-size: contain;
+}
+
+#background-crop-area {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#background-crop-box {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px #000, 0 0 0 999px rgb(0 0 0 / 45%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  pointer-events: auto;
+}
+
+#background-crop-box.is-dragging {
+  cursor: grabbing;
+}
+
+#background-crop-box:focus-visible {
+  outline: 2px dashed #000;
+  outline-offset: -5px;
 }
 
 #setting-background-file {
@@ -456,19 +489,31 @@ body {
 }
 
 /* ===== Chat Area ===== */
-#chat-area {
+#chat-layout {
   flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+#chat-area {
+  position: absolute;
+  inset: min(var(--chat-area-top, 0px), 95%) 0 0;
   overflow-y: auto;
-  padding: 12px;
   display: flex;
   flex-direction: column;
+}
+
+#chat-layout.is-standby #chat-area {
+  top: 0;
 }
 
 #chat-messages {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: 8px;
   margin-top: auto;
+  padding: 12px;
 }
 
 #chat-messages.hidden {
@@ -477,6 +522,7 @@ body {
 
 #call-standby {
   flex: 1;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1668,16 +1714,18 @@ body.no-borders .import-divider::after {
   </header>
 
   <!-- ===== チャットエリア ===== -->
-  <main id="chat-area">
-    <div id="call-standby" class="hidden">
-      <div id="last-call-duration" class="hidden">
-        <div class="call-duration-caption">前回の通話時間</div>
-        <div id="last-call-duration-value">00:00</div>
+  <div id="chat-layout">
+    <main id="chat-area">
+      <div id="call-standby" class="hidden">
+        <div id="last-call-duration" class="hidden">
+          <div class="call-duration-caption">前回の通話時間</div>
+          <div id="last-call-duration-value">00:00</div>
+        </div>
+        <button id="btn-start-call">通話を開始</button>
       </div>
-      <button id="btn-start-call">通話を開始</button>
-    </div>
-    <div id="chat-messages"></div>
-  </main>
+      <div id="chat-messages"></div>
+    </main>
+  </div>
 
   <!-- ===== クイックレスポンスエリア ===== -->
   <div id="quick-responses"></div>
@@ -1790,25 +1838,24 @@ body.no-borders .import-divider::after {
               <button type="button" id="btn-remove-background">画像を削除</button>
             </div>
             <div id="background-status" class="settings-status" role="status"></div>
-            <label for="setting-background-x">横方向の配置</label>
-            <select id="setting-background-x">
-              <option value="left">左</option>
-              <option value="center" selected>中央</option>
-              <option value="right">右</option>
-            </select>
-            <label for="setting-background-y">縦方向の配置</label>
-            <select id="setting-background-y">
-              <option value="top">上</option>
-              <option value="center" selected>中央</option>
-              <option value="bottom">下</option>
-            </select>
+            <label for="background-crop-box">切り出し位置</label>
+            <div id="background-crop-help" class="settings-note">画像上の枠をドラッグして表示範囲を調整します。矢印キーでも移動できます（Shiftで大きく移動）。</div>
+            <div class="background-preview-frame">
+              <div id="background-preview" role="img" aria-label="背景画像全体のプレビュー"></div>
+              <div id="background-crop-area" hidden>
+                <button type="button" id="background-crop-box" aria-label="切り出し位置" aria-describedby="background-crop-help"></button>
+              </div>
+            </div>
             <label for="setting-background-transparency">透明度（0%: 不透明 / 100%: 透明）</label>
             <div class="slider-row">
               <input type="range" id="setting-background-transparency" min="0" max="100" value="0">
               <output id="background-transparency-value" for="setting-background-transparency" class="slider-value">0%</output>
             </div>
-            <div class="background-preview-frame">
-              <div id="background-preview" role="img" aria-label="背景画像のプレビュー"></div>
+
+            <label for="setting-chat-area">チャット領域</label>
+            <div class="slider-row">
+              <input type="range" id="setting-chat-area" min="0" max="95" step="1" value="0">
+              <output id="chat-area-value" for="setting-chat-area" class="slider-value">0%</output>
             </div>
 
             <label class="checkbox-row">
@@ -2331,9 +2378,10 @@ const Settings = (() => {
         font: 'NotoSansJP',
         theme: 'gb',
         backgroundImageId: null,
-        backgroundPositionX: 'center',
-        backgroundPositionY: 'center',
+        backgroundPositionX: 0.5,
+        backgroundPositionY: 0.5,
         backgroundTransparency: 0,
+        chatAreaOffset: 0,
         autoAdvance: true,
         showPauseButton: true,
         soundEnabled: true,
@@ -2370,18 +2418,30 @@ const Settings = (() => {
 
     let _settings = { ...DEFAULTS };
 
+    // 数値の位置だけを受け入れ、それ以外は既定値に戻す。
+    function normalizeBackgroundPosition(settings) {
+        for (const key of ['backgroundPositionX', 'backgroundPositionY']) {
+            const value = settings[key];
+            settings[key] = Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : DEFAULTS[key];
+        }
+    }
+
     /** デフォルト値と保存済み値をマージして返す */
     function load() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) _settings = { ...DEFAULTS, ...JSON.parse(raw) };
         } catch { /* ignore */ }
+        normalizeBackgroundPosition(_settings);
+        _settings.chatAreaOffset = Math.min(95, Math.max(0, Number(_settings.chatAreaOffset) || 0));
         return _settings;
     }
 
     /** デフォルト値を補完して localStorage に保存し内部状態を更新 */
     function save(s) {
         const next = { ...DEFAULTS, ...s };
+        normalizeBackgroundPosition(next);
+        next.chatAreaOffset = Math.min(95, Math.max(0, Number(next.chatAreaOffset) || 0));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         _settings = next;
     }
@@ -2449,6 +2509,52 @@ const BackgroundImage = (() => {
     let saving = false;
     let ready;
     let database;
+    let imageSize = null;
+    let position = { x: 0.5, y: 0.5 };
+    let renderedPosition = { ...position };
+    let cropGeometry = null;
+    let drag = null;
+
+    const clamp = (value) => Math.min(1, Math.max(0, value));
+
+    // contain表示の画像内に、実際の背景レイヤーのcover切り出し範囲を重ねる。
+    function layoutCrop() {
+        const preview = el('background-preview');
+        const area = el('background-crop-area');
+        const box = el('background-crop-box');
+        const layer = el('background-image');
+        const width = preview.clientWidth;
+        const height = preview.clientHeight;
+        cropGeometry = null;
+        area.hidden = !imageSize || !width || !height || !layer.clientWidth || !layer.clientHeight;
+        if (area.hidden) return;
+        const scale = Math.min(width / imageSize.width, height / imageSize.height);
+        const imageWidth = imageSize.width * scale;
+        const imageHeight = imageSize.height * scale;
+        const cover = Math.max(layer.clientWidth / imageSize.width, layer.clientHeight / imageSize.height);
+        const cropWidth = Math.min(imageWidth, layer.clientWidth / cover * scale);
+        const cropHeight = Math.min(imageHeight, layer.clientHeight / cover * scale);
+        cropGeometry = { x: Math.max(0, imageWidth - cropWidth), y: Math.max(0, imageHeight - cropHeight) };
+        Object.assign(area.style, {
+            left: `${(width - imageWidth) / 2}px`, top: `${(height - imageHeight) / 2}px`,
+            width: `${imageWidth}px`, height: `${imageHeight}px`,
+        });
+        Object.assign(box.style, {
+            left: `${cropGeometry.x * renderedPosition.x}px`, top: `${cropGeometry.y * renderedPosition.y}px`,
+            width: `${cropWidth}px`, height: `${cropHeight}px`,
+        });
+        box.setAttribute('aria-label', message('切り出し位置', 'Crop position')
+            + `: X ${Math.round(renderedPosition.x * 100)}%, Y ${Math.round(renderedPosition.y * 100)}%`);
+    }
+
+    function endDrag() {
+        if (!drag) return;
+        const pointerId = drag.pointerId;
+        drag = null;
+        const box = el('background-crop-box');
+        box.classList.remove('is-dragging');
+        if (box.hasPointerCapture(pointerId)) box.releasePointerCapture(pointerId);
+    }
 
     // IndexedDB を遅延初期化して Promise をキャッシュ（失敗時はキャッシュをクリアして再試行可能にする）
     function db() {
@@ -2480,27 +2586,39 @@ const BackgroundImage = (() => {
         const layer = el('background-image');
         const preview = el('background-preview');
         if (blob !== renderedBlob) {
+            endDrag();
             if (objectUrl) URL.revokeObjectURL(objectUrl);
             objectUrl = blob ? URL.createObjectURL(blob) : null;
             renderedBlob = blob;
             for (const target of [layer, preview]) {
                 target.style.backgroundImage = objectUrl ? `url("${objectUrl}")` : 'none';
             }
+            imageSize = null;
+            if (objectUrl) {
+                const url = objectUrl;
+                const image = new Image();
+                image.onload = () => {
+                    if (url !== objectUrl) return;
+                    imageSize = { width: image.naturalWidth, height: image.naturalHeight };
+                    layoutCrop();
+                };
+                image.src = url;
+            }
         }
-        for (const target of [layer, preview]) {
-            target.style.backgroundPosition = `${settings.backgroundPositionX} ${settings.backgroundPositionY}`;
-        }
+        renderedPosition = { x: settings.backgroundPositionX, y: settings.backgroundPositionY };
+        layer.style.backgroundPosition = `${renderedPosition.x * 100}% ${renderedPosition.y * 100}%`;
         const opacity = 1 - settings.backgroundTransparency / 100;
         layer.style.opacity = opacity;
         preview.style.opacity = opacity;
         el('btn-remove-background').disabled = !blob || saving;
+        layoutCrop();
     }
 
     // 設定フォームから背景の現在値を取得（保存状態ではなくフォーム入力値）
     function values() {
         return {
-            backgroundPositionX: el('setting-background-x').value,
-            backgroundPositionY: el('setting-background-y').value,
+            backgroundPositionX: position.x,
+            backgroundPositionY: position.y,
             backgroundTransparency: Number(el('setting-background-transparency').value),
         };
     }
@@ -2576,9 +2694,43 @@ const BackgroundImage = (() => {
             preview();
             status(message('背景画像なし', 'No background image'));
         });
-        for (const id of ['setting-background-x', 'setting-background-y']) {
-            el(id).addEventListener('input', preview);
+        const box = el('background-crop-box');
+        box.addEventListener('pointerdown', (event) => {
+            if (saving || loading || !cropGeometry || !event.isPrimary || event.button !== 0) return;
+            event.preventDefault();
+            box.focus({ preventScroll: true });
+            drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY,
+                position: { ...position }, geometry: { ...cropGeometry } };
+            box.setPointerCapture(event.pointerId);
+            box.classList.add('is-dragging');
+        });
+        box.addEventListener('pointermove', (event) => {
+            if (!drag || event.pointerId !== drag.pointerId) return;
+            for (const [axis, coordinate] of [['x', event.clientX], ['y', event.clientY]]) {
+                if (drag.geometry[axis] > 0.01) {
+                    position[axis] = clamp(drag.position[axis] + (coordinate - drag[axis]) / drag.geometry[axis]);
+                }
+            }
+            preview();
+        });
+        for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+            box.addEventListener(event, (event) => {
+                if (event.pointerId === drag?.pointerId) endDrag();
+            });
         }
+        box.addEventListener('keydown', (event) => {
+            const move = { ArrowLeft: ['x', -1], ArrowRight: ['x', 1], ArrowUp: ['y', -1], ArrowDown: ['y', 1] }[event.key];
+            if (!move || !cropGeometry || saving || loading) return;
+            event.preventDefault();
+            const [axis, direction] = move;
+            if (cropGeometry[axis] > 0.01) {
+                position[axis] = clamp(position[axis] + direction * (event.shiftKey ? 0.1 : 0.01));
+                preview();
+            }
+        });
+        const observer = new ResizeObserver(() => { endDrag(); layoutCrop(); });
+        observer.observe(el('background-image'));
+        observer.observe(el('background-preview'));
         el('setting-background-transparency').addEventListener('input', () => {
             el('background-transparency-value').textContent = `${values().backgroundTransparency}%`;
         });
@@ -2594,8 +2746,8 @@ const BackgroundImage = (() => {
         loading = false;
         draft = saved;
         const s = Settings.get();
-        el('setting-background-x').value = s.backgroundPositionX;
-        el('setting-background-y').value = s.backgroundPositionY;
+        endDrag();
+        position = { x: s.backgroundPositionX, y: s.backgroundPositionY };
         el('setting-background-transparency').value = s.backgroundTransparency;
         status(draft ? message('保存済みの背景画像', 'Saved background image') : message('背景画像なし', 'No background image'));
         preview();
@@ -2603,6 +2755,7 @@ const BackgroundImage = (() => {
 
     /** 変更を破棄して保存済み画像に戻す */
     function cancel() {
+        endDrag();
         ++revision;
         loading = false;
         draft = saved;
@@ -2616,6 +2769,7 @@ const BackgroundImage = (() => {
             return false;
         }
         saving = true;
+        endDrag();
         const controls = [...el('settings-form').querySelectorAll('input, select, textarea, button')];
         const disabled = controls.map((control) => control.disabled);
         controls.forEach((control) => { control.disabled = true; });
@@ -3284,6 +3438,21 @@ const ChatHistory = (() => {
 })();
 
 // ────────────────────────────────────────────────────────────
+// CommunicationError — HTTPステータスを保持し、表示用の短い原因を共通化
+// ────────────────────────────────────────────────────────────
+const CommunicationError = {
+    http(response, message) {
+        return Object.assign(new Error(message), { status: response.status });
+    },
+    suffix(error) {
+        const detail = Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599
+            ? error.status
+            : Array.from(String(error?.message || error?.name || error || 'Error')).slice(0, 8).join('');
+        return `(${detail})`;
+    },
+};
+
+// ────────────────────────────────────────────────────────────
 // ApiClient
 // ────────────────────────────────────────────────────────────
 const ApiClient = (() => {
@@ -3311,7 +3480,7 @@ const ApiClient = (() => {
             });
 
             if (!res.ok) {
-                throw new Error(`API error: ${res.status} ${res.statusText}`);
+                throw CommunicationError.http(res, `API error: ${res.status} ${res.statusText}`);
             }
 
             const reader = res.body.getReader();
@@ -3724,13 +3893,13 @@ const VoiceVoxClient = (() => {
 
     async function testConnection(url) {
         const res = await fetch(`${_baseUrl(url)}/version`);
-        if (!res.ok) throw new Error(`VOICEVOX version failed: ${res.status}`);
+        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX version failed: ${res.status}`);
         return res.text();
     }
 
     async function fetchSpeakers(url) {
         const res = await fetch(`${_baseUrl(url)}/speakers`);
-        if (!res.ok) throw new Error(`VOICEVOX speakers failed: ${res.status}`);
+        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX speakers failed: ${res.status}`);
         return await res.json();
     }
 
@@ -3745,7 +3914,7 @@ const VoiceVoxClient = (() => {
 
         const queryUrl = `${baseUrl}/audio_query?text=${encodeURIComponent(normalized)}&speaker=${encodeURIComponent(speaker)}`;
         const queryRes = await fetch(queryUrl, { method: 'POST' });
-        if (!queryRes.ok) throw new Error(`VOICEVOX audio_query failed: ${queryRes.status}`);
+        if (!queryRes.ok) throw CommunicationError.http(queryRes, `VOICEVOX audio_query failed: ${queryRes.status}`);
         const query = await queryRes.json();
 
         _applyAudioQuerySettings(query, s);
@@ -3756,7 +3925,7 @@ const VoiceVoxClient = (() => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(query),
         });
-        if (!synthRes.ok) throw new Error(`VOICEVOX synthesis failed: ${synthRes.status}`);
+        if (!synthRes.ok) throw CommunicationError.http(synthRes, `VOICEVOX synthesis failed: ${synthRes.status}`);
         const blob = await synthRes.blob();
         return URL.createObjectURL(blob);
     }
@@ -3851,12 +4020,12 @@ const SystemOneIntent = (() => {
     const text = (ja, en) => Lang.current() === 'ja' ? ja : en;
     const controllers = [];
     let confirming = false;
-    function confirmSend(failed) {
+    function confirmSend(failed, errorSuffix) {
         if (confirming) return Promise.resolve(false);
         confirming = true;
         const dialog = document.getElementById('intent-confirm');
         document.getElementById('intent-confirm-message').textContent = failed
-            ? text('通信異常により意図を判定できませんでした。本当に送信しますか？', 'Intent could not be checked due to a connection error. Do you really want to send?')
+            ? text(`通信異常${errorSuffix}により意図を判定できませんでした。本当に送信しますか？`, `Intent could not be checked due to a connection error${errorSuffix}. Do you really want to send?`)
             : text('意図が不明確ですが、送信しますか？', 'Your intent is unclear. Do you really want to send?');
         return new Promise(resolve => {
             dialog.returnValue = '';
@@ -3920,6 +4089,7 @@ const SystemOneIntent = (() => {
     function attach(input, badge, getMessages = () => ChatHistory.getAll()) {
         let revision = 0, timer, abort, state = 'idle', label = null, draft = '', composing = false;
         let manual = false, contextKey = '';
+        let errorSuffix = '';
         let rankedChoices = [];
         let choiceProbabilities = null;
         let updatePicker = null;
@@ -3927,7 +4097,7 @@ const SystemOneIntent = (() => {
         function render() {
             badge.classList.toggle('hidden', state === 'idle');
             badge.classList.toggle('intent-uncertain', state === 'unknown' || state === 'error');
-            badge.textContent = state === 'pending' ? text('判定中…', 'Checking…') : state === 'unknown' ? text('判定不能', 'Unclear intent') + '(' + rankedChoices[0] + '?)' : state === 'error' ? text('通信異常', 'Connection error') : state === 'removed' ? text('タグなし', 'No tag') : label || '';
+            badge.textContent = state === 'pending' ? text('判定中…', 'Checking…') : state === 'unknown' ? text('判定不能', 'Unclear intent') + '(' + rankedChoices[0] + '?)' : state === 'error' ? text('通信異常', 'Connection error') + errorSuffix : state === 'removed' ? text('タグなし', 'No tag') : label || '';
             badge.title = text('タップして意図を変更・消去', 'Select to change or remove intent');
             badge.setAttribute('aria-label', badge.textContent + ': ' + badge.title);
             if (dialog.open && updatePicker) updatePicker();
@@ -3942,6 +4112,7 @@ const SystemOneIntent = (() => {
             cancel();
             draft = input.value.trim();
             label = null;
+            errorSuffix = '';
             rankedChoices = [];
             choiceProbabilities = null;
             manual = false;
@@ -3967,7 +4138,7 @@ const SystemOneIntent = (() => {
                         criteria: Object.fromEntries(choices.map(c => [c, c])),
                     } } }),
                 });
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                if (!response.ok) throw CommunicationError.http(response, 'HTTP ' + response.status);
                 const answer = (await response.json()).answers?.intent;
                 if (answer?.type !== 'choice' || !choices.includes(answer.choice) || typeof answer.confidence !== 'number' || !Number.isFinite(answer.confidence) || answer.confidence < 0 || answer.confidence > 1) throw new Error('Invalid Choice response');
                 const probabilities = answer.probabilities;
@@ -3978,9 +4149,10 @@ const SystemOneIntent = (() => {
                 choiceProbabilities = probabilities;
                 label = answer.confidence >= s.intentConfidence ? answer.choice : null;
                 state = label ? 'ready' : 'unknown';
-            } catch {
+            } catch (error) {
                 if (token !== revision) return;
                 label = null;
+                errorSuffix = CommunicationError.suffix(error);
                 rankedChoices = [];
                 choiceProbabilities = null;
                 state = 'error';
@@ -4072,7 +4244,7 @@ const SystemOneIntent = (() => {
             }
             if (state === 'unknown' || state === 'error') {
                 const token = revision;
-                const approved = await confirmSend(state === 'error');
+                const approved = await confirmSend(state === 'error', errorSuffix);
                 if (!approved || token !== revision || input.value.trim() !== draft) return { allowed: false };
             }
             return { allowed: true, label };
@@ -4165,6 +4337,7 @@ const UIController = (() => {
     let _originalTheme = null; // 設定ダイアログを開いた時のテーマ
     let _originalScanline = null; // 設定ダイアログを開いた時のスキャンライン状態
     let _originalScanlineStrength = null;
+    let _chatAreaOffset = 0;
     let _isCallActive = false;
     let _callStartedAt = null;
     let _lastCallDurationMs = null;
@@ -4173,6 +4346,10 @@ const UIController = (() => {
 
     function init() {
         Settings.load();
+        _applyChatAreaOffset(Settings.get().chatAreaOffset);
+        const chatLayoutObserver = new ResizeObserver(() => _applyChatAreaOffset());
+        chatLayoutObserver.observe(document.body);
+        chatLayoutObserver.observe(document.getElementById('toolbar'));
         BackgroundImage.init();
         FloatingIcons.init();
         Settings.applyFont();
@@ -4242,6 +4419,12 @@ const UIController = (() => {
         document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
         document.getElementById('setting-scanline').addEventListener('change', _handleScanlinePreview);
         document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
+        document.getElementById('setting-chat-area').addEventListener('input', () => {
+            const value = Number(document.getElementById('setting-chat-area').value);
+            document.getElementById('chat-area-value').textContent = `${value}%`;
+            _applyChatAreaOffset(value);
+            _scrollToBottom();
+        });
         settingsOverlay.addEventListener('click', (e) => {
             if (e.target === settingsOverlay) {
                 btnCancel.focus();
@@ -4502,7 +4685,7 @@ const UIController = (() => {
                 if (last && last.role === 'assistant' && !last.content.trim()) {
                     ChatHistory.popLast();
                 }
-                _showRetryBar();
+                _showRetryBar(err);
             }
         });
     }
@@ -4794,7 +4977,8 @@ const UIController = (() => {
     }
 
     /** 再試行バーを表示 */
-    function _showRetryBar() {
+    function _showRetryBar(error) {
+        retryBar.querySelector('span').textContent = (Lang.current() === 'ja' ? '通信に失敗しました' : 'Communication failed') + CommunicationError.suffix(error);
         retryBar.classList.remove('hidden');
     }
 
@@ -4867,6 +5051,7 @@ const UIController = (() => {
         const isTextCall = Settings.get().appMode === 'textCall';
         const isStandby = isTextCall && !_isCallActive;
 
+        document.getElementById('chat-layout').classList.toggle('is-standby', isStandby);
         callStandby.classList.toggle('hidden', !isStandby);
         chatMessages.classList.toggle('hidden', isStandby);
         inputArea.classList.toggle('hidden', isStandby);
@@ -5249,6 +5434,7 @@ const UIController = (() => {
 
     // 現在の設定値を全フォームフィールドに転記して設定ダイアログを開く
     function openSettings() {
+        BackgroundImage.open();
         SystemOneIntent.openSettings();
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
@@ -5261,6 +5447,8 @@ const UIController = (() => {
         document.getElementById('setting-systemprompt').value = s.systemPrompt;
         document.getElementById('setting-font').value = s.font;
         document.getElementById('setting-theme').value = s.theme || 'gb';
+        document.getElementById('setting-chat-area').value = s.chatAreaOffset;
+        document.getElementById('chat-area-value').textContent = `${s.chatAreaOffset}%`;
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
         document.getElementById('setting-show-pause-button').checked = s.showPauseButton;
         document.getElementById('setting-sound').checked = s.soundEnabled;
@@ -5297,9 +5485,11 @@ const UIController = (() => {
         firstTab.focus();
     }
 
-    // プレビュー変更（テーマ・スキャンライン）を元に戻して設定ダイアログを閉じる
+    // プレビュー変更（テーマ・スキャンライン・チャット領域）を元に戻して設定ダイアログを閉じる
     function closeSettings() {
         BackgroundImage.cancel();
+        _applyChatAreaOffset(Settings.get().chatAreaOffset);
+        _scrollToBottom();
         // テーマを元に戻す
         if (_originalTheme !== null) {
             const theme = _originalTheme;
@@ -5335,6 +5525,14 @@ const UIController = (() => {
         }
     }
 
+    /** 画面上端を基準に表示開始位置を設定。入力欄の高さに関係なく50%は画面中央。 */
+    function _applyChatAreaOffset(value = _chatAreaOffset) {
+        _chatAreaOffset = value;
+        const layout = document.getElementById('chat-layout');
+        const top = Math.max(0, document.body.clientHeight * value / 100 - layout.offsetTop);
+        chatArea.style.setProperty('--chat-area-top', `${top}px`);
+    }
+
     /** スキャンライン ON/OFF をリアルタイムにプレビュー */
     function _handleScanlinePreview() {
         const checked = document.getElementById('setting-scanline').checked;
@@ -5360,7 +5558,7 @@ const UIController = (() => {
             voiceVoxStatus.textContent = Lang.t('voicevoxTestOk');
         } catch (err) {
             console.warn('VOICEVOX connection test failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxTestNg');
+            voiceVoxStatus.textContent = Lang.t('voicevoxTestNg') + CommunicationError.suffix(err);
         }
     }
 
@@ -5391,7 +5589,7 @@ const UIController = (() => {
             voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestOk');
         } catch (err) {
             console.warn('VOICEVOX speech test failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestNg');
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestNg') + CommunicationError.suffix(err);
         }
     }
 
@@ -5405,7 +5603,7 @@ const UIController = (() => {
             voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersOk');
         } catch (err) {
             console.warn('VOICEVOX speaker loading failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersNg');
+            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersNg') + CommunicationError.suffix(err);
         }
     }
 
@@ -5504,6 +5702,7 @@ const UIController = (() => {
             systemPrompt: document.getElementById('setting-systemprompt').value.trim(),
             font: document.getElementById('setting-font').value,
             theme: document.getElementById('setting-theme').value,
+            chatAreaOffset: Number(document.getElementById('setting-chat-area').value),
             autoAdvance: document.getElementById('setting-autoadvance').checked,
             showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,

@@ -87,8 +87,9 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | System Prompt | Instructions for the AI | `You are a helpful assistant.` |
 | Font | Display font | Noto Sans JP |
 | Theme | Color theme | GB Classic |
-| Background image | Select or remove an image in Display. Saved within 4096×4096 pixels and scaled to cover the screen without margins while preserving its aspect ratio. Overflow is cropped according to alignment | None |
-| Background alignment | Horizontal (left/center/right) and vertical (top/center/bottom) | Center / center |
+| Background image | Select or remove an image in Display. Saved within 4096×4096 pixels and scaled to cover the screen without margins while preserving its aspect ratio. The preview box marks the visible crop | None |
+| Chat area | Space to leave clear from the top of the screen (0–95%). At 50%, chat bubbles appear in the lower half. At least 5% of the original chat area remains above the input controls | 0% |
+| Background crop position | Drag the screen-proportioned box over the full image preview. Arrow keys also move it (Shift for larger steps). Position is saved as normalized values from 0 to 1 | Center (0.5, 0.5) |
 | Background transparency | Slider from 0% (opaque) to 100% (transparent) | 0% |
 | Auto Advance | Whether to advance automatically | On |
 | Pause Button (Auto Advance) | Show pause button during auto-advance | On |
@@ -237,7 +238,7 @@ When the user's message contains the following tags, respond in the correspondin
 Enable **Intent** in settings to classify drafts with Jev Choice after 0.5 seconds without typing (off by default). Select the badge to the left of Send to change or remove the tag. Wait for the result before sending. Quick responses open a separate send preview and preserve the original draft on send or cancel; editing a previous message also gets a fresh classification.
 
 - Base URL: `https://openrouter.ai/api`. Any compatible System One API is supported. `/v1/systemone` is appended; a base ending in `/v1` or the full endpoint is also accepted. Configure the Jev API key separately. Default model: `~typesafe/jev-latest`.
-- Delay: 0.5 seconds by default. Minimum confidence: 0.65. Below the threshold, the badge shows **Unclear intent(top candidate?)**. Whenever probabilities are available, the intent picker sorts choices by descending probability, preserving configured order for ties. Connection failures, timeouts, and invalid responses show **Connection error**. Both unclear intent and connection error require confirmation before sending; confirmed messages carry no tag.
+- Delay: 0.5 seconds by default. Minimum confidence: 0.65. Below the threshold, the badge shows **Unclear intent(top candidate?)**. Whenever probabilities are available, the intent picker sorts choices by descending probability, preserving configured order for ties. Connection failures, timeouts, and invalid responses show **Connection error(429)**, with the HTTP status code or the first eight characters of the exception message in parentheses. Send confirmations, chat connection failures, and VOICEVOX test results use the same format for error details. Both unclear intent and connection error require confirmation before sending; confirmed messages carry no tag.
 - Choices: 2–255 options, one per line. Defaults distinguish emotional conversation (listening, comfort, encouragement, reassurance), supportive discussion (processing feelings, self-exploration, coping, relationships), character chat (affection, closeness, romance, fictional conflict, out-of-character discussion), tabletop-style games and adventures (investigation, NPC dialogue, combat, rolls, branches, hints), and work (research, analysis, creation, review, planning, authorization). Additional question guidance is configurable.
 - Conversation tracking: off sends only the draft; on includes the last three turns (each user utterance and subsequent assistant replies). Intent tags, outgoing mode tags, and timestamps are excluded. Classification instructions use English, except for choices, input data, and custom guidance.
 

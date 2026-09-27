@@ -106,6 +106,10 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `contextSize` | number | `20` | API送信する履歴メッセージ数 |
 | `font` | string | `k8x12S` | 使用フォントキー |
 | `theme` | string | `gb` | カラーテーマ |
+| `backgroundImageId` | string / null | `null` | IndexedDBに保存した背景画像のID |
+| `backgroundPositionX` | number | `0.5` | 横方向の切り出し可能範囲に対する位置（0〜1） |
+| `backgroundPositionY` | number | `0.5` | 縦方向の切り出し可能範囲に対する位置（0〜1） |
+| `backgroundTransparency` | number | `0` | 背景画像の透明度（0〜100%） |
 | `autoAdvance` | boolean | `true` | 自動進行モード |
 | `soundEnabled` | boolean | `true` | 効果音を有効にするか |
 | `voicevoxEnabled` | boolean | `false` | VOICEVOX音声合成を有効にするか |
@@ -452,6 +456,8 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 
 #### 設定プレビュー
 
+- 背景画像全体をcontainで表示し、実際の背景レイヤーのcover表示範囲を切り出し枠で重ねる。枠のドラッグ・矢印キー操作を背景に即時反映し、「保存」で0〜1の位置を永続化する。サイズ変更時は枠を再計算し、キャンセル時は保存済み位置に戻す。
+- 背景位置は数値のみを受け入れ、旧配置名などの非数値は破棄して既定値の0.5に戻す。
 - テーマ変更時、即座にプレビュー
 - キャンセル時は元のテーマに戻す
 - スキャンライン効果も同様
@@ -536,6 +542,7 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 - `node tests/intent-choices.cjs`：日英の選択肢数・重複・カスタム設定の保持。
 - `node tests/intent.cjs`：debounce、Confidence、送信確認、手動選択・消去、送信内容、モバイル配置。
 - `node tests/intent-lifecycle.cjs`：下書き保持、無関係な設定保存、履歴変更時の再判定、タグ付き割り込み連結、タグ境界の保存・復元。
+- `node tests/communication-errors.cjs`：チャット・意図判定（通常入力・編集・送信確認）・VOICEVOXのHTTPステータス／例外メッセージ表示、再試行時の更新、Unicode文字数。
 - `node tests/background.cjs`、`node tests/floating-icons.cjs`：既存機能の回帰確認。
 
 ブラウザテストはPlaywrightとEdgeを使用し、日英の通常版・単一HTML配布版を確認する。APIはモックのため、Jev実接続での分類精度・Confidenceの評価は含まない。
