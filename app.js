@@ -1554,8 +1554,13 @@ const TypingSimulator = (() => {
     /** バッファ先頭から次の区切りを探しチャンク文字列を返す */
     function _extractNextChunk() {
         let idx = -1;
+        let parenDepth = 0;
         for (let i = 0; i < _buffer.length; i++) {
             const ch = _buffer[i];
+            // 全角・半角の丸括弧内は分割しない（入れ子対応、かぎ括弧は対象外）。
+            if (ch === '（' || ch === '(') parenDepth++;
+            else if (ch === '）' || ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+            if (parenDepth > 0) continue;
             if (ch === '。') {
                 // 次の文字が閉じ括弧系なら含めて区切る
                 if (i + 1 < _buffer.length && '」）)"\'】》〉>'.includes(_buffer[i + 1])) {
@@ -3255,13 +3260,18 @@ const UIController = (() => {
         return content === CALL_START_PROMPT || content.startsWith(CALL_START_PROMPT + '\n');
     }
 
-    /** テキストを「。」「. 」改行で分割（空行は区切りとしない） */
+    /** テキストを「。」「. 」改行で分割（丸括弧内・空行は区切りとしない） */
     function _splitIntoChunks(text) {
         const chunks = [];
         let current = '';
+        let parenDepth = 0;
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
             current += ch;
+            // 受信中の表示・音声合成と同じく、丸括弧内の区切りを無視する。
+            if (ch === '（' || ch === '(') parenDepth++;
+            else if (ch === '）' || ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+            if (parenDepth > 0) continue;
             if (ch === '。') {
                 // 次の文字が閉じ括弧系なら含めて区切る
                 if (i + 1 < text.length && '」）)"\'】》〉>'.includes(text[i + 1])) {

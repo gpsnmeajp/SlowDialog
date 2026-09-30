@@ -197,6 +197,8 @@ Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI respons
 
 Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.
 
+Display and speech chunks never split at periods or line breaks inside full-width or half-width parentheses, including nested parentheses. Restored history follows the same rule. Japanese quotation marks (`「…」` and `『…』`) still allow normal splitting.
+
 ## Irodori-TTS Speech Synthesis
 
 Enable **Irodori-TTS Speech Synthesis** in the **Speech** settings tab. Enabling either engine disables the other while keeping both engines' settings. Existing VOICEVOX settings continue to work.

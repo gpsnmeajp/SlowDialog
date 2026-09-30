@@ -77,7 +77,7 @@ function makeWave({ channels = 1, bits = 16, float = false, sample = () => 0 } =
                 await route.fulfill({ contentType: route.request().url().includes('/audio_query') ? 'application/json' : 'audio/wav',
                     body: route.request().url().includes('/audio_query') ? '{}' : wav });
             });
-            let responseText = '最初（補足）。次の文章。';
+            let responseText = '最初（補足です。Next. \n続き(入れ子。)も含む）です。次の文章。';
             await page.route('https://chat.test/**', route => route.fulfill({ contentType: 'text/event-stream',
                 body: 'data: ' + JSON.stringify({ choices: [{ delta: { content: responseText } }] }) + '\n\ndata: [DONE]\n\n' }));
             await page.goto(pathToFileURL(path.resolve(__dirname, '..', entry)).href);
@@ -201,8 +201,8 @@ function makeWave({ channels = 1, bits = 16, float = false, sample = () => 0 } =
             await expect(page.locator('.msg.assistant')).toHaveCount(0);
             release();
             await expect(page.locator('.msg.assistant')).toHaveCount(1);
-            await expect(page.locator('.msg.assistant').first()).toHaveText('最初（補足）。');
-            assert.equal(speeches[before].input, '最初。');
+            await expect(page.locator('.msg.assistant').first()).toHaveText('最初（補足です。Next. \n続き(入れ子。)も含む）です。');
+            assert.equal(speeches[before].input, '最初です。');
             assert.equal(speeches[before].voice, 'relay-voice');
             await page.waitForTimeout(100);
             await expect(page.locator('.msg.assistant')).toHaveCount(1);
@@ -212,6 +212,10 @@ function makeWave({ channels = 1, bits = 16, float = false, sample = () => 0 } =
             await page.evaluate(() => window.playedAudio.at(-1).dispatchEvent(new Event('ended')));
             assert.equal(await page.evaluate(() => ChatHistory.peekLast().content), responseText);
             assert.equal(voicevox.length, 0, 'Irodori chat never requests VOICEVOX');
+            await page.reload();
+            await expect(page.locator('.msg.assistant')).toHaveCount(2);
+            await expect(page.locator('.msg.assistant').first()).toHaveText('最初（補足です。Next. \n続き(入れ子。)も含む）です。');
+            assert.equal(speeches.length, before + 2, 'restored history keeps parentheses together without resynthesizing');
             // Exhausting silence retries still displays the AI reply and lets the conversation finish.
             speechResponses = [silentWav, silentWav, silentWav, silentWav];
             const silentChatStart = speeches.length;
