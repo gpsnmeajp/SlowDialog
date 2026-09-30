@@ -464,6 +464,13 @@
     </div>
   </div>
 
+  <dialog id="context-limit-confirm" aria-labelledby="context-limit-confirm-message">
+    <p id="context-limit-confirm-message">コンテキスト上限に到達しました。このままメッセージを送信すると、古いメッセージから削除されます。上限は設定画面から変更できます。送信を続けますか？</p>
+    <form method="dialog" id="context-limit-confirm-buttons">
+      <button id="btn-context-limit-confirm-send" value="send">送信</button>
+      <button id="btn-context-limit-confirm-cancel" value="cancel" autofocus>キャンセル</button>
+    </form>
+  </dialog>
   <dialog id="intent-confirm" aria-labelledby="intent-confirm-message">
     <p id="intent-confirm-message">意図が不明確ですが、送信しますか？</p>
     <form method="dialog" id="intent-confirm-buttons">

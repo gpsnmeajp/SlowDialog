@@ -361,7 +361,9 @@ const Settings = (() => {
         if (next.irodoriEnabled) next.voicevoxEnabled = false;
         next.chatAreaOffset = Math.min(95, Math.max(0, Number(next.chatAreaOffset) || 0));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        const contextIncreased = next.contextSize > _settings.contextSize;
         _settings = next;
+        if (contextIncreased) ContextLimitReminder.reset();
     }
 
     /** 現在の設定のスナップショットを返す */
@@ -1183,6 +1185,7 @@ const ChatHistory = (() => {
     const listeners = new Set();
 
     function load() {
+        ContextLimitReminder.reset();
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) _messages = JSON.parse(raw);
@@ -1252,6 +1255,7 @@ const ChatHistory = (() => {
 
     function clear() {
         _messages = [];
+        ContextLimitReminder.reset();
         save();
     }
 
@@ -1349,10 +1353,48 @@ const ChatHistory = (() => {
         }
         // system / _quickresponse / _mode* メッセージは除外して会話メッセージのみ取り込む
         _messages = data.filter(m => m.role !== 'system' && m.role !== '_quickresponse' && !m.role.startsWith('_mode'));
+        ContextLimitReminder.reset();
         save();
     }
 
     return { load, save, subscribe, push, appendUser, intentLabel, updateLast, updateAt, popLast, peekLast, getAll, clear, truncateFrom, buildApiMessages, exportJSON, importJSON };
+})();
+
+// ────────────────────────────────────────────────────────────
+// ContextLimitReminder — 上限到達後の送信前に一度だけ確認
+// ────────────────────────────────────────────────────────────
+const ContextLimitReminder = (() => {
+    // 保存しない。履歴のロード・クリア・インポート、上限増加時だけ再通知を有効にする。
+    let acknowledged = false;
+    let confirming = false;
+
+    function reset() {
+        acknowledged = false;
+        const dialog = document.getElementById('context-limit-confirm');
+        if (dialog.open) dialog.close('cancel');
+    }
+
+    function confirmSend() {
+        // 確認中の連打で別の送信やダイアログが発生しないようにする。
+        if (confirming) return Promise.resolve(false);
+        if (acknowledged || ChatHistory.getAll().length < Settings.get().contextSize) return Promise.resolve(true);
+
+        confirming = true;
+        const dialog = document.getElementById('context-limit-confirm');
+        return new Promise(resolve => {
+            dialog.returnValue = '';
+            dialog.addEventListener('close', () => {
+                confirming = false;
+                const approved = dialog.returnValue === 'send';
+                // キャンセル・Escでは、次の送信時も確認する。
+                if (approved) acknowledged = true;
+                resolve(approved);
+            }, { once: true });
+            dialog.showModal();
+        });
+    }
+
+    return { reset, confirmSend };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -2540,6 +2582,7 @@ const UIController = (() => {
 
         const intent = await _intentPreview.forSend();
         if (!intent.allowed) return;
+        if (!await ContextLimitReminder.confirmSend()) return;
         userInput.value = '';
         _intentPreview.reset();
         _autoResize();
@@ -2563,11 +2606,12 @@ const UIController = (() => {
         _startStreaming();
     }
 
-    function _handleStartCall() {
+    async function _handleStartCall() {
         if (!Settings.isConfigured()) {
             openSettings();
             return;
         }
+        if (!await ContextLimitReminder.confirmSend()) return;
         _isCallActive = true;
         _callStartedAt = Date.now();
         _lastCallDurationMs = null;
@@ -2740,7 +2784,8 @@ const UIController = (() => {
     }
 
     // ─── Retry ───
-    function _handleRetry() {
+    async function _handleRetry() {
+        if (!await ContextLimitReminder.confirmSend()) return;
         _hideRetryBar();
         if (_lastRetryMessages) {
             _startStreaming();
@@ -3070,7 +3115,7 @@ const UIController = (() => {
     }
 
     // 意図判定が有効なら編集プレビューを経由、無効なら直接送信
-    function _handleQuickResponse(text) {
+    async function _handleQuickResponse(text) {
         if (!Settings.isConfigured()) {
             openSettings();
             return;
@@ -3087,6 +3132,7 @@ const UIController = (() => {
             bubbleEditText.focus();
             return;
         }
+        if (!await ContextLimitReminder.confirmSend()) return;
         _hideRetryBar();
         if (_isStreaming) {
             _performInterrupt(text);
@@ -3353,12 +3399,13 @@ const UIController = (() => {
     }
 
     /** ユーザーバブル: 再送信 */
-    function _handleBubbleResend() {
+    async function _handleBubbleResend() {
         if (_bubbleTapIndex === null) return;
         const idx = _bubbleTapIndex;
         const messages = ChatHistory.getAll();
         const text = messages[idx].content;
 
+        if (!await ContextLimitReminder.confirmSend()) return;
         // idx+1 以降を削除
         ChatHistory.truncateFrom(idx + 1);
         // DOM を再描画
@@ -3404,6 +3451,7 @@ const UIController = (() => {
         if (!newText) return;
         const decision = await _editIntentPreview.forSend();
         if (!decision.allowed) return;
+        if (!await ContextLimitReminder.confirmSend()) return;
         const intent = decision.label;
         if (_isQuickResponsePreview) {
             _closeBubbleEditDialog();

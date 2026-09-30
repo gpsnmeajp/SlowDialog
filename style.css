@@ -1313,8 +1313,10 @@ body {
 }
 
 /* ===== Confirm Dialog ===== */
-#intent-confirm { margin: auto; color: var(--gb-darkest); font-family: var(--app-font); }
-#intent-confirm::backdrop { background: var(--overlay-bg); }
+#intent-confirm,
+#context-limit-confirm { margin: auto; color: var(--gb-darkest); font-family: var(--app-font); }
+#intent-confirm::backdrop,
+#context-limit-confirm::backdrop { background: var(--overlay-bg); }
 #confirm-overlay {
   position: fixed;
   inset: 0;
@@ -1326,7 +1328,8 @@ body {
 }
 
 #confirm-dialog,
-#intent-confirm {
+#intent-confirm,
+#context-limit-confirm {
   background: var(--gb-lightest);
   border: var(--border-w) solid var(--gb-darkest);
   padding: 24px;
@@ -1336,7 +1339,8 @@ body {
 }
 
 #confirm-dialog p,
-#intent-confirm p {
+#intent-confirm p,
+#context-limit-confirm p {
   margin: 0 0 8px;
   font-size: 16px;
   color: var(--gb-darkest);
@@ -1349,13 +1353,15 @@ body {
 }
 
 #confirm-buttons,
-#intent-confirm-buttons {
+#intent-confirm-buttons,
+#context-limit-confirm-buttons {
   display: flex;
   gap: 8px;
 }
 
 #confirm-buttons button,
-#intent-confirm-buttons button {
+#intent-confirm-buttons button,
+#context-limit-confirm-buttons button {
   flex: 1;
   font-family: var(--app-font);
   font-size: var(--font-size);
@@ -1366,24 +1372,28 @@ body {
 }
 
 #btn-confirm-ok,
-#btn-intent-confirm-send {
+#btn-intent-confirm-send,
+#btn-context-limit-confirm-send {
   background: var(--gb-dark);
   color: var(--gb-lightest);
 }
 
 #btn-confirm-ok:hover,
-#btn-intent-confirm-send:hover {
+#btn-intent-confirm-send:hover,
+#btn-context-limit-confirm-send:hover {
   background: var(--gb-darkest);
 }
 
 #btn-confirm-cancel,
-#btn-intent-confirm-cancel {
+#btn-intent-confirm-cancel,
+#btn-context-limit-confirm-cancel {
   background: var(--gb-light);
   color: var(--gb-darkest);
 }
 
 #btn-confirm-cancel:hover,
-#btn-intent-confirm-cancel:hover {
+#btn-intent-confirm-cancel:hover,
+#btn-context-limit-confirm-cancel:hover {
   background: var(--gb-lightest);
 }
 
