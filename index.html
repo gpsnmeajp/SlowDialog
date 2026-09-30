@@ -264,6 +264,57 @@
                 <button type="button" id="btn-voicevox-speak-test">発話テスト</button>
               </div>
             </div>
+
+            <div class="settings-note">音声エンジンはどちらか一方を有効にしてください。</div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-irodori-enabled">
+              Irodori-TTS音声合成
+            </label>
+
+            <div id="irodori-settings" class="settings-subsection hidden">
+              <label for="setting-irodori-url">Irodori-TTS接続先URL</label>
+              <input type="url" id="setting-irodori-url" placeholder="http://localhost:8088">
+              <div class="settings-note">サーバーの .env に IRODORI_CORS_ORIGINS=[&quot;null&quot;] を設定すると、ローカルHTMLから接続できます。HTTPで開く場合は、そのページのオリジンを指定してください。</div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-open-docs">APIドキュメントを開く</button>
+              </div>
+
+              <label for="setting-irodori-apikey">APIキー（任意）</label>
+              <input type="password" id="setting-irodori-apikey" placeholder="IRODORI_API_KEY" autocomplete="off">
+              <label for="setting-irodori-model">モデル名</label>
+              <input type="text" id="setting-irodori-model" placeholder="irodori-tts">
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-test">接続テスト</button>
+                <button type="button" id="btn-irodori-load-voices">話者リスト取得</button>
+              </div>
+              <div id="irodori-status" class="settings-status" role="status"></div>
+
+              <label for="setting-irodori-voice">Irodori-TTS話者</label>
+              <input type="text" id="setting-irodori-voice" list="irodori-voices" placeholder="空欄でサーバーの既定値" autocomplete="off">
+              <datalist id="irodori-voices">
+                <option value="none">参照音声なし</option>
+              </datalist>
+              <div class="settings-note">話者IDを直接入力するか、取得した候補から選択できます。話者リストの取得は不要です。none は参照音声なし、空欄はサーバーの既定値を使います。</div>
+
+              <label for="setting-irodori-speed">話速</label>
+              <input type="number" id="setting-irodori-speed" min="0.25" max="4" step="0.05" value="1">
+              <label for="setting-irodori-caption">声・話し方の説明（任意）</label>
+              <textarea id="setting-irodori-caption" rows="2" placeholder="落ち着いた声で、穏やかに話す。"></textarea>
+              <label for="setting-irodori-num-steps">生成ステップ数（空欄でサーバーの既定値）</label>
+              <input type="number" id="setting-irodori-num-steps" min="1" step="1">
+              <label for="setting-irodori-seed">シード（空欄でランダム）</label>
+              <input type="number" id="setting-irodori-seed" min="0" step="1">
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-irodori-skip-annotations" checked>
+                ルビ・補足を読み上げない
+              </label>
+
+              <label for="setting-irodori-test-text">テスト用テキスト</label>
+              <textarea id="setting-irodori-test-text" rows="2" placeholder="こんにちは"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-speak-test">発話テスト</button>
+              </div>
+            </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
             <label class="checkbox-row">

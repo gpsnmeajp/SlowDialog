@@ -55,6 +55,8 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
    │  │  └───────────▶ ApiClient         SSE ストリーミング
    │  └──────────────▶ ChatHistory       履歴管理・永続化
    └─────────────────▶ Settings          設定管理・永続化
+                       SpeechClient      音声エンジン選択（VoiceVoxClient / IrodoriClient）
+                       SpeechAudio       共通の再生・テキスト正規化
                        SimpleMarkdown    Markdown → HTML 変換
                        SystemOneIntent   意図判定とプレビュー
                        IntentChoices     日英の既定選択肢
@@ -123,6 +125,17 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `voicevoxPrePhonemeLength` | number | `0.1` | VOICEVOX開始無音 |
 | `voicevoxPostPhonemeLength` | number | `0.1` | VOICEVOX終了無音 |
 | `voicevoxSkipAnnotations` | boolean | `true` | ルビや括弧内補足をVOICEVOX読み上げから除外するか |
+| `irodoriEnabled` | boolean | `false` | Irodori音声合成を有効化（VOICEVOXと排他） |
+| `irodoriUrl` | string | `http://localhost:8088` | サーバーURL（末尾 `/v1` も可） |
+| `irodoriApiKey` | string | `''` | 任意のBearer認証キー |
+| `irodoriModel` | string | `irodori-tts` | サーバーのモデルID |
+| `irodoriVoice` | string | `none` | 話者ID。空文字はサーバーの既定話者 |
+| `irodoriVoices` | array | `[]` | 取得済み話者リスト |
+| `irodoriSpeed` | number | `1` | 話速（0.25〜4） |
+| `irodoriCaption` | string | `''` | 任意の声・話し方の説明 |
+| `irodoriNumSteps` | number/null | `null` | 生成ステップ数。nullは送信しない |
+| `irodoriSeed` | number/null | `null` | シード。nullは送信しない（0は有効） |
+| `irodoriSkipAnnotations` | boolean | `true` | ルビ・括弧内補足を読み飛ばす |
 | `scanlineEffect` | boolean | `false` | スキャンライン効果 |
 | `scanlineStrength` | number | `2` | スキャンライン強度（%） |
 | `sendTimestamp` | boolean | `false` | タイムスタンプをAPIに送信するか |
@@ -311,7 +324,13 @@ feed(text) → _tryFlush() → _extractNextChunk()
 
 ---
 
-### 8. VoiceVoxClient
+### 8. 音声合成モジュール
+
+**SpeechClient / SpeechAudio:** `SpeechClient.synthesize(text)` が有効な音声エンジンへ振り分ける。`SpeechAudio` が既存の再生処理と注釈除去を共通化し、`SpeechClient.play(url)` からも利用する。再生終了時にObject URLを解放する。両エンジン無効時は音声を生成しない。
+
+音声設定は既存のチェックボックスとサブセクション表示を踏襲し、一方の有効化で他方を無効化する。保存・復元時も排他を保証し、両方trueの場合はIrodoriを優先する。エンジン固有のパラメータと話者リストは切り替えても保持する。
+
+#### VoiceVoxClient
 
 VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 
@@ -326,6 +345,20 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 **発話テキスト正規化:** `voicevoxSkipAnnotations` が有効な場合、VOICEVOXへ送る前にルビ表記と `()` / `（）` 内の補足を除去する。画面表示と履歴のテキストは変更しない。
 
 ---
+
+#### IrodoriClient
+
+[Aratako/Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server) のAPIに接続する。
+
+- `testConnection(overrides)` — 認証のある `/v1/models` で接続確認。
+- `fetchVoices(overrides)` — `/v1/audio/voices` の `{ data: [...] }` から話者一覧を取得。話者欄はdatalist付きテキスト入力で、取得が未対応でも任意のIDを手入力できる。リストの取得・更新・失敗は入力済みIDを変更しない。
+- `synthesize(text, overrides)` — `/v1/audio/speech` に `model`、`input`、`voice`、`response_format: "wav"`、`speed` を送り、Object URLを返す。空の話者IDは送信せずサーバーの既定値を使う。
+- 受信した音声はOfflineAudioContextでデコードし、全チャンネルの全サンプルを調べる。ピークが0.0001（-80 dBFS）以下、または空レスポンスなら無音として最大3回再試行（初回を含め4回）。シードなどのリクエスト設定は保持する。音のあるBlobだけObject URLを生成し、上限到達時は既存のエラー処理へ渡して文字表示を続行する。HTTPエラーやデコード不能は無音リトライの対象外。
+- `irodori.caption`、`irodori.num_steps`、`irodori.seed` は値が指定されている場合のみ送信する。
+- APIキーがある場合だけBearerヘッダーを付ける。チャットAPIのキーは流用しない。
+- 接続先はサーバールート／`/v1` の両方を許容し、プロキシのパス接頭辞を維持する。
+- 発話テストには未保存のフォーム値を渡す。HTTP／通信エラーはVOICEVOXと同じステータス表示を使う。
+- ブラウザーからの接続にはサーバー側の `IRODORI_CORS_ORIGINS` 設定が必要。
 
 ### 9. IntentChoices
 
@@ -406,8 +439,8 @@ _performInterrupt(newText)
 #### 表示チャンク処理
 
 - 各チャンクは **個別のチャットバブル** として追加（`_appendBubble`）
-- VOICEVOX有効時は、チャンク確定時に `VoiceVoxClient.synthesize()` を開始し、音声準備後にバブル表示と再生を同期
-- 次チャンクへの進行は、通常の待機時間と `VoiceVoxClient.play()` の再生完了Promiseの両方を待つ
+- 音声合成有効時は、チャンク確定時に `SpeechClient.synthesize()` を開始し、音声準備後にバブル表示と再生を同期
+- 次チャンクへの進行は、通常の待機時間と `SpeechClient.play()` の再生完了Promiseの両方を待つ
 - assistant メッセージは `SimpleMarkdown.render()` で HTML 変換して `innerHTML` に設定
 - user メッセージは `textContent` で設定（XSS対策）
 - タイムスタンプは最後のチャンクの後に表示
@@ -543,6 +576,7 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 - `node tests/intent.cjs`：debounce、Confidence、送信確認、手動選択・消去、送信内容、モバイル配置。
 - `node tests/intent-lifecycle.cjs`：下書き保持、無関係な設定保存、履歴変更時の再判定、タグ付き割り込み連結、タグ境界の保存・復元。
 - `node tests/communication-errors.cjs`：チャット・意図判定（通常入力・編集・送信確認）・VOICEVOXのHTTPステータス／例外メッセージ表示、再試行時の更新、Unicode文字数。
+- `node tests/irodori.cjs`：日英・通常版・配布版でIrodoriのAPI契約、認証、話者手入力、実WAVのデコードによる無音判定・再試行上限、設定保存、排他切り替え、注釈除去、表示同期、合成失敗時の続行、割り込み、VOICEVOX互換性。
 - `node tests/background.cjs`、`node tests/floating-icons.cjs`：既存機能の回帰確認。
 
-ブラウザテストはPlaywrightとEdgeを使用し、日英の通常版・単一HTML配布版を確認する。APIはモックのため、Jev実接続での分類精度・Confidenceの評価は含まない。
+ブラウザテストはPlaywrightとEdgeを使用し、日英の通常版・単一HTML配布版を確認する。APIはモックのため、Jev実接続での分類精度・Confidenceの評価や、Irodori実サーバーの推論・音質評価は含まない。

@@ -1925,6 +1925,57 @@ body.no-borders .import-divider::after {
                 <button type="button" id="btn-voicevox-speak-test">Test Speech</button>
               </div>
             </div>
+
+            <div class="settings-note">Enable one speech engine at a time.</div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-irodori-enabled">
+              Irodori-TTS Speech Synthesis
+            </label>
+
+            <div id="irodori-settings" class="settings-subsection hidden">
+              <label for="setting-irodori-url">Irodori-TTS URL</label>
+              <input type="url" id="setting-irodori-url" placeholder="http://localhost:8088">
+              <div class="settings-note">Set IRODORI_CORS_ORIGINS=[&quot;null&quot;] in the server .env for local HTML files. For pages served over HTTP, specify the page origin instead.</div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-open-docs">Open API Docs</button>
+              </div>
+
+              <label for="setting-irodori-apikey">API Key (optional)</label>
+              <input type="password" id="setting-irodori-apikey" placeholder="IRODORI_API_KEY" autocomplete="off">
+              <label for="setting-irodori-model">Model</label>
+              <input type="text" id="setting-irodori-model" placeholder="irodori-tts">
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-test">Test Connection</button>
+                <button type="button" id="btn-irodori-load-voices">Load Voices</button>
+              </div>
+              <div id="irodori-status" class="settings-status" role="status"></div>
+
+              <label for="setting-irodori-voice">Irodori-TTS Voice</label>
+              <input type="text" id="setting-irodori-voice" list="irodori-voices" placeholder="Blank for server default" autocomplete="off">
+              <datalist id="irodori-voices">
+                <option value="none">No reference audio</option>
+              </datalist>
+              <div class="settings-note">Enter a voice ID directly or choose a loaded suggestion. Voice listing is optional. Use none for no reference audio, or leave blank for the server default.</div>
+
+              <label for="setting-irodori-speed">Speed</label>
+              <input type="number" id="setting-irodori-speed" min="0.25" max="4" step="0.05" value="1">
+              <label for="setting-irodori-caption">Voice / Style Description (optional)</label>
+              <textarea id="setting-irodori-caption" rows="2" placeholder="A calm voice, speaking gently."></textarea>
+              <label for="setting-irodori-num-steps">Sampling Steps (blank for server default)</label>
+              <input type="number" id="setting-irodori-num-steps" min="1" step="1">
+              <label for="setting-irodori-seed">Seed (blank for random)</label>
+              <input type="number" id="setting-irodori-seed" min="0" step="1">
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-irodori-skip-annotations" checked>
+                Skip ruby and notes in speech
+              </label>
+
+              <label for="setting-irodori-test-text">Test Text</label>
+              <textarea id="setting-irodori-test-text" rows="2" placeholder="Hello"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-speak-test">Test Speech</button>
+              </div>
+            </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
             <label class="checkbox-row">
@@ -2124,15 +2175,15 @@ const Lang = (() => {
             bubbleDeleteConfirm: 'この発言とそれ以降を削除しますか？',
             bubbleDelete: '削除',
             cancel: 'キャンセル',
-            voicevoxTesting: '接続テスト中...',
-            voicevoxTestOk: '接続しました。',
-            voicevoxTestNg: '接続に失敗しました。',
-            voicevoxLoadingSpeakers: '話者リストを取得中...',
-            voicevoxSpeakersOk: '話者リストを取得しました。',
-            voicevoxSpeakersNg: '話者リストの取得に失敗しました。',
-            voicevoxSpeakingTest: '発話テスト中...',
-            voicevoxSpeakTestOk: '発話テストを再生しました。',
-            voicevoxSpeakTestNg: '発話テストに失敗しました。',
+            speechTesting: '接続テスト中...',
+            speechTestOk: '接続しました。',
+            speechTestNg: '接続に失敗しました。',
+            speechLoadingSpeakers: '話者リストを取得中...',
+            speechSpeakersOk: '話者リストを取得しました。',
+            speechSpeakersNg: '話者リストの取得に失敗しました。',
+            speechSpeakingTest: '発話テスト中...',
+            speechSpeakTestOk: '発話テストを再生しました。',
+            speechSpeakTestNg: '発話テストに失敗しました。',
             mixedContentWarning: [
                 'Base URL が http:// で、このページが https:// で開かれています。',
                 '',
@@ -2165,15 +2216,15 @@ const Lang = (() => {
             bubbleDeleteConfirm: 'Delete this message and all subsequent messages?',
             bubbleDelete: 'Delete',
             cancel: 'Cancel',
-            voicevoxTesting: 'Testing connection...',
-            voicevoxTestOk: 'Connected.',
-            voicevoxTestNg: 'Connection failed.',
-            voicevoxLoadingSpeakers: 'Loading speakers...',
-            voicevoxSpeakersOk: 'Speakers loaded.',
-            voicevoxSpeakersNg: 'Failed to load speakers.',
-            voicevoxSpeakingTest: 'Testing speech...',
-            voicevoxSpeakTestOk: 'Test speech played.',
-            voicevoxSpeakTestNg: 'Test speech failed.',
+            speechTesting: 'Testing connection...',
+            speechTestOk: 'Connected.',
+            speechTestNg: 'Connection failed.',
+            speechLoadingSpeakers: 'Loading speakers...',
+            speechSpeakersOk: 'Speakers loaded.',
+            speechSpeakersNg: 'Failed to load speakers.',
+            speechSpeakingTest: 'Testing speech...',
+            speechSpeakTestOk: 'Test speech played.',
+            speechSpeakTestNg: 'Test speech failed.',
             mixedContentWarning: [
                 'The Base URL starts with http://, but this page is open over https://.',
                 '',
@@ -2396,6 +2447,17 @@ const Settings = (() => {
         voicevoxPrePhonemeLength: 0.1,
         voicevoxPostPhonemeLength: 0.1,
         voicevoxSkipAnnotations: true,
+        irodoriEnabled: false,
+        irodoriUrl: 'http://localhost:8088',
+        irodoriApiKey: '',
+        irodoriModel: 'irodori-tts',
+        irodoriVoice: 'none',
+        irodoriVoices: [],
+        irodoriSpeed: 1,
+        irodoriCaption: '',
+        irodoriNumSteps: null,
+        irodoriSeed: null,
+        irodoriSkipAnnotations: true,
         showBorders: true,
         scanlineEffect: false,
         scanlineStrength: 2,
@@ -2433,6 +2495,7 @@ const Settings = (() => {
             if (raw) _settings = { ...DEFAULTS, ...JSON.parse(raw) };
         } catch { /* ignore */ }
         normalizeBackgroundPosition(_settings);
+        if (_settings.irodoriEnabled) _settings.voicevoxEnabled = false;
         _settings.chatAreaOffset = Math.min(95, Math.max(0, Number(_settings.chatAreaOffset) || 0));
         return _settings;
     }
@@ -2441,6 +2504,7 @@ const Settings = (() => {
     function save(s) {
         const next = { ...DEFAULTS, ...s };
         normalizeBackgroundPosition(next);
+        if (next.irodoriEnabled) next.voicevoxEnabled = false;
         next.chatAreaOffset = Math.min(95, Math.max(0, Number(next.chatAreaOffset) || 0));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         _settings = next;
@@ -3884,52 +3948,9 @@ const SoundManager = (() => {
 })();
 
 // ────────────────────────────────────────────────────────────
-// VoiceVoxClient — VOICEVOX Engine 連携
+// SpeechAudio — 共通の音声再生・発話テキスト正規化
 // ────────────────────────────────────────────────────────────
-const VoiceVoxClient = (() => {
-    function _baseUrl(url) {
-        return (url || Settings.get().voicevoxUrl || 'http://localhost:50021').replace(/\/+$/, '');
-    }
-
-    async function testConnection(url) {
-        const res = await fetch(`${_baseUrl(url)}/version`);
-        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX version failed: ${res.status}`);
-        return res.text();
-    }
-
-    async function fetchSpeakers(url) {
-        const res = await fetch(`${_baseUrl(url)}/speakers`);
-        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX speakers failed: ${res.status}`);
-        return await res.json();
-    }
-
-    // audio_query → synthesis の2段階 API 呼び出しで音声 Blob URL を生成
-    async function synthesize(text, overrides = null) {
-        const s = { ...Settings.get(), ...(overrides || {}) };
-        if (!s.voicevoxEnabled) return null;
-        const normalized = _normalizeSpeechText(text, s).trim();
-        if (!normalized) return null;
-        const speaker = parseInt(s.voicevoxSpeaker, 10) || 3;
-        const baseUrl = _baseUrl(s.voicevoxUrl);
-
-        const queryUrl = `${baseUrl}/audio_query?text=${encodeURIComponent(normalized)}&speaker=${encodeURIComponent(speaker)}`;
-        const queryRes = await fetch(queryUrl, { method: 'POST' });
-        if (!queryRes.ok) throw CommunicationError.http(queryRes, `VOICEVOX audio_query failed: ${queryRes.status}`);
-        const query = await queryRes.json();
-
-        _applyAudioQuerySettings(query, s);
-
-        const synthUrl = `${baseUrl}/synthesis?speaker=${encodeURIComponent(speaker)}`;
-        const synthRes = await fetch(synthUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(query),
-        });
-        if (!synthRes.ok) throw CommunicationError.http(synthRes, `VOICEVOX synthesis failed: ${synthRes.status}`);
-        const blob = await synthRes.blob();
-        return URL.createObjectURL(blob);
-    }
-
+const SpeechAudio = (() => {
     function play(url) {
         if (!url) return Promise.resolve();
         return new Promise((resolve) => {
@@ -3963,24 +3984,10 @@ const VoiceVoxClient = (() => {
         });
     }
 
-    function _applyAudioQuerySettings(query, s) {
-        _setNumber(query, 'speedScale', s.voicevoxSpeedScale);
-        _setNumber(query, 'pitchScale', s.voicevoxPitchScale);
-        _setNumber(query, 'intonationScale', s.voicevoxIntonationScale);
-        _setNumber(query, 'volumeScale', s.voicevoxVolumeScale);
-        _setNumber(query, 'prePhonemeLength', s.voicevoxPrePhonemeLength);
-        _setNumber(query, 'postPhonemeLength', s.voicevoxPostPhonemeLength);
-    }
-
-    function _setNumber(obj, key, value) {
-        const n = parseFloat(value);
-        if (Number.isFinite(n)) obj[key] = n;
-    }
-
     // 設定に応じて注釈除去を適用し読み上げ用テキストを返す
-    function _normalizeSpeechText(text, s) {
+    function normalizeText(text, skipAnnotations) {
         const raw = String(text || '');
-        if (!s.voicevoxSkipAnnotations) return raw;
+        if (!skipAnnotations) return raw;
         return _stripAnnotations(raw);
     }
 
@@ -4009,7 +4016,180 @@ const VoiceVoxClient = (() => {
             .replace(/\n{3,}/g, '\n\n');
     }
 
-    return { testConnection, fetchSpeakers, synthesize, play };
+    return { play, normalizeText };
+})();
+
+// ────────────────────────────────────────────────────────────
+// VoiceVoxClient — VOICEVOX Engine 連携
+// ────────────────────────────────────────────────────────────
+const VoiceVoxClient = (() => {
+    function _baseUrl(url) {
+        return (url || Settings.get().voicevoxUrl || 'http://localhost:50021').replace(/\/+$/, '');
+    }
+
+    async function testConnection(url) {
+        const res = await fetch(`${_baseUrl(url)}/version`);
+        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX version failed: ${res.status}`);
+        return res.text();
+    }
+
+    async function fetchSpeakers(url) {
+        const res = await fetch(`${_baseUrl(url)}/speakers`);
+        if (!res.ok) throw CommunicationError.http(res, `VOICEVOX speakers failed: ${res.status}`);
+        return await res.json();
+    }
+
+    // audio_query → synthesis の2段階 API 呼び出しで音声 Blob URL を生成
+    async function synthesize(text, overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
+        if (!s.voicevoxEnabled) return null;
+        const normalized = SpeechAudio.normalizeText(text, s.voicevoxSkipAnnotations).trim();
+        if (!normalized) return null;
+        const speaker = parseInt(s.voicevoxSpeaker, 10) || 3;
+        const baseUrl = _baseUrl(s.voicevoxUrl);
+
+        const queryUrl = `${baseUrl}/audio_query?text=${encodeURIComponent(normalized)}&speaker=${encodeURIComponent(speaker)}`;
+        const queryRes = await fetch(queryUrl, { method: 'POST' });
+        if (!queryRes.ok) throw CommunicationError.http(queryRes, `VOICEVOX audio_query failed: ${queryRes.status}`);
+        const query = await queryRes.json();
+
+        _applyAudioQuerySettings(query, s);
+
+        const synthUrl = `${baseUrl}/synthesis?speaker=${encodeURIComponent(speaker)}`;
+        const synthRes = await fetch(synthUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(query),
+        });
+        if (!synthRes.ok) throw CommunicationError.http(synthRes, `VOICEVOX synthesis failed: ${synthRes.status}`);
+        const blob = await synthRes.blob();
+        return URL.createObjectURL(blob);
+    }
+
+    function _applyAudioQuerySettings(query, s) {
+        _setNumber(query, 'speedScale', s.voicevoxSpeedScale);
+        _setNumber(query, 'pitchScale', s.voicevoxPitchScale);
+        _setNumber(query, 'intonationScale', s.voicevoxIntonationScale);
+        _setNumber(query, 'volumeScale', s.voicevoxVolumeScale);
+        _setNumber(query, 'prePhonemeLength', s.voicevoxPrePhonemeLength);
+        _setNumber(query, 'postPhonemeLength', s.voicevoxPostPhonemeLength);
+    }
+
+    function _setNumber(obj, key, value) {
+        const n = parseFloat(value);
+        if (Number.isFinite(n)) obj[key] = n;
+    }
+
+    return { testConnection, fetchSpeakers, synthesize, play: SpeechAudio.play };
+})();
+
+// ────────────────────────────────────────────────────────────
+// IrodoriClient — Aratako/Irodori-TTS-Server 連携
+// ────────────────────────────────────────────────────────────
+const IrodoriClient = (() => {
+    const MAX_SILENCE_RETRIES = 3;
+    // 全チャンネルのピークが -80 dBFS 以下なら無音として扱う。
+    const SILENCE_THRESHOLD = 0.0001;
+    let _decoder = null;
+
+    async function _isSilent(blob) {
+        if (!blob.size) return true;
+        // オフラインのデコードなので、自動再生許可や音声出力デバイスは不要。
+        if (!_decoder) {
+            const Decoder = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+            _decoder = new Decoder(1, 1, 44100);
+        }
+        const audio = await _decoder.decodeAudioData(await blob.arrayBuffer());
+        for (let channel = 0; channel < audio.numberOfChannels; channel++) {
+            const samples = audio.getChannelData(channel);
+            for (let i = 0; i < samples.length; i++) {
+                if (Math.abs(samples[i]) > SILENCE_THRESHOLD) return false;
+            }
+        }
+        return true;
+    }
+
+    // サーバーURLと /v1 付きのURLの両方を受け付ける。
+    function baseUrl(url) {
+        return (url || Settings.get().irodoriUrl || 'http://localhost:8088')
+            .trim().replace(/\/+$/, '').replace(/\/v1$/, '');
+    }
+
+    function _headers(s) {
+        const key = String(s.irodoriApiKey || '').trim();
+        return key ? { Authorization: `Bearer ${key}` } : {};
+    }
+
+    async function testConnection(overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
+        // /health は認証不要のため、認証も検証できる /v1/models を使う。
+        const res = await fetch(`${baseUrl(s.irodoriUrl)}/v1/models`, { headers: _headers(s) });
+        if (!res.ok) throw CommunicationError.http(res, `Irodori models failed: ${res.status}`);
+        return res.json();
+    }
+
+    async function fetchVoices(overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
+        const res = await fetch(`${baseUrl(s.irodoriUrl)}/v1/audio/voices`, { headers: _headers(s) });
+        if (!res.ok) throw CommunicationError.http(res, `Irodori voices failed: ${res.status}`);
+        const result = await res.json();
+        if (!Array.isArray(result.data)) throw new Error('Invalid voices response');
+        return result.data;
+    }
+
+    async function synthesize(text, overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
+        if (!s.irodoriEnabled) return null;
+        const input = SpeechAudio.normalizeText(text, s.irodoriSkipAnnotations).trim();
+        if (!input) return null;
+        const speed = Number.parseFloat(s.irodoriSpeed);
+        const body = {
+            model: String(s.irodoriModel || '').trim() || 'irodori-tts',
+            input,
+            response_format: 'wav',
+            speed: Number.isFinite(speed) ? Math.min(4, Math.max(0.25, speed)) : 1,
+        };
+        const voice = String(s.irodoriVoice ?? 'none').trim();
+        if (voice) body.voice = voice;
+        const options = {};
+        const caption = String(s.irodoriCaption || '').trim();
+        if (caption) options.caption = caption;
+        for (const [key, value, min] of [
+            ['num_steps', s.irodoriNumSteps, 1], ['seed', s.irodoriSeed, 0],
+        ]) {
+            if (value === null || value === undefined || String(value).trim() === '') continue;
+            const number = Number(value);
+            if (Number.isSafeInteger(number) && number >= min) options[key] = number;
+        }
+        // 空欄の推論設定は送信せず、サーバー／モデルの既定値を使う。
+        if (Object.keys(options).length) body.irodori = options;
+        for (let attempt = 0; attempt <= MAX_SILENCE_RETRIES; attempt++) {
+            const res = await fetch(`${baseUrl(s.irodoriUrl)}/v1/audio/speech`, {
+                method: 'POST',
+                headers: { ..._headers(s), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) throw CommunicationError.http(res, `Irodori speech failed: ${res.status}`);
+            const blob = await res.blob();
+            if (!await _isSilent(blob)) return URL.createObjectURL(blob);
+        }
+        throw new Error(Lang.current() === 'en'
+            ? 'Silent audio after 3 retries'
+            : '3回再試行しても無音でした');
+    }
+
+    return { baseUrl, testConnection, fetchVoices, synthesize };
+})();
+
+// ────────────────────────────────────────────────────────────
+// SpeechClient — 有効な音声エンジンへ合成を振り分ける
+// ────────────────────────────────────────────────────────────
+const SpeechClient = (() => {
+    function synthesize(text) {
+        if (Settings.get().irodoriEnabled) return IrodoriClient.synthesize(text);
+        return VoiceVoxClient.synthesize(text);
+    }
+    return { synthesize, play: SpeechAudio.play };
 })();
 
 // ────────────────────────────────────────────────────────────
@@ -4302,6 +4482,7 @@ const UIController = (() => {
     const btnVoiceVoxSpeakTest = document.getElementById('btn-voicevox-speak-test');
     const voiceVoxStatus = document.getElementById('voicevox-status');
     const voiceVoxSettings = document.getElementById('voicevox-settings');
+    const irodoriStatus = document.getElementById('irodori-status');
     const retryBar = document.getElementById('retry-bar');
     const btnRetry = document.getElementById('btn-retry');
     const introOverlay = document.getElementById('intro-overlay');
@@ -4343,6 +4524,7 @@ const UIController = (() => {
     let _lastCallDurationMs = null;
     let _callTimerId = null;
     let _voicevoxSpeakers = [];
+    let _irodoriVoices = [];
 
     function init() {
         Settings.load();
@@ -4416,6 +4598,14 @@ const UIController = (() => {
         btnVoiceVoxLoadSpeakers.addEventListener('click', _handleVoiceVoxLoadSpeakers);
         btnVoiceVoxSpeakTest.addEventListener('click', _handleVoiceVoxSpeakTest);
         document.getElementById('setting-voicevox-enabled').addEventListener('change', _handleVoiceVoxEnabledChange);
+        document.getElementById('setting-irodori-enabled').addEventListener('change', _handleIrodoriEnabledChange);
+        document.getElementById('btn-irodori-test').addEventListener('click', _handleIrodoriTest);
+        document.getElementById('btn-irodori-load-voices').addEventListener('click', _handleIrodoriLoadVoices);
+        document.getElementById('btn-irodori-speak-test').addEventListener('click', _handleIrodoriSpeakTest);
+        document.getElementById('btn-irodori-open-docs').addEventListener('click', () => {
+            const s = _getIrodoriSettingsFromForm();
+            window.open(IrodoriClient.baseUrl(s.irodoriUrl) + '/docs', '_blank', 'noopener,noreferrer');
+        });
         document.getElementById('setting-theme').addEventListener('change', _handleThemePreview);
         document.getElementById('setting-scanline').addEventListener('change', _handleScanlinePreview);
         document.getElementById('setting-scanline-strength').addEventListener('input', _handleScanlineStrengthPreview);
@@ -4612,7 +4802,7 @@ const UIController = (() => {
                 _removePauseButton();
                 const bubble = _appendBubble('assistant', chunk.trim(), assistantHistIdx, _streamChunkCounter++);
                 _assistantBubblesInTurn.push(bubble);
-                const playbackDone = VoiceVoxClient.play(voiceUrl);
+                const playbackDone = SpeechClient.play(voiceUrl);
                 SoundManager.play('assistant');
                 ChatHistory.updateLast(fullText);
                 if (_isStreaming) {
@@ -4666,7 +4856,7 @@ const UIController = (() => {
                 _showPauseButton();
             },
             // onPrepareChunk — チャンク確定時点で音声合成を開始
-            (chunk) => VoiceVoxClient.synthesize(chunk)
+            (chunk) => SpeechClient.synthesize(chunk)
         );
 
         ApiClient.streamChat(apiMessages, {
@@ -5465,6 +5655,19 @@ const UIController = (() => {
         document.getElementById('setting-voicevox-post-phoneme').value = s.voicevoxPostPhonemeLength ?? 0.1;
         document.getElementById('setting-voicevox-skip-annotations').checked = s.voicevoxSkipAnnotations ?? true;
         voiceVoxStatus.textContent = '';
+        document.getElementById('setting-irodori-enabled').checked = s.irodoriEnabled;
+        _toggleIrodoriSettings(s.irodoriEnabled);
+        document.getElementById('setting-irodori-url').value = s.irodoriUrl;
+        document.getElementById('setting-irodori-apikey').value = s.irodoriApiKey;
+        document.getElementById('setting-irodori-model').value = s.irodoriModel;
+        _irodoriVoices = Array.isArray(s.irodoriVoices) ? s.irodoriVoices : [];
+        _populateIrodoriVoices(_irodoriVoices, s.irodoriVoice);
+        document.getElementById('setting-irodori-speed').value = s.irodoriSpeed;
+        document.getElementById('setting-irodori-caption').value = s.irodoriCaption;
+        document.getElementById('setting-irodori-num-steps').value = s.irodoriNumSteps ?? '';
+        document.getElementById('setting-irodori-seed').value = s.irodoriSeed ?? '';
+        document.getElementById('setting-irodori-skip-annotations').checked = s.irodoriSkipAnnotations;
+        irodoriStatus.textContent = '';
         document.getElementById('setting-show-borders').checked = s.showBorders;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
@@ -5552,19 +5755,24 @@ const UIController = (() => {
 
     /** 接続テストを実行して結果をステータスに表示 */
     async function _handleVoiceVoxTest() {
-        voiceVoxStatus.textContent = Lang.t('voicevoxTesting');
+        voiceVoxStatus.textContent = Lang.t('speechTesting');
         try {
             await VoiceVoxClient.testConnection(_getVoiceVoxUrlFromForm());
-            voiceVoxStatus.textContent = Lang.t('voicevoxTestOk');
+            voiceVoxStatus.textContent = Lang.t('speechTestOk');
         } catch (err) {
             console.warn('VOICEVOX connection test failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxTestNg') + CommunicationError.suffix(err);
+            voiceVoxStatus.textContent = Lang.t('speechTestNg') + CommunicationError.suffix(err);
         }
     }
 
     /** VOICEVOX 有効/無効切り替えで設定欄の表示を制御 */
     function _handleVoiceVoxEnabledChange() {
-        _toggleVoiceVoxSettings(document.getElementById('setting-voicevox-enabled').checked);
+        const enabled = document.getElementById('setting-voicevox-enabled').checked;
+        _toggleVoiceVoxSettings(enabled);
+        if (enabled) {
+            document.getElementById('setting-irodori-enabled').checked = false;
+            _toggleIrodoriSettings(false);
+        }
     }
 
     /** VOICEVOX 設定欄の表示を切り替え */
@@ -5582,28 +5790,28 @@ const UIController = (() => {
     async function _handleVoiceVoxSpeakTest() {
         const text = document.getElementById('setting-voicevox-test-text').value.trim()
             || (Lang.current() === 'en' ? 'Hello.' : 'こんにちは。');
-        voiceVoxStatus.textContent = Lang.t('voicevoxSpeakingTest');
+        voiceVoxStatus.textContent = Lang.t('speechSpeakingTest');
         try {
             const url = await VoiceVoxClient.synthesize(text, _getVoiceVoxSettingsFromForm(true));
             await VoiceVoxClient.play(url);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestOk');
+            voiceVoxStatus.textContent = Lang.t('speechSpeakTestOk');
         } catch (err) {
             console.warn('VOICEVOX speech test failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakTestNg') + CommunicationError.suffix(err);
+            voiceVoxStatus.textContent = Lang.t('speechSpeakTestNg') + CommunicationError.suffix(err);
         }
     }
 
     /** 話者リストを取得しセレクトボックスに反映 */
     async function _handleVoiceVoxLoadSpeakers() {
-        voiceVoxStatus.textContent = Lang.t('voicevoxLoadingSpeakers');
+        voiceVoxStatus.textContent = Lang.t('speechLoadingSpeakers');
         try {
             const speakers = await VoiceVoxClient.fetchSpeakers(_getVoiceVoxUrlFromForm());
             _voicevoxSpeakers = Array.isArray(speakers) ? speakers : [];
             _populateVoiceVoxSpeakers(_voicevoxSpeakers, document.getElementById('setting-voicevox-speaker').value);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersOk');
+            voiceVoxStatus.textContent = Lang.t('speechSpeakersOk');
         } catch (err) {
             console.warn('VOICEVOX speaker loading failed:', err);
-            voiceVoxStatus.textContent = Lang.t('voicevoxSpeakersNg') + CommunicationError.suffix(err);
+            voiceVoxStatus.textContent = Lang.t('speechSpeakersNg') + CommunicationError.suffix(err);
         }
     }
 
@@ -5662,6 +5870,94 @@ const UIController = (() => {
         };
     }
 
+    function _handleIrodoriEnabledChange() {
+        const enabled = document.getElementById('setting-irodori-enabled').checked;
+        _toggleIrodoriSettings(enabled);
+        if (enabled) {
+            document.getElementById('setting-voicevox-enabled').checked = false;
+            _toggleVoiceVoxSettings(false);
+        }
+    }
+
+    function _toggleIrodoriSettings(enabled) {
+        document.getElementById('irodori-settings').classList.toggle('hidden', !enabled);
+    }
+
+    async function _handleIrodoriTest() {
+        irodoriStatus.textContent = Lang.t('speechTesting');
+        try {
+            await IrodoriClient.testConnection(_getIrodoriSettingsFromForm());
+            irodoriStatus.textContent = Lang.t('speechTestOk');
+        } catch (err) {
+            console.warn('Irodori connection test failed:', err);
+            irodoriStatus.textContent = Lang.t('speechTestNg') + CommunicationError.suffix(err);
+        }
+    }
+
+    async function _handleIrodoriLoadVoices() {
+        irodoriStatus.textContent = Lang.t('speechLoadingSpeakers');
+        try {
+            _irodoriVoices = await IrodoriClient.fetchVoices(_getIrodoriSettingsFromForm());
+            _populateIrodoriVoices(_irodoriVoices, document.getElementById('setting-irodori-voice').value);
+            irodoriStatus.textContent = Lang.t('speechSpeakersOk');
+        } catch (err) {
+            console.warn('Irodori voice loading failed:', err);
+            irodoriStatus.textContent = Lang.t('speechSpeakersNg') + CommunicationError.suffix(err);
+        }
+    }
+
+    async function _handleIrodoriSpeakTest() {
+        const text = document.getElementById('setting-irodori-test-text').value.trim()
+            || (Lang.current() === 'en' ? 'Hello.' : 'こんにちは。');
+        irodoriStatus.textContent = Lang.t('speechSpeakingTest');
+        try {
+            const url = await IrodoriClient.synthesize(text, _getIrodoriSettingsFromForm(true));
+            await SpeechClient.play(url);
+            irodoriStatus.textContent = Lang.t('speechSpeakTestOk');
+        } catch (err) {
+            console.warn('Irodori speech test failed:', err);
+            irodoriStatus.textContent = Lang.t('speechSpeakTestNg') + CommunicationError.suffix(err);
+        }
+    }
+
+    function _populateIrodoriVoices(voices, selectedId) {
+        const input = document.getElementById('setting-irodori-voice');
+        const suggestions = document.getElementById('irodori-voices');
+        suggestions.replaceChildren();
+        const items = new Map();
+        for (const voice of voices) {
+            if (typeof voice?.id !== 'string' || !voice.id) continue;
+            items.set(voice.id, voice.no_ref
+                ? `${voice.id} (${Lang.current() === 'en' ? 'No reference audio' : '参照音声なし'})`
+                : voice.id);
+        }
+        const selected = String(selectedId ?? 'none');
+        // 手動入力したIDは話者リストにない場合でも保持する。
+        if (selected && !items.has(selected)) items.set(selected, selected);
+        for (const [id, label] of items) {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = label;
+            suggestions.appendChild(option);
+        }
+        input.value = selected;
+    }
+
+    function _getIrodoriSettingsFromForm(forceEnabled = false) {
+        return {
+            irodoriEnabled: forceEnabled || document.getElementById('setting-irodori-enabled').checked,
+            irodoriUrl: document.getElementById('setting-irodori-url').value.trim() || 'http://localhost:8088',
+            irodoriApiKey: document.getElementById('setting-irodori-apikey').value.trim(),
+            irodoriModel: document.getElementById('setting-irodori-model').value.trim() || 'irodori-tts',
+            irodoriVoice: document.getElementById('setting-irodori-voice').value.trim(),
+            irodoriSpeed: _readNumber('setting-irodori-speed', 1),
+            irodoriCaption: document.getElementById('setting-irodori-caption').value.trim(),
+            irodoriNumSteps: _readNumber('setting-irodori-num-steps', null),
+            irodoriSeed: _readNumber('setting-irodori-seed', null),
+            irodoriSkipAnnotations: document.getElementById('setting-irodori-skip-annotations').checked,
+        };
+    }
+
     // HTTPS ページから HTTP API へのアクセスはブラウザにブロックされるため警告
     function _shouldWarnMixedContent(baseUrl) {
         try {
@@ -5708,6 +6004,8 @@ const UIController = (() => {
             soundEnabled: document.getElementById('setting-sound').checked,
             voicevoxSpeakers: _voicevoxSpeakers,
             ..._getVoiceVoxSettingsFromForm(),
+            irodoriVoices: _irodoriVoices,
+            ..._getIrodoriSettingsFromForm(),
             showBorders: document.getElementById('setting-show-borders').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,

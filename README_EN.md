@@ -44,6 +44,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
+- **Irodori-TTS Speech Synthesis** — Connect to [Aratako/Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server) for synchronized speech with reference voices and voice descriptions.
 - **VOICEVOX Speech Synthesis** — Connect to VOICEVOX Engine and synthesize AI responses in the same units as chat bubbles.
 - **Multi-language Support** — Provides Japanese and English interfaces.
 - **Rich Color Themes** — Choose from 14 retro-style themes including GB Classic, Red, Amber, Green, Blue, Mono, DOS Console, and MSX Console. Each theme has an inverted version.
@@ -57,6 +58,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 - A modern browser (latest version of Chrome, Firefox, Safari, or Edge)
 - An endpoint and API key for an OpenAI-compatible ChatCompletion API (with SSE streaming support)
+- Irodori-TTS-Server running locally or on the same network when using Irodori speech synthesis
 - VOICEVOX Engine running locally or on the same network when using speech synthesis
 
 ## Usage
@@ -99,6 +101,11 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | VOICEVOX Speaker | Speaker ID used for synthesis | 3 |
 | VOICEVOX Speech Parameters | Speed, pitch, intonation, volume, pre/post silence | Defaults per field |
 | Skip ruby and notes in speech | Exclude ruby text and notes inside `()` / `（）` from VOICEVOX synthesis | On |
+| Irodori-TTS Speech Synthesis | Read AI responses aloud with Irodori-TTS (exclusive with VOICEVOX) | Off |
+| Irodori-TTS URL | Server URL; trailing `/v1` is optional | `http://localhost:8088` |
+| Irodori-TTS API Key / Model | Optional server key and model ID | Blank / `irodori-tts` |
+| Irodori-TTS Voice | Server voice ID | `none` (no reference audio) |
+| Irodori-TTS Speech Parameters | Speed, voice/style description, sampling steps, seed | Speed 1; others blank |
 | Borders | Show message borders | On |
 | Send Time to AI | Add timestamp to user messages | Off |
 | Scanline Effect | Retro-style scanline effect | Off |
@@ -189,6 +196,18 @@ Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI respons
 - **Test Speech** — Synthesizes the test text with the current form settings and plays it immediately.
 
 Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.
+
+## Irodori-TTS Speech Synthesis
+
+Enable **Irodori-TTS Speech Synthesis** in the **Speech** settings tab. Enabling either engine disables the other while keeping both engines' settings. Existing VOICEVOX settings continue to work.
+
+1. Start [Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server). The default URL is `http://localhost:8088`; a trailing `/v1` is also accepted.
+2. Configure CORS in the server `.env` and restart the server. Use `IRODORI_CORS_ORIGINS=["null"]` for local HTML files. For a page served over HTTP, specify its origin, for example `IRODORI_CORS_ORIGINS=["http://localhost:8000"]`.
+3. Enter an API key only if the server has `IRODORI_API_KEY` set. The model defaults to `irodori-tts`; change it to match any custom `IRODORI_MODEL_NAME`.
+4. Use **Test Connection** to check connectivity and authentication, then enter a voice ID directly in **Irodori-TTS Voice**. **Load Voices** provides suggestions when supported; manual IDs also work through relay servers without voice listing. Add reference audio to the server's `voices` folder. `none` generates without reference audio; select a reference voice for consistency across bubbles. Leave the voice field blank to use `IRODORI_DEFAULT_VOICE` on the server.
+5. Use **Test Speech** with the current form settings, then save. You can set speed (0.25–4), voice/style description, sampling steps, and seed. Descriptions require a compatible model. Blank steps use the server/model default; a blank seed uses random generation.
+
+Like VOICEVOX, synthesis follows bubble boundaries and playback starts with each bubble. Ruby and parenthetical notes are skipped by default without changing display text or history. Silent audio is regenerated up to three times (four attempts including the first). Replies still appear without audio if every attempt is silent or synthesis fails. **Open API Docs** opens the server's `/docs` page.
 
 ## Text Call Mode
 
@@ -303,7 +322,7 @@ This writes the following files to `dist/`.
 
 The `dist/` directory is included in the repository as the distribution package. Use these HTML files when copying or downloading SlowDialog onto a smartphone.
 
-The generated files embed fonts and sound effects as data URLs, so each HTML file can run on its own. External API and VOICEVOX Engine requests still connect from the browser to the configured URLs, just like the normal version.
+The generated files embed fonts and sound effects as data URLs, so each HTML file can run on its own. External API, VOICEVOX Engine, and Irodori-TTS-Server requests still connect from the browser to the configured URLs, just like the normal version.
 
 Use `--dist` to change the output directory.
 

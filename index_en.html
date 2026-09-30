@@ -264,6 +264,57 @@
                 <button type="button" id="btn-voicevox-speak-test">Test Speech</button>
               </div>
             </div>
+
+            <div class="settings-note">Enable one speech engine at a time.</div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-irodori-enabled">
+              Irodori-TTS Speech Synthesis
+            </label>
+
+            <div id="irodori-settings" class="settings-subsection hidden">
+              <label for="setting-irodori-url">Irodori-TTS URL</label>
+              <input type="url" id="setting-irodori-url" placeholder="http://localhost:8088">
+              <div class="settings-note">Set IRODORI_CORS_ORIGINS=[&quot;null&quot;] in the server .env for local HTML files. For pages served over HTTP, specify the page origin instead.</div>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-open-docs">Open API Docs</button>
+              </div>
+
+              <label for="setting-irodori-apikey">API Key (optional)</label>
+              <input type="password" id="setting-irodori-apikey" placeholder="IRODORI_API_KEY" autocomplete="off">
+              <label for="setting-irodori-model">Model</label>
+              <input type="text" id="setting-irodori-model" placeholder="irodori-tts">
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-test">Test Connection</button>
+                <button type="button" id="btn-irodori-load-voices">Load Voices</button>
+              </div>
+              <div id="irodori-status" class="settings-status" role="status"></div>
+
+              <label for="setting-irodori-voice">Irodori-TTS Voice</label>
+              <input type="text" id="setting-irodori-voice" list="irodori-voices" placeholder="Blank for server default" autocomplete="off">
+              <datalist id="irodori-voices">
+                <option value="none">No reference audio</option>
+              </datalist>
+              <div class="settings-note">Enter a voice ID directly or choose a loaded suggestion. Voice listing is optional. Use none for no reference audio, or leave blank for the server default.</div>
+
+              <label for="setting-irodori-speed">Speed</label>
+              <input type="number" id="setting-irodori-speed" min="0.25" max="4" step="0.05" value="1">
+              <label for="setting-irodori-caption">Voice / Style Description (optional)</label>
+              <textarea id="setting-irodori-caption" rows="2" placeholder="A calm voice, speaking gently."></textarea>
+              <label for="setting-irodori-num-steps">Sampling Steps (blank for server default)</label>
+              <input type="number" id="setting-irodori-num-steps" min="1" step="1">
+              <label for="setting-irodori-seed">Seed (blank for random)</label>
+              <input type="number" id="setting-irodori-seed" min="0" step="1">
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-irodori-skip-annotations" checked>
+                Skip ruby and notes in speech
+              </label>
+
+              <label for="setting-irodori-test-text">Test Text</label>
+              <textarea id="setting-irodori-test-text" rows="2" placeholder="Hello"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-irodori-speak-test">Test Speech</button>
+              </div>
+            </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
             <label class="checkbox-row">
