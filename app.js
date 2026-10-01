@@ -288,6 +288,7 @@ const Settings = (() => {
         backgroundTransparency: 0,
         chatAreaOffset: 0,
         autoAdvance: true,
+        splitInsideQuotes: false,
         showPauseButton: true,
         soundEnabled: true,
         voicevoxEnabled: false,
@@ -1597,15 +1598,19 @@ const TypingSimulator = (() => {
     function _extractNextChunk() {
         let idx = -1;
         let parenDepth = 0;
+        let quoteDepth = 0;
+        const splitInsideQuotes = Settings.get().splitInsideQuotes;
         for (let i = 0; i < _buffer.length; i++) {
             const ch = _buffer[i];
-            // 全角・半角の丸括弧内は分割しない（入れ子対応、かぎ括弧は対象外）。
+            // 丸括弧内は常に、かぎ括弧内は設定がオフのとき分割しない（入れ子対応）。
             if (ch === '（' || ch === '(') parenDepth++;
             else if (ch === '）' || ch === ')') parenDepth = Math.max(0, parenDepth - 1);
-            if (parenDepth > 0) continue;
+            if (ch === '「' || ch === '『') quoteDepth++;
+            else if (ch === '」' || ch === '』') quoteDepth = Math.max(0, quoteDepth - 1);
+            if (parenDepth > 0 || (!splitInsideQuotes && quoteDepth > 0)) continue;
             if (ch === '。') {
                 // 次の文字が閉じ括弧系なら含めて区切る
-                if (i + 1 < _buffer.length && '」）)"\'】》〉>'.includes(_buffer[i + 1])) {
+                if (i + 1 < _buffer.length && '」』）)"\'】》〉>'.includes(_buffer[i + 1])) {
                     idx = i + 1;
                 } else {
                     idx = i;
@@ -3306,21 +3311,25 @@ const UIController = (() => {
         return content === CALL_START_PROMPT || content.startsWith(CALL_START_PROMPT + '\n');
     }
 
-    /** テキストを「。」「. 」改行で分割（丸括弧内・空行は区切りとしない） */
+    /** テキストを「。」「. 」改行で分割（括弧内は設定に従い、空行は区切りとしない） */
     function _splitIntoChunks(text) {
         const chunks = [];
         let current = '';
         let parenDepth = 0;
+        let quoteDepth = 0;
+        const splitInsideQuotes = Settings.get().splitInsideQuotes;
         for (let i = 0; i < text.length; i++) {
             const ch = text[i];
             current += ch;
-            // 受信中の表示・音声合成と同じく、丸括弧内の区切りを無視する。
+            // 受信中の表示・音声合成と同じ括弧の分割ルールを適用する。
             if (ch === '（' || ch === '(') parenDepth++;
             else if (ch === '）' || ch === ')') parenDepth = Math.max(0, parenDepth - 1);
-            if (parenDepth > 0) continue;
+            if (ch === '「' || ch === '『') quoteDepth++;
+            else if (ch === '」' || ch === '』') quoteDepth = Math.max(0, quoteDepth - 1);
+            if (parenDepth > 0 || (!splitInsideQuotes && quoteDepth > 0)) continue;
             if (ch === '。') {
                 // 次の文字が閉じ括弧系なら含めて区切る
-                if (i + 1 < text.length && '」）)"\'】》〉>'.includes(text[i + 1])) {
+                if (i + 1 < text.length && '」』）)"\'】》〉>'.includes(text[i + 1])) {
                     current += text[++i];
                 }
                 chunks.push(current);
@@ -3552,6 +3561,7 @@ const UIController = (() => {
         document.getElementById('setting-chat-area').value = s.chatAreaOffset;
         document.getElementById('chat-area-value').textContent = `${s.chatAreaOffset}%`;
         document.getElementById('setting-autoadvance').checked = s.autoAdvance;
+        document.getElementById('setting-split-inside-quotes').checked = s.splitInsideQuotes;
         document.getElementById('setting-show-pause-button').checked = s.showPauseButton;
         document.getElementById('setting-sound').checked = s.soundEnabled;
         document.getElementById('setting-voicevox-enabled').checked = s.voicevoxEnabled;
@@ -3912,6 +3922,7 @@ const UIController = (() => {
             theme: document.getElementById('setting-theme').value,
             chatAreaOffset: Number(document.getElementById('setting-chat-area').value),
             autoAdvance: document.getElementById('setting-autoadvance').checked,
+            splitInsideQuotes: document.getElementById('setting-split-inside-quotes').checked,
             showPauseButton: document.getElementById('setting-show-pause-button').checked,
             soundEnabled: document.getElementById('setting-sound').checked,
             voicevoxSpeakers: _voicevoxSpeakers,
@@ -3952,6 +3963,10 @@ const UIController = (() => {
         _originalTheme = null;
         _originalScanline = null;
         _originalScanlineStrength = null;
+
+        if (!_isStreaming && previousSettings.splitInsideQuotes !== Settings.get().splitInsideQuotes) {
+            _renderAllMessages();
+        }
 
         // ストリーミング中に autoAdvance が変更された場合の即時反映
         if (_isStreaming) {

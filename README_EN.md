@@ -94,6 +94,7 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Background crop position | Drag the screen-proportioned box over the full image preview. Arrow keys also move it (Shift for larger steps). Position is saved as normalized values from 0 to 1 | Center (0.5, 0.5) |
 | Background transparency | Slider from 0% (opaque) to 100% (transparent) | 0% |
 | Auto Advance | Whether to advance automatically | On |
+| Split inside Japanese quotation marks | Allow display and speech splitting inside `「…」` / `『…』` in the Conversation tab | Off |
 | Pause Button (Auto Advance) | Show pause button during auto-advance | On |
 | Sound Effects | Whether to enable sound effects | On |
 | VOICEVOX Speech Synthesis | Read AI responses aloud with VOICEVOX | Off |
@@ -197,7 +198,7 @@ Enable **"VOICEVOX Speech Synthesis"** in the settings dialog to read AI respons
 
 Synthesis uses the same chunk boundaries as chat bubbles. SlowDialog starts synthesis as soon as each chunk is known, then displays the bubble and starts playback together when audio is ready. The next bubble waits for whichever is longer: the normal display delay or the speech playback duration.
 
-Display and speech chunks never split at periods or line breaks inside full-width or half-width parentheses, including nested parentheses. Restored history follows the same rule. Japanese quotation marks (`「…」` and `『…』`) still allow normal splitting.
+Display and speech chunks never split at periods or line breaks inside full-width or half-width parentheses. Japanese quotation marks (`「…」` and `『…』`) also prevent splitting by default. Enable “Split inside Japanese quotation marks” in the Conversation tab to allow splitting within those quotes; parentheses still stay together. Nested brackets are supported, and restored history follows the same rules.
 
 ## Irodori-TTS Speech Synthesis
 
