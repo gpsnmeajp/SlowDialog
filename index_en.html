@@ -74,13 +74,24 @@
 
   <!-- ===== Input Area ===== -->
   <footer id="input-area">
-    <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
-    <button type="button" id="intent-badge" class="intent-badge hidden" aria-live="polite"></button>
-    <button id="btn-send" title="Send">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
-      </svg>
-    </button>
+    <div id="microphone-controls" class="hidden">
+      <button type="button" id="btn-microphone" title="Speech recognition" aria-label="Start speech recognition" aria-pressed="false" aria-describedby="microphone-status" disabled>
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="8" y="2" width="6" height="11" rx="3" />
+          <path d="M5 9v2a6 6 0 0 0 12 0V9M11 17v3M7 20h8" />
+        </svg>
+      </button>
+      <div id="microphone-status" role="status" aria-live="polite"></div>
+    </div>
+    <div id="input-row">
+      <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+      <button type="button" id="intent-badge" class="intent-badge hidden" aria-live="polite"></button>
+      <button id="btn-send" title="Send">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
   </footer>
 
   <!-- ===== Settings Dialog ===== -->
@@ -93,6 +104,7 @@
           <button type="button" id="settings-tab-setup" role="tab" aria-controls="settings-panel-setup" aria-selected="true" tabindex="0">Setup</button>
           <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-panel-display" aria-selected="false" tabindex="-1">Display</button>
           <button type="button" id="settings-tab-speech" role="tab" aria-controls="settings-panel-speech" aria-selected="false" tabindex="-1">Speech</button>
+          <button type="button" id="settings-tab-recognition" role="tab" aria-controls="settings-panel-recognition" aria-selected="false" tabindex="-1">Recognition</button>
           <button type="button" id="settings-tab-conversation" role="tab" aria-controls="settings-panel-conversation" aria-selected="false" tabindex="-1">Conversation</button>
           <button type="button" id="settings-tab-intent" role="tab" aria-controls="settings-panel-intent" aria-selected="false" tabindex="-1">Intent</button>
           <button type="button" id="settings-tab-shortcuts" role="tab" aria-controls="settings-panel-shortcuts" aria-selected="false" tabindex="-1">Shortcuts</button>
@@ -359,6 +371,52 @@
               </div>
               <div class="settings-note">Speech tests incur the selected model's usual charges.</div>
               <div id="openrouter-tts-status" class="settings-status" role="status"></div>
+            </div>
+          </section>
+          <section id="settings-panel-recognition" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-recognition" tabindex="0" hidden>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-deepgram-enabled">
+              Deepgram speech recognition
+            </label>
+            <div id="deepgram-settings" class="settings-subsection hidden">
+              <label for="setting-deepgram-apikey">Deepgram API key</label>
+              <input type="password" id="setting-deepgram-apikey" autocomplete="off" spellcheck="false">
+              <label for="setting-deepgram-model">Recognition model</label>
+              <input type="text" id="setting-deepgram-model" list="deepgram-models" placeholder="nova-3" autocomplete="off" spellcheck="false">
+              <datalist id="deepgram-models">
+                <option value="nova-3"></option>
+                <option value="nova-2"></option>
+              </datalist>
+              <label for="setting-deepgram-language">Recognition language</label>
+              <select id="setting-deepgram-language">
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+                <option value="multi">Multilingual (including Japanese and English)</option>
+              </select>
+              <div class="settings-note">Microphone permission is required. Open over HTTPS or localhost. Local HTML works in browsers that allow microphone access from files.</div>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-openrouter-stt-enabled">
+              OpenRouter STT speech recognition
+            </label>
+            <div id="openrouter-stt-settings" class="settings-subsection hidden">
+              <label for="setting-openrouter-stt-baseurl">Base URL</label>
+              <input type="url" id="setting-openrouter-stt-baseurl" placeholder="https://openrouter.ai/api/v1">
+              <label for="setting-openrouter-stt-apikey">OpenRouter API key</label>
+              <input type="password" id="setting-openrouter-stt-apikey" autocomplete="off" spellcheck="false">
+              <label for="setting-openrouter-stt-model">Recognition model</label>
+              <input type="text" id="setting-openrouter-stt-model" list="openrouter-stt-models" placeholder="openai/whisper-1" autocomplete="off" spellcheck="false">
+              <datalist id="openrouter-stt-models">
+                <option value="openai/whisper-1"></option>
+                <option value="openai/gpt-4o-transcribe"></option>
+              </datalist>
+              <label for="setting-openrouter-stt-language">Recognition language</label>
+              <select id="setting-openrouter-stt-language">
+                <option value="">Auto-detect</option>
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+              </select>
+              <div class="settings-note">Transcription starts when recording stops.</div>
             </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>

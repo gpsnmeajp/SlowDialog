@@ -116,6 +116,15 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `splitInsideQuotes` | boolean | `false` | かぎ括弧・二重かぎ括弧内のチャンク分割を許可するか |
 | `soundEnabled` | boolean | `true` | 効果音を有効にするか |
 | `voicevoxEnabled` | boolean | `false` | VOICEVOX音声合成を有効にするか |
+| `deepgramEnabled` | boolean | `false` | Deepgram音声認識を有効化（音声合成と独立） |
+| `deepgramApiKey` | string | `''` | 音声認識専用のAPIキー |
+| `deepgramModel` | string | `'nova-3'` | v1ストリーミングモデルID（手入力可・空欄時は既定値） |
+| `deepgramLanguage` | string | `Lang.current()` | `ja` / `en` / `multi` |
+| `openrouterSttEnabled` | boolean | `false` | OpenRouter STTを有効化（Deepgramと排他、音声合成とは独立） |
+| `openrouterSttBaseUrl` | string | `'https://openrouter.ai/api/v1'` | 文字起こしAPIのBase URL |
+| `openrouterSttApiKey` | string | `''` | STT専用Bearer認証キー |
+| `openrouterSttModel` | string | `'openai/whisper-1'` | STTモデルID（手入力可） |
+| `openrouterSttLanguage` | string | `Lang.current()` | `ja` / `en` / `''`（自動判定） |
 | `voicevoxUrl` | string | `http://localhost:50021` | VOICEVOX Engine URL |
 | `voicevoxSpeaker` | number | `3` | VOICEVOX話者ID |
 | `voicevoxSpeakers` | array | `[]` | 取得済み話者リスト |
@@ -338,6 +347,20 @@ feed(text) → _tryFlush() → _extractNextChunk()
 
 ---
 
+### 音声認識（DeepgramClient / OpenRouterSttClient / VoiceInput）
+
+- `DeepgramClient` は `getUserMedia` → `MediaRecorder`（250ms間隔）→ `wss://api.deepgram.com/v1/listen` を管理する。選択モデル（既定Nova-3）、選択言語、`smart_format=true`、`interim_results=true` を指定。APIキーは `['token', apiKey]` のWebSocketサブプロトコルで送信し、URLやエラー表示には含めない。コンテナー付き音声にはencoding/sample_rateを指定しない。
+- 許可後は接続待ちの間も録音し、音声を最大1MiBまでバッファーする。送信待ちが上限を超える場合も停止する。WebSocket接続後は4秒ごとにKeepAliveを送る。
+- 通常停止は最後の `dataavailable` → `stop` → `CloseStream` の順。録音トラックは即時停止し、ソケットは最終Resultsと正常切断まで維持する。許可待ちは30秒、接続待ちは10秒、停止後の確定待ちは5秒でタイムアウトする。エラーや取消ではトラック・レコーダー・ソケット・タイマーを破棄し、遅れて届いたマイク許可や認識結果も処理しない。
+- `VoiceInput` はpointer captureとキーボードで短押しトグル／350ms以上のPTTを区別する。押下時に取得開始、長押し解放・pointercancel・押下中のフォーカス喪失で停止する。停止処理中は再開を抑止しつつ、キーボードフォーカスを保持する。
+- 途中結果は入力欄で差し替え、確定結果は区間識別子で重複を除いて追記する。入力欄の文字列が変わる場合だけ `input` イベントで自動リサイズ・意図判定に反映する。空の結果や同一文字列の再通知・確定で意図判定の再実行や手動選択の解除は行わない。手入力、設定表示、通話待機、ページ非表示／pagehideで取消し、下書きは保持する。
+- 送信時は直ちに録音を停止し、`VoiceInput.finish()` を待ってから下書きを取得する。確定待ちの連打を抑止し、タイムアウト時は自動送信せず表示済みの文字を残す。無効時は `microphone-controls` 全体を隠して高さも元に戻し、権限要求・通信を行わない。
+- 仕様参照：[Streaming API](https://developers.deepgram.com/reference/speech-to-text/listen-streaming)、[CloseStream](https://developers.deepgram.com/docs/close-stream)、[モデルと言語](https://developers.deepgram.com/docs/models-languages-overview)。
+
+`OpenRouterSttClient` は同じ `start/stop/cancel/done` インターフェースを提供する。WebSocketは使わず、MediaRecorderの全チャンクと最後のdataavailableを一つの録音としてBase64化し、`POST {baseUrl}/audio/transcriptions` に送る。JSONは `model`、`input_audio: {data, format}`、`response_format: 'json'`、任意の `language`。音声形式は実際のMIMEからwebm/ogg/m4a/wavを判定し、自動言語時はlanguageを省略する。返却された `text` を共通の確定結果形式に変換して入力欄へ追記する。
+
+OpenRouter STTは録音20MiB・許可待ち30秒・停止から完了まで65秒に制限する。停止時は即時マイク解放し、最後の音声チャンクを待って送信する。取消／タイムアウトはAbortControllerでHTTPを中断し、遅延した許可・応答を無視する。HTTPエラーではキーや応答本文を表示せず、ステータスコードのみ添える。チェック変更・設定読み込み・保存で認識プロバイダーの排他を保証し、競合した保存値はOpenRouter STTを優先する。両方無効ならマイク行を隠す。[OpenRouter STT仕様](https://openrouter.ai/docs/guides/overview/multimodal/stt)。
+
 ### 8. 音声合成モジュール
 
 **SpeechClient / SpeechAudio:** `SpeechClient.synthesize(text)` が有効な音声エンジンへ振り分ける。`SpeechAudio` が既存の再生処理と注釈除去を共通化し、`SpeechClient.play(url)` からも利用する。再生終了時にObject URLを解放する。全エンジン無効時は音声を生成しない。設定の読み込み・保存時にも排他状態を正規化する（競合時はOpenRouter、Irodori、VOICEVOXの順）。
@@ -532,7 +555,9 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
       <div id="last-call-duration"> ← 前回の通話時間
     <div id="chat-messages">    ← バブル・インジケータの親
   <div id="quick-responses">    ← クイックレスポンスボタンエリア
-  <footer id="input-area">      ← テキストエリア + 意図バッジ + 送信ボタン
+  <footer id="input-area">      ← 縦2段の送信エリア
+    <div id="microphone-controls"> ← 画面中央のマイクボタン + 認識状態
+    <div id="input-row">        ← テキストエリア + 意図バッジ + 送信ボタン
   <div id="settings-overlay">   ← 設定ダイアログ（モーダル）
   <div id="intro-overlay">      ← イントロダイアログ（初回のみ）
   <div id="retry-bar">          ← エラー時リトライバー
@@ -596,6 +621,10 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 | `slowdialog_intro_seen` | イントロ表示済みフラグ（`"1"`） |
 
 ## 検証
+
+- `node tests/openrouter-stt.cjs`：日英・通常版・配布版で認識エンジン切替・設定保持・キー分離・モデル手入力・言語自動判定、録音全体と最終チャンクのBase64送信、MIMEとformatの一致、短押し/PTT、送信待ちと連打、編集取消・HTTP/不正応答/通信エラー・タイムアウト・遅延許可・ページ離脱を確認。疑似マイクと標準MediaRecorderによる実WebM音声も検証する。APIはモックで、有料の実接続は含まない。
+
+- `node tests/deepgram.cjs`：日英・通常版・配布版で設定保存・取消・キー保持・音声合成との独立、短押し・PTT・キーボード・タッチ、接続待ちの録音、遅延したマイク許可、途中結果の差し替え・重複排除、手動編集、最終結果待ちと送信、エラー・タイムアウト・後処理、モバイル／デスクトップ配置を確認。モックによる状態遷移に加え、疑似マイクとlocalhostのWebSocketサーバーでブラウザ標準MediaRecorder/WebSocketのWebM出力・最終音声とCloseStreamの送信順・トラック解放も確認する。課金されるDeepgram実接続や認識精度の確認は含まない。
 
 - `node tests/context-limit.cjs`：上限到達後の送信確認、キャンセル時の履歴・入力保持、連打抑止、再表示条件、通常送信・定型入力・編集・再送信・通話開始、日英・通常版・配布版の確認。
 - `node tests/intent-choices.cjs`：日英の選択肢数・重複・カスタム設定の保持。

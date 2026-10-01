@@ -919,12 +919,35 @@ body {
 /* ===== Input Area ===== */
 #input-area {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
   padding: 8px 12px;
   background: var(--gb-dark);
   border-top: var(--border-w) solid var(--gb-darkest);
   flex-shrink: 0;
+}
+
+#input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+#microphone-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#microphone-status {
+  min-height: 1.4em;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--gb-lightest);
+  overflow-wrap: anywhere;
 }
 
 #user-input {
@@ -947,7 +970,8 @@ body {
   opacity: 0.7;
 }
 
-#btn-send {
+#btn-send,
+#btn-microphone {
   width: 40px;
   height: 40px;
   background: var(--gb-light);
@@ -961,12 +985,37 @@ body {
   transition: background 0.1s;
 }
 
-#btn-send:hover {
+#btn-send:hover,
+#btn-microphone:hover:not(:disabled) {
   background: var(--gb-lightest);
 }
 
-#btn-send:active {
+#btn-send:active,
+#btn-microphone:active:not(:disabled) {
   transform: scale(0.93);
+}
+
+#btn-microphone {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#btn-microphone[aria-pressed="true"] {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  box-shadow: 0 0 0 2px var(--gb-light);
+}
+
+#btn-microphone:focus-visible {
+  outline: 2px solid var(--gb-lightest);
+  outline-offset: 3px;
+}
+
+#btn-microphone:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ===== Settings Dialog ===== */
@@ -1745,13 +1794,24 @@ body.no-borders .import-divider::after {
 
   <!-- ===== Input Area ===== -->
   <footer id="input-area">
-    <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
-    <button type="button" id="intent-badge" class="intent-badge hidden" aria-live="polite"></button>
-    <button id="btn-send" title="Send">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
-      </svg>
-    </button>
+    <div id="microphone-controls" class="hidden">
+      <button type="button" id="btn-microphone" title="Speech recognition" aria-label="Start speech recognition" aria-pressed="false" aria-describedby="microphone-status" disabled>
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="8" y="2" width="6" height="11" rx="3" />
+          <path d="M5 9v2a6 6 0 0 0 12 0V9M11 17v3M7 20h8" />
+        </svg>
+      </button>
+      <div id="microphone-status" role="status" aria-live="polite"></div>
+    </div>
+    <div id="input-row">
+      <textarea id="user-input" placeholder="Type a message..." rows="1"></textarea>
+      <button type="button" id="intent-badge" class="intent-badge hidden" aria-live="polite"></button>
+      <button id="btn-send" title="Send">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M4 11l14-7-7 14v-7H4z" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
   </footer>
 
   <!-- ===== Settings Dialog ===== -->
@@ -1764,6 +1824,7 @@ body.no-borders .import-divider::after {
           <button type="button" id="settings-tab-setup" role="tab" aria-controls="settings-panel-setup" aria-selected="true" tabindex="0">Setup</button>
           <button type="button" id="settings-tab-display" role="tab" aria-controls="settings-panel-display" aria-selected="false" tabindex="-1">Display</button>
           <button type="button" id="settings-tab-speech" role="tab" aria-controls="settings-panel-speech" aria-selected="false" tabindex="-1">Speech</button>
+          <button type="button" id="settings-tab-recognition" role="tab" aria-controls="settings-panel-recognition" aria-selected="false" tabindex="-1">Recognition</button>
           <button type="button" id="settings-tab-conversation" role="tab" aria-controls="settings-panel-conversation" aria-selected="false" tabindex="-1">Conversation</button>
           <button type="button" id="settings-tab-intent" role="tab" aria-controls="settings-panel-intent" aria-selected="false" tabindex="-1">Intent</button>
           <button type="button" id="settings-tab-shortcuts" role="tab" aria-controls="settings-panel-shortcuts" aria-selected="false" tabindex="-1">Shortcuts</button>
@@ -2030,6 +2091,52 @@ body.no-borders .import-divider::after {
               </div>
               <div class="settings-note">Speech tests incur the selected model's usual charges.</div>
               <div id="openrouter-tts-status" class="settings-status" role="status"></div>
+            </div>
+          </section>
+          <section id="settings-panel-recognition" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-recognition" tabindex="0" hidden>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-deepgram-enabled">
+              Deepgram speech recognition
+            </label>
+            <div id="deepgram-settings" class="settings-subsection hidden">
+              <label for="setting-deepgram-apikey">Deepgram API key</label>
+              <input type="password" id="setting-deepgram-apikey" autocomplete="off" spellcheck="false">
+              <label for="setting-deepgram-model">Recognition model</label>
+              <input type="text" id="setting-deepgram-model" list="deepgram-models" placeholder="nova-3" autocomplete="off" spellcheck="false">
+              <datalist id="deepgram-models">
+                <option value="nova-3"></option>
+                <option value="nova-2"></option>
+              </datalist>
+              <label for="setting-deepgram-language">Recognition language</label>
+              <select id="setting-deepgram-language">
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+                <option value="multi">Multilingual (including Japanese and English)</option>
+              </select>
+              <div class="settings-note">Microphone permission is required. Open over HTTPS or localhost. Local HTML works in browsers that allow microphone access from files.</div>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-openrouter-stt-enabled">
+              OpenRouter STT speech recognition
+            </label>
+            <div id="openrouter-stt-settings" class="settings-subsection hidden">
+              <label for="setting-openrouter-stt-baseurl">Base URL</label>
+              <input type="url" id="setting-openrouter-stt-baseurl" placeholder="https://openrouter.ai/api/v1">
+              <label for="setting-openrouter-stt-apikey">OpenRouter API key</label>
+              <input type="password" id="setting-openrouter-stt-apikey" autocomplete="off" spellcheck="false">
+              <label for="setting-openrouter-stt-model">Recognition model</label>
+              <input type="text" id="setting-openrouter-stt-model" list="openrouter-stt-models" placeholder="openai/whisper-1" autocomplete="off" spellcheck="false">
+              <datalist id="openrouter-stt-models">
+                <option value="openai/whisper-1"></option>
+                <option value="openai/gpt-4o-transcribe"></option>
+              </datalist>
+              <label for="setting-openrouter-stt-language">Recognition language</label>
+              <select id="setting-openrouter-stt-language">
+                <option value="">Auto-detect</option>
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+              </select>
+              <div class="settings-note">Transcription starts when recording stops.</div>
             </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
@@ -2507,6 +2614,15 @@ const Settings = (() => {
         splitInsideQuotes: false,
         showPauseButton: true,
         soundEnabled: true,
+        deepgramEnabled: false,
+        deepgramApiKey: '',
+        deepgramModel: 'nova-3',
+        deepgramLanguage: Lang.current(),
+        openrouterSttEnabled: false,
+        openrouterSttBaseUrl: 'https://openrouter.ai/api/v1',
+        openrouterSttApiKey: '',
+        openrouterSttModel: 'openai/whisper-1',
+        openrouterSttLanguage: Lang.current(),
         voicevoxEnabled: false,
         voicevoxUrl: 'http://localhost:50021',
         voicevoxSpeaker: 3,
@@ -2575,6 +2691,7 @@ const Settings = (() => {
         } catch { /* ignore */ }
         normalizeBackgroundPosition(_settings);
         normalizeSpeechEngine(_settings);
+        normalizeRecognitionEngine(_settings);
         _settings.chatAreaOffset = Math.min(95, Math.max(0, Number(_settings.chatAreaOffset) || 0));
         return _settings;
     }
@@ -2584,6 +2701,7 @@ const Settings = (() => {
         const next = { ...DEFAULTS, ...s };
         normalizeBackgroundPosition(next);
         normalizeSpeechEngine(next);
+        normalizeRecognitionEngine(next);
         next.chatAreaOffset = Math.min(95, Math.max(0, Number(next.chatAreaOffset) || 0));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         const contextIncreased = next.contextSize > _settings.contextSize;
@@ -2599,6 +2717,11 @@ const Settings = (() => {
         } else if (settings.irodoriEnabled) {
             settings.voicevoxEnabled = false;
         }
+    }
+
+    // 音声認識プロバイダーは一つだけ有効にする（音声合成とは独立）。
+    function normalizeRecognitionEngine(settings) {
+        if (settings.openrouterSttEnabled) settings.deepgramEnabled = false;
     }
 
     /** 現在の設定のスナップショットを返す */
@@ -4646,6 +4769,450 @@ const SystemOneIntent = (() => {
 })();
 
 
+// ────────────────────────────────────────────────────────────
+// DeepgramClient — microphone chunks → streaming transcription
+// ────────────────────────────────────────────────────────────
+const DeepgramClient = (() => {
+    function supported() {
+        return !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined' && typeof WebSocket !== 'undefined';
+    }
+
+    function start({ apiKey, model = 'nova-3', language, onResult, onState, onError }) {
+        let stream, recorder, socket, timer, keepAlive;
+        let closed = false, stopping = false, recorderStopped = false, closeSent = false;
+        let queue = [], queuedBytes = 0;
+        const maxBufferedBytes = 1024 * 1024;
+        let resolveDone;
+        const done = new Promise(resolve => { resolveDone = resolve; });
+
+        function stopTracks() { stream?.getTracks().forEach(track => track.stop()); }
+        function dispose(ok = true, error = '') {
+            if (closed) return;
+            closed = true;
+            clearTimeout(timer);
+            clearInterval(keepAlive);
+            if (recorder) {
+                recorder.ondataavailable = recorder.onstop = recorder.onerror = null;
+                if (recorder.state !== 'inactive') recorder.stop();
+            }
+            stopTracks();
+            if (socket) {
+                socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+                if (socket.readyState < WebSocket.CLOSING) socket.close();
+            }
+            queue = [];
+            onState('idle');
+            if (error) onError(error);
+            resolveDone(ok);
+        }
+        const fail = error => dispose(false, error);
+        function send(data) {
+            if (closed) return false;
+            if (socket.bufferedAmount + (data.size || 0) > maxBufferedBytes) {
+                fail('connection');
+                return false;
+            }
+            try { socket.send(data); return true; }
+            catch { fail('connection'); return false; }
+        }
+        // MediaRecorder emits its last dataavailable BEFORE stop. Only then flush
+        // Deepgram, and leave the socket open to receive the final Results.
+        function closeWhenReady() {
+            if (closed || closeSent || !stopping || !recorderStopped || socket?.readyState !== WebSocket.OPEN) return;
+            closeSent = true;
+            clearInterval(keepAlive);
+            send(JSON.stringify({ type: 'CloseStream' }));
+        }
+        function stop() {
+            if (closed || stopping) return done;
+            stopping = true;
+            onState('stopping');
+            clearTimeout(timer);
+            // Permission prompts cannot be dismissed programmatically. Any late
+            // stream is stopped below without opening a connection.
+            if (!recorder) { dispose(); return done; }
+            timer = setTimeout(() => fail('finalTimeout'), 5000);
+            if (recorder.state !== 'inactive') recorder.stop();
+            else { recorderStopped = true; closeWhenReady(); }
+            stopTracks();
+            return done;
+        }
+
+        timer = setTimeout(() => fail('permissionTimeout'), 30000);
+        (async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+                });
+                if (closed) { stopTracks(); return; }
+                clearTimeout(timer);
+                const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+                    .find(type => MediaRecorder.isTypeSupported(type));
+                recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+                const params = new URLSearchParams({
+                    model, language, smart_format: 'true', interim_results: 'true',
+                });
+                // Containerized MediaRecorder audio carries its own sample rate
+                // and encoding. Authenticate via subprotocol, never in the URL.
+                socket = new WebSocket(`wss://api.deepgram.com/v1/listen?${params}`, ['token', apiKey]);
+                timer = setTimeout(() => fail('connection'), 10000);
+                socket.onopen = () => {
+                    if (closed) return;
+                    if (!stopping) clearTimeout(timer);
+                    for (const chunk of queue) { if (!send(chunk)) return; }
+                    queue = [];
+                    queuedBytes = 0;
+                    if (!stopping) onState('listening');
+                    keepAlive = setInterval(() => {
+                        if (!closed && !closeSent && socket.readyState === WebSocket.OPEN) send(JSON.stringify({ type: 'KeepAlive' }));
+                    }, 4000);
+                    closeWhenReady();
+                };
+                socket.onmessage = event => {
+                    if (closed) return;
+                    let result;
+                    try { result = JSON.parse(event.data); }
+                    catch { fail('connection'); return; }
+                    if (result.type === 'Error') fail('connection');
+                    else if (result.type === 'Results') onResult(result);
+                };
+                socket.onerror = () => fail('connection');
+                socket.onclose = event => {
+                    if (stopping && closeSent && event.code === 1000) dispose();
+                    else fail('connection');
+                };
+                recorder.ondataavailable = event => {
+                    if (closed || !event.data.size) return;
+                    if (socket.readyState === WebSocket.OPEN) send(event.data);
+                    else if (socket.readyState === WebSocket.CONNECTING) {
+                        queuedBytes += event.data.size;
+                        if (queuedBytes > maxBufferedBytes) fail('connection');
+                        else queue.push(event.data);
+                    }
+                };
+                recorder.onstop = () => {
+                    recorderStopped = true;
+                    if (!stopping) fail('microphone');
+                    else closeWhenReady();
+                };
+                recorder.onerror = () => fail('microphone');
+                stream.getAudioTracks().forEach(track => {
+                    track.onended = () => { if (!closed && !stopping) fail('microphone'); };
+                });
+                // Capture immediately, including speech spoken during the handshake.
+                recorder.start(250);
+            } catch (error) {
+                if (closed) return;
+                fail(['NotAllowedError', 'SecurityError'].includes(error.name) ? 'permission' :
+                    ['NotFoundError', 'NotReadableError', 'NotSupportedError'].includes(error.name) ? 'microphone' : 'connection');
+            }
+        })();
+        return { stop, cancel: () => dispose(false), done };
+    }
+    return { supported, start };
+})();
+
+// ────────────────────────────────────────────────────────────
+// OpenRouterSttClient — record a complete clip, then transcribe via HTTP
+// ────────────────────────────────────────────────────────────
+const OpenRouterSttClient = (() => {
+    function supported() {
+        return !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined';
+    }
+    function start({ apiKey, baseUrl, model, language, onResult, onState, onError }) {
+        let stream, recorder, timer, parts = [], bytes = 0;
+        let closed = false, stopping = false;
+        const controller = new AbortController();
+        let resolveDone;
+        const done = new Promise(resolve => { resolveDone = resolve; });
+        const stopTracks = () => stream?.getTracks().forEach(track => track.stop());
+
+        function dispose(ok = true, error = '', status) {
+            if (closed) return;
+            closed = true;
+            clearTimeout(timer);
+            controller.abort();
+            if (recorder) {
+                recorder.ondataavailable = recorder.onstop = recorder.onerror = null;
+                if (recorder.state !== 'inactive') recorder.stop();
+            }
+            stopTracks();
+            parts = [];
+            onState('idle');
+            if (error) onError(error, status);
+            resolveDone(ok);
+        }
+        const fail = (error, status) => dispose(false, error, status);
+        async function transcribe() {
+            if (closed) return;
+            if (!stopping) { fail('microphone'); return; }
+            const mime = (recorder.mimeType || parts.find(part => part.type)?.type || '').split(';')[0].toLowerCase();
+            const format = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/wav': 'wav' }[mime];
+            if (!format) { fail('audioFormat'); return; }
+            const audio = new Blob(parts, { type: mime });
+            parts = [];
+            if (!audio.size) { dispose(); return; }
+            try {
+                const data = new Uint8Array(await audio.arrayBuffer());
+                if (closed) return;
+                const binary = [];
+                for (let i = 0; i < data.length; i += 32768) binary.push(String.fromCharCode(...data.subarray(i, i + 32768)));
+                const body = { model, input_audio: { data: btoa(binary.join('')), format }, response_format: 'json' };
+                if (language) body.language = language;
+                const url = (String(baseUrl || '').trim() || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+                const response = await fetch(`${url}/audio/transcriptions`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    signal: controller.signal,
+                });
+                if (closed) return;
+                if (!response.ok) { fail('openrouterConnection', response.status); return; }
+                let result;
+                try { result = await response.json(); }
+                catch { if (!closed) fail('invalidTranscript'); return; }
+                if (closed) return;
+                if (typeof result?.text !== 'string') { fail('invalidTranscript'); return; }
+                if (result.text.trim()) onResult({
+                    is_final: true, start: 0, duration: 0,
+                    channel: { alternatives: [{ transcript: result.text.trim() }] },
+                });
+                dispose();
+            } catch {
+                if (!closed) fail('openrouterConnection');
+            }
+        }
+        function stop() {
+            if (closed || stopping) return done;
+            stopping = true;
+            onState('stopping');
+            clearTimeout(timer);
+            if (!recorder) { dispose(); return done; }
+            // OpenRouter's upstream processing limit is 60 seconds. Include a
+            // small allowance for finalizing and uploading the recorded clip.
+            timer = setTimeout(() => fail('finalTimeout'), 65000);
+            if (recorder.state !== 'inactive') recorder.stop();
+            stopTracks();
+            return done;
+        }
+        timer = setTimeout(() => fail('permissionTimeout'), 30000);
+        (async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+                });
+                if (closed) { stopTracks(); return; }
+                clearTimeout(timer);
+                const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+                    .find(type => MediaRecorder.isTypeSupported(type));
+                recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+                recorder.ondataavailable = event => {
+                    if (closed || !event.data.size) return;
+                    bytes += event.data.size;
+                    if (bytes > 20 * 1024 * 1024) { fail('recordingTooLarge'); return; }
+                    parts.push(event.data);
+                };
+                // All chunks, including the final dataavailable event, form one
+                // decodable recording. Individual WebM chunks are not files.
+                recorder.onstop = transcribe;
+                recorder.onerror = () => fail('microphone');
+                stream.getAudioTracks().forEach(track => {
+                    track.onended = () => { if (!closed && !stopping) fail('microphone'); };
+                });
+                recorder.start(250);
+                if (!closed) onState('listening');
+            } catch (error) {
+                if (!closed) fail(['NotAllowedError', 'SecurityError'].includes(error.name) ? 'permission' : 'microphone');
+            }
+        })();
+        return { stop, cancel: () => dispose(false), done };
+    }
+    return { supported, start };
+})();
+
+// ────────────────────────────────────────────────────────────
+// VoiceInput — tap toggle / hold-to-talk, editable recognition draft
+// ────────────────────────────────────────────────────────────
+const VoiceInput = (() => {
+    let button, input, status, session = null, press = null, state = 'idle', writing = false, error = '';
+    const message = (ja, en) => Lang.current() === 'ja' ? ja : en;
+    const errors = {
+        key: ['設定の「音声認識」でDeepgram APIキーを入力してください。', 'Enter a Deepgram API key in Recognition settings.'],
+        openrouterKey: ['設定の「音声認識」でOpenRouter APIキーを入力してください。', 'Enter an OpenRouter API key in Recognition settings.'],
+        openrouterConnection: ['OpenRouter STTに接続できません。APIキー・モデル・利用枠・ネットワークを確認してください。', 'OpenRouter STT request failed. Check your API key, model, quota, and network.'],
+        invalidTranscript: ['OpenRouter STTから有効な認識結果を取得できませんでした。', 'OpenRouter STT returned an invalid transcription.'],
+        audioFormat: ['このブラウザの録音形式には対応していません。', 'This browser’s recording format is unsupported.'],
+        recordingTooLarge: ['録音が20MiBの上限に達したため停止しました。短く区切って録音してください。', 'Recording stopped at the 20 MiB limit. Please record a shorter clip.'],
+        unsupported: ['この環境ではマイクを使えません。HTTPSまたはlocalhostで開いてください。', 'Microphone access is unavailable. Open over HTTPS or localhost.'],
+        permission: ['マイクの使用が許可されていません。ブラウザの権限を確認してください。', 'Microphone access was denied. Check browser permissions.'],
+        permissionTimeout: ['マイクの許可待ちを終了しました。許可後にもう一度押してください。', 'Microphone permission timed out. Allow access and try again.'],
+        microphone: ['マイクから録音できません。接続や他のアプリでの使用状況を確認してください。', 'Cannot record from the microphone. Check its connection and use by other apps.'],
+        connection: ['Deepgramに接続できないか、接続が切れました。APIキー・利用枠・ネットワークを確認してください。', 'Deepgram connection failed or disconnected. Check your API key, quota, and network.'],
+        finalTimeout: ['認識結果の確定がタイムアウトしました。入力欄の内容を確認してください。', 'Final transcription timed out. Please check the text in the input box.'],
+    };
+    function render() {
+        if (!button) return;
+        const settings = Settings.get();
+        const enabled = settings.deepgramEnabled || settings.openrouterSttEnabled;
+        document.getElementById('microphone-controls').classList.toggle('hidden', !enabled);
+        const active = state === 'starting' || state === 'listening';
+        button.disabled = !enabled;
+        button.setAttribute('aria-disabled', String(!enabled || state === 'stopping'));
+        button.dataset.state = state;
+        button.setAttribute('aria-pressed', String(active));
+        button.setAttribute('aria-busy', String(state === 'starting' || state === 'stopping'));
+        button.setAttribute('aria-label', active ? message('音声認識を停止', 'Stop speech recognition') : message('音声認識を開始', 'Start speech recognition'));
+        const hints = {
+            idle: message('短押しで開始・停止 / 長押しで話す', 'Tap to start/stop / Hold to talk'),
+            starting: message('マイク・接続を準備中…', 'Preparing microphone and connection…'),
+            listening: settings.openrouterSttEnabled ? message('録音中…', 'Recording…') : message('音声認識中…', 'Listening…'),
+            stopping: settings.openrouterSttEnabled ? message('文字起こし中…', 'Transcribing…') : message('認識結果を確定中…', 'Finishing transcription…'),
+        };
+        status.textContent = error || (!enabled ? message('設定の「音声認識」で有効にできます', 'Enable in Recognition settings') : hints[state]);
+        button.title = status.textContent;
+    }
+    function start() {
+        const settings = Settings.get();
+        if (session || !(settings.deepgramEnabled || settings.openrouterSttEnabled)) return;
+        const openrouter = settings.openrouterSttEnabled;
+        const client = openrouter ? OpenRouterSttClient : DeepgramClient;
+        const apiKey = String((openrouter ? settings.openrouterSttApiKey : settings.deepgramApiKey) || '').trim();
+        const problem = !apiKey ? (openrouter ? 'openrouterKey' : 'key') : !client.supported() ? 'unsupported' : '';
+        if (problem) { error = message(...errors[problem]); render(); return; }
+        error = '';
+        state = 'starting';
+        render();
+        const language = openrouter ? (['', 'ja', 'en'].includes(settings.openrouterSttLanguage) ? settings.openrouterSttLanguage : Lang.current()) :
+            (['ja', 'en', 'multi'].includes(settings.deepgramLanguage) ? settings.deepgramLanguage : Lang.current());
+        let committed = input.value;
+        const finalized = new Set();
+        const join = (left, right) => {
+            if (!right) return left;
+            const space = left && !/\s$/.test(left) && !/^[\s、。，．！？,.!?]/u.test(right) &&
+                !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]$/u.test(left) &&
+                !/^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(right);
+            return left + (space ? ' ' : '') + right;
+        };
+        session = client.start({
+            apiKey, language,
+            model: String((openrouter ? settings.openrouterSttModel : settings.deepgramModel) || '').trim() || (openrouter ? 'openai/whisper-1' : 'nova-3'),
+            baseUrl: settings.openrouterSttBaseUrl,
+            onState(next) { state = next; if (next === 'idle') session = null; render(); },
+            onError(kind, httpStatus) {
+                error = message(...errors[kind]) + (Number.isInteger(httpStatus) ? ` (${httpStatus})` : '');
+                render();
+            },
+            onResult(result) {
+                const transcript = result.channel?.alternatives?.[0]?.transcript;
+                if (typeof transcript !== 'string') return;
+                if (result.is_final) {
+                    const id = `${result.start}:${result.duration}`;
+                    if (finalized.has(id)) return;
+                    finalized.add(id);
+                    committed = join(committed, transcript);
+                }
+                const nextValue = result.is_final ? committed : join(committed, transcript);
+                // Repeated/empty recognition results must not reset intent
+                // classification, its debounce, or a manually selected intent.
+                if (input.value === nextValue) return;
+                input.value = nextValue;
+                writing = true;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                writing = false;
+                input.scrollTop = input.scrollHeight;
+            },
+        });
+    }
+    function finish() { press = null; return session ? session.stop() : Promise.resolve(true); }
+    function cancel() { press = null; session?.cancel(); }
+    function beginPress(id) {
+        if (press || button.disabled || state === 'stopping') return;
+        press = { id, time: performance.now(), wasActive: !!session };
+        if (!session) start();
+    }
+    function endPress(id, cancelled = false) {
+        if (!press || press.id !== id) return;
+        const stop = cancelled || press.wasActive || performance.now() - press.time >= 350;
+        press = null;
+        if (stop) finish();
+    }
+    function init() {
+        button = document.getElementById('btn-microphone');
+        input = document.getElementById('user-input');
+        status = document.getElementById('microphone-status');
+        button.addEventListener('pointerdown', event => {
+            if (event.button !== 0 || !event.isPrimary || button.disabled || press) return;
+            event.preventDefault();
+            button.focus({ preventScroll: true });
+            button.setPointerCapture(event.pointerId);
+            beginPress(event.pointerId);
+        });
+        button.addEventListener('pointerup', event => endPress(event.pointerId));
+        button.addEventListener('pointercancel', event => endPress(event.pointerId, true));
+        button.addEventListener('lostpointercapture', event => endPress(event.pointerId, true));
+        button.addEventListener('contextmenu', event => event.preventDefault());
+        button.addEventListener('keydown', event => {
+            if (![' ', 'Enter'].includes(event.key)) return;
+            event.preventDefault();
+            if (!event.repeat) beginPress(event.key);
+        });
+        button.addEventListener('keyup', event => {
+            if (![' ', 'Enter'].includes(event.key)) return;
+            event.preventDefault();
+            endPress(event.key);
+        });
+        // Assistive technology can activate a button without pointer/key events.
+        button.addEventListener('click', event => { if (event.detail === 0 && !press) { if (session) finish(); else start(); } });
+        button.addEventListener('blur', () => { if (press) finish(); });
+        window.addEventListener('blur', () => { if (press) finish(); });
+        window.addEventListener('pagehide', cancel);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) cancel(); });
+        // Manual edits take ownership of the draft. Late results cannot undo them.
+        input.addEventListener('beforeinput', cancel);
+        input.addEventListener('input', () => { if (!writing) cancel(); });
+        for (const provider of ['deepgram', 'openrouter-stt']) {
+            document.getElementById(`setting-${provider}-enabled`).addEventListener('change', event => {
+                if (event.target.checked) document.getElementById(`setting-${provider === 'deepgram' ? 'openrouter-stt' : 'deepgram'}-enabled`).checked = false;
+                toggleSettings();
+            });
+        }
+        render();
+    }
+    function toggleSettings() {
+        document.getElementById('deepgram-settings').classList.toggle('hidden', !document.getElementById('setting-deepgram-enabled').checked);
+        document.getElementById('openrouter-stt-settings').classList.toggle('hidden', !document.getElementById('setting-openrouter-stt-enabled').checked);
+    }
+    function openSettings() {
+        cancel();
+        const settings = Settings.get();
+        document.getElementById('setting-deepgram-enabled').checked = settings.deepgramEnabled;
+        document.getElementById('setting-deepgram-apikey').value = settings.deepgramApiKey;
+        document.getElementById('setting-deepgram-model').value = settings.deepgramModel;
+        document.getElementById('setting-deepgram-language').value = settings.deepgramLanguage;
+        document.getElementById('setting-openrouter-stt-enabled').checked = settings.openrouterSttEnabled;
+        document.getElementById('setting-openrouter-stt-baseurl').value = settings.openrouterSttBaseUrl;
+        document.getElementById('setting-openrouter-stt-apikey').value = settings.openrouterSttApiKey;
+        document.getElementById('setting-openrouter-stt-model').value = settings.openrouterSttModel;
+        document.getElementById('setting-openrouter-stt-language').value = settings.openrouterSttLanguage;
+        toggleSettings();
+    }
+    function readSettings() {
+        return {
+            deepgramEnabled: document.getElementById('setting-deepgram-enabled').checked,
+            deepgramApiKey: document.getElementById('setting-deepgram-apikey').value.trim(),
+            deepgramModel: document.getElementById('setting-deepgram-model').value.trim() || 'nova-3',
+            deepgramLanguage: document.getElementById('setting-deepgram-language').value,
+            openrouterSttEnabled: document.getElementById('setting-openrouter-stt-enabled').checked,
+            openrouterSttBaseUrl: document.getElementById('setting-openrouter-stt-baseurl').value.trim() || 'https://openrouter.ai/api/v1',
+            openrouterSttApiKey: document.getElementById('setting-openrouter-stt-apikey').value.trim(),
+            openrouterSttModel: document.getElementById('setting-openrouter-stt-model').value.trim() || 'openai/whisper-1',
+            openrouterSttLanguage: document.getElementById('setting-openrouter-stt-language').value,
+        };
+    }
+    function refresh() { error = ''; render(); }
+    return { init, finish, cancel, openSettings, readSettings, refresh };
+})();
+
 const UIController = (() => {
     const CALL_START_PROMPT = '<SYSTEM>Ringring! The user has called you. A call session has started. Please begin responding in the language defined by the system prompt.</SYSTEM>';
 
@@ -4714,6 +5281,7 @@ const UIController = (() => {
     let _intentPreview, _editIntentPreview;
     let _isQuickResponsePreview = false;
     let _isStreaming = false;
+    let _isSending = false;
     let _typingIndicator = null;
     let _assistantBubblesInTurn = []; // 現在のターンで追加された assistant バブル
     let _lastRetryMessages = null;
@@ -4748,6 +5316,7 @@ const UIController = (() => {
 
         _renderAllMessages();
         _bindEvents();
+        VoiceInput.init();
         _renderQuickResponses();
         _renderModeDropdowns();
         _applyInteractionMode();
@@ -4877,6 +5446,17 @@ const UIController = (() => {
 
     // ─── Send Message ───
     async function _handleSend() {
+        const recognitionFinished = VoiceInput.finish();
+        if (_isSending) return;
+        _isSending = true;
+        try {
+            if (await recognitionFinished) await _sendDraft();
+        } finally {
+            _isSending = false;
+        }
+    }
+
+    async function _sendDraft() {
         const text = userInput.value.trim();
         if (!text) return;
 
@@ -5459,6 +6039,7 @@ const UIController = (() => {
         _renderCallDuration(isTextCall, isStandby);
 
         if (isStandby) {
+            VoiceInput.cancel();
             quickResponsesContainer.classList.add('hidden');
             modeDropdownsContainer.classList.add('hidden');
             _hideRetryBar();
@@ -5846,6 +6427,7 @@ const UIController = (() => {
     // 現在の設定値を全フォームフィールドに転記して設定ダイアログを開く
     function openSettings() {
         BackgroundImage.open();
+        VoiceInput.openSettings();
         SystemOneIntent.openSettings();
         const s = Settings.get();
         _originalTheme = s.theme || 'gb';
@@ -6274,6 +6856,7 @@ const UIController = (() => {
         }
         const saved = await BackgroundImage.save({
             ...intentSettings,
+            ...VoiceInput.readSettings(),
             appMode: nextMode,
             baseUrl,
             apiKey: document.getElementById('setting-apikey').value.trim(),
@@ -6306,6 +6889,7 @@ const UIController = (() => {
             mode4: document.getElementById('setting-mode4').value,
         });
         if (!saved) return;
+        VoiceInput.refresh();
         SystemOneIntent.refresh(previousSettings);
         Settings.applyFont();
         Settings.applyTheme();

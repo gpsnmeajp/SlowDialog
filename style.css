@@ -909,12 +909,35 @@ body {
 /* ===== Input Area ===== */
 #input-area {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
   padding: 8px 12px;
   background: var(--gb-dark);
   border-top: var(--border-w) solid var(--gb-darkest);
   flex-shrink: 0;
+}
+
+#input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
+#microphone-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#microphone-status {
+  min-height: 1.4em;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--gb-lightest);
+  overflow-wrap: anywhere;
 }
 
 #user-input {
@@ -937,7 +960,8 @@ body {
   opacity: 0.7;
 }
 
-#btn-send {
+#btn-send,
+#btn-microphone {
   width: 40px;
   height: 40px;
   background: var(--gb-light);
@@ -951,12 +975,37 @@ body {
   transition: background 0.1s;
 }
 
-#btn-send:hover {
+#btn-send:hover,
+#btn-microphone:hover:not(:disabled) {
   background: var(--gb-lightest);
 }
 
-#btn-send:active {
+#btn-send:active,
+#btn-microphone:active:not(:disabled) {
   transform: scale(0.93);
+}
+
+#btn-microphone {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#btn-microphone[aria-pressed="true"] {
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  box-shadow: 0 0 0 2px var(--gb-light);
+}
+
+#btn-microphone:focus-visible {
+  outline: 2px solid var(--gb-lightest);
+  outline-offset: 3px;
+}
+
+#btn-microphone:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ===== Settings Dialog ===== */

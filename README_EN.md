@@ -59,6 +59,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 - A modern browser (latest version of Chrome, Firefox, Safari, or Edge)
 - An endpoint and API key for an OpenAI-compatible ChatCompletion API (with SSE streaming support)
+- For Deepgram recognition: a Deepgram API key, available quota, and microphone permission over HTTPS or localhost (local HTML works where the browser permits microphone access)
 - An OpenRouter API key and available quota or credits for your chosen model when using OpenRouter TTS
 - Irodori-TTS-Server running locally or on the same network when using Irodori speech synthesis
 - VOICEVOX Engine running locally or on the same network when using speech synthesis
@@ -100,6 +101,13 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | Pause Button (Auto Advance) | Show pause button during auto-advance | On |
 | Sound Effects | Whether to enable sound effects | On |
 | VOICEVOX Speech Synthesis | Read AI responses aloud with VOICEVOX | Off |
+| Deepgram Speech Recognition | Enable microphone input in the Recognition tab | Off |
+| Deepgram API Key | Separate speech recognition key | Blank |
+| Recognition Model | Enter a streaming model ID or choose a suggestion | `nova-3` |
+| Recognition Language | Japanese, English, or multilingual (including Japanese and English) | Japanese on the Japanese page; English on the English page |
+| OpenRouter STT Speech Recognition | Switch from Deepgram to transcription after recording | Off |
+| OpenRouter STT Base URL / API Key | Separate recognition endpoint and key | `https://openrouter.ai/api/v1` / Blank |
+| OpenRouter STT Model / Language | Editable model ID; Japanese, English, or auto-detect | `openai/whisper-1` / Page language |
 | VOICEVOX URL | VOICEVOX Engine URL | `http://localhost:50021` |
 | VOICEVOX Speaker | Speaker ID used for synthesis | 3 |
 | VOICEVOX Speech Parameters | Speed, pitch, intonation, volume, pre/post silence | Defaults per field |
@@ -191,6 +199,32 @@ You can type and send a new message even while the AI response is still being di
 You can download the conversation history in JSON format from the export button in the toolbar. The exported JSON includes quick response settings, mode tag settings, system prompt, and conversation history.
 
 From the import button, you can restore history by uploading a previously exported JSON file or pasting JSON text.
+
+## Deepgram Speech Recognition
+
+In **Recognition** settings, check **Deepgram speech recognition**, enter an API key, choose a model and language, and save. The model field accepts manual IDs, suggests `nova-3` and `nova-2`, and defaults to `nova-3` when blank. Recognition is independent of speech synthesis, and disabling it preserves the key, model, and language.
+
+When enabled, the taller input area includes a microphone button centered above the text box. It shares the Send button's theme and 40 × 40px size. When both Deepgram and OpenRouter STT are disabled, the microphone and status are hidden and the input area returns to its normal height.
+
+- **Tap** to start or stop continuous recognition.
+- **Hold for at least 350ms** for push-to-talk. Capture starts on press and stops on release, including when released outside the button.
+- **Keyboard:** focus the microphone and use Space or Enter for the same tap/hold controls.
+- Interim results update the input box and are replaced by final results. Speech appends to an existing draft. Manual editing stops recognition and takes ownership of the text.
+- Stopping recognition does not send a chat message. Send or Enter in the text box immediately stops capture, then waits for the last transcription before sending.
+- Opening settings, ending a text call, or hiding the page stops capture. Permission and connection errors appear below the microphone.
+
+The browser streams microphone audio directly to Deepgram using the selected model (Nova-3 by default). The API key is stored in the browser with other settings, and recognition incurs Deepgram usage charges. Microphone permission is required. Open over HTTPS or localhost; local HTML works where the browser permits microphone access from files. Choose a model and language supported by the [Deepgram v1 streaming API](https://developers.deepgram.com/reference/speech-to-text/listen-streaming).
+
+## OpenRouter STT Speech Recognition
+
+In **Recognition** settings, check **OpenRouter STT speech recognition**, set an API key, model and language, then save. It switches exclusively with Deepgram and preserves both configurations. Speech synthesis can remain enabled independently. The recognition key is separate from chat and synthesis settings.
+
+- Base URL defaults to `https://openrouter.ai/api/v1` and can be changed for a compatible API.
+- The model defaults to `openai/whisper-1` and accepts manual model IDs. Languages are Japanese, English, or auto-detect.
+- Use the shared microphone's tap toggle or hold-to-talk controls. Transcription begins when recording stops and appends the result to the draft.
+- Send immediately stops capture, waits for transcription, then sends the chat. Editing or opening settings cancels transcription and any pending send, preventing late results from overwriting the draft.
+
+Following the [OpenRouter STT specification](https://openrouter.ai/docs/guides/overview/multimodal/stt), the complete clip is encoded as Base64 and sent to `/audio/transcriptions`. Text is not transcribed incrementally during recording. Recordings are limited to 20 MiB, with a 65-second processing timeout after stop. Failures preserve the draft and display an error.
 
 ## VOICEVOX Speech Synthesis
 
