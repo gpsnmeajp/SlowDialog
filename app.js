@@ -38,6 +38,7 @@ const Lang = (() => {
             speechSpeakingTest: '発話テスト中...',
             speechSpeakTestOk: '発話テストを再生しました。',
             speechSpeakTestNg: '発話テストに失敗しました。',
+            speechApiKeyRequired: 'OpenRouterのAPIキーを入力してください。',
             mixedContentWarning: [
                 'Base URL が http:// で、このページが https:// で開かれています。',
                 '',
@@ -79,6 +80,7 @@ const Lang = (() => {
             speechSpeakingTest: 'Testing speech...',
             speechSpeakTestOk: 'Test speech played.',
             speechSpeakTestNg: 'Test speech failed.',
+            speechApiKeyRequired: 'Enter your OpenRouter API key.',
             mixedContentWarning: [
                 'The Base URL starts with http://, but this page is open over https://.',
                 '',
@@ -313,6 +315,14 @@ const Settings = (() => {
         irodoriNumSteps: null,
         irodoriSeed: null,
         irodoriSkipAnnotations: true,
+        openrouterTtsEnabled: false,
+        openrouterTtsBaseUrl: 'https://openrouter.ai/api/v1',
+        openrouterTtsApiKey: '',
+        openrouterTtsModel: 'google/gemini-3.8-flash-tts',
+        openrouterTtsVoice: 'Zephyr',
+        openrouterTtsResponseFormat: 'pcm',
+        openrouterTtsSpeed: 1,
+        openrouterTtsSkipAnnotations: true,
         showBorders: true,
         scanlineEffect: false,
         scanlineStrength: 2,
@@ -350,7 +360,7 @@ const Settings = (() => {
             if (raw) _settings = { ...DEFAULTS, ...JSON.parse(raw) };
         } catch { /* ignore */ }
         normalizeBackgroundPosition(_settings);
-        if (_settings.irodoriEnabled) _settings.voicevoxEnabled = false;
+        normalizeSpeechEngine(_settings);
         _settings.chatAreaOffset = Math.min(95, Math.max(0, Number(_settings.chatAreaOffset) || 0));
         return _settings;
     }
@@ -359,12 +369,22 @@ const Settings = (() => {
     function save(s) {
         const next = { ...DEFAULTS, ...s };
         normalizeBackgroundPosition(next);
-        if (next.irodoriEnabled) next.voicevoxEnabled = false;
+        normalizeSpeechEngine(next);
         next.chatAreaOffset = Math.min(95, Math.max(0, Number(next.chatAreaOffset) || 0));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         const contextIncreased = next.contextSize > _settings.contextSize;
         _settings = next;
         if (contextIncreased) ContextLimitReminder.reset();
+    }
+
+    // 保存済み設定に複数の有効フラグがある場合も、音声エンジンを一つに絞る。
+    function normalizeSpeechEngine(settings) {
+        if (settings.openrouterTtsEnabled) {
+            settings.irodoriEnabled = false;
+            settings.voicevoxEnabled = false;
+        } else if (settings.irodoriEnabled) {
+            settings.voicevoxEnabled = false;
+        }
     }
 
     /** 現在の設定のスナップショットを返す */
@@ -2088,10 +2108,73 @@ const IrodoriClient = (() => {
 })();
 
 // ────────────────────────────────────────────────────────────
+// OpenRouterTtsClient — OpenRouter Audio Speech API 連携
+// ────────────────────────────────────────────────────────────
+const OpenRouterTtsClient = (() => {
+    // Gemini/OpenRouterの生PCM（24kHz・16bit little-endian・mono）を再生可能なWAVに包む。
+    function _pcmToWav(blob) {
+        if (blob.size % 2 !== 0) throw new Error('Invalid PCM length');
+        const header = new ArrayBuffer(44);
+        const view = new DataView(header);
+        const writeTag = (offset, tag) => {
+            for (let i = 0; i < tag.length; i++) view.setUint8(offset + i, tag.charCodeAt(i));
+        };
+        writeTag(0, 'RIFF');
+        view.setUint32(4, 36 + blob.size, true);
+        writeTag(8, 'WAVE');
+        writeTag(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, 1, true); // mono
+        view.setUint32(24, 24000, true);
+        view.setUint32(28, 48000, true); // bytes/second
+        view.setUint16(32, 2, true); // bytes/frame
+        view.setUint16(34, 16, true);
+        writeTag(36, 'data');
+        view.setUint32(40, blob.size, true);
+        return new Blob([header, blob], { type: 'audio/wav' });
+    }
+
+    async function synthesize(text, overrides = null) {
+        const s = { ...Settings.get(), ...(overrides || {}) };
+        if (!s.openrouterTtsEnabled) return null;
+        const input = SpeechAudio.normalizeText(text, s.openrouterTtsSkipAnnotations).trim();
+        if (!input) return null;
+        const key = String(s.openrouterTtsApiKey || '').trim();
+        if (!key) throw new Error(Lang.t('speechApiKeyRequired'));
+        const speed = Number.parseFloat(s.openrouterTtsSpeed);
+        const responseFormat = s.openrouterTtsResponseFormat === 'mp3' ? 'mp3' : 'pcm';
+        const baseUrl = (String(s.openrouterTtsBaseUrl || '').trim() || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
+        const res = await fetch(`${baseUrl}/audio/speech`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: String(s.openrouterTtsModel || '').trim() || 'google/gemini-3.8-flash-tts',
+                input,
+                voice: String(s.openrouterTtsVoice || '').trim() || 'Zephyr',
+                response_format: responseFormat,
+                speed: Number.isFinite(speed) ? Math.min(4, Math.max(0.25, speed)) : 1,
+            }),
+        });
+        if (!res.ok) throw CommunicationError.http(res, `OpenRouter speech failed: ${res.status}`);
+        const contentType = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+        const isPcm = ['audio/pcm', 'audio/l16', 'audio/x-pcm'].includes(contentType)
+            || (responseFormat === 'pcm' && contentType === 'application/octet-stream');
+        if (!contentType.startsWith('audio/') && !isPcm) throw new Error('Invalid audio response');
+        const blob = await res.blob();
+        if (!blob.size) throw new Error('Empty audio response');
+        return URL.createObjectURL(isPcm ? _pcmToWav(blob) : blob);
+    }
+
+    return { synthesize };
+})();
+
+// ────────────────────────────────────────────────────────────
 // SpeechClient — 有効な音声エンジンへ合成を振り分ける
 // ────────────────────────────────────────────────────────────
 const SpeechClient = (() => {
     function synthesize(text) {
+        if (Settings.get().openrouterTtsEnabled) return OpenRouterTtsClient.synthesize(text);
         if (Settings.get().irodoriEnabled) return IrodoriClient.synthesize(text);
         return VoiceVoxClient.synthesize(text);
     }
@@ -2389,6 +2472,7 @@ const UIController = (() => {
     const voiceVoxStatus = document.getElementById('voicevox-status');
     const voiceVoxSettings = document.getElementById('voicevox-settings');
     const irodoriStatus = document.getElementById('irodori-status');
+    const openrouterTtsStatus = document.getElementById('openrouter-tts-status');
     const retryBar = document.getElementById('retry-bar');
     const btnRetry = document.getElementById('btn-retry');
     const introOverlay = document.getElementById('intro-overlay');
@@ -2505,6 +2589,8 @@ const UIController = (() => {
         btnVoiceVoxSpeakTest.addEventListener('click', _handleVoiceVoxSpeakTest);
         document.getElementById('setting-voicevox-enabled').addEventListener('change', _handleVoiceVoxEnabledChange);
         document.getElementById('setting-irodori-enabled').addEventListener('change', _handleIrodoriEnabledChange);
+        document.getElementById('setting-openrouter-tts-enabled').addEventListener('change', _handleOpenRouterTtsEnabledChange);
+        document.getElementById('btn-openrouter-tts-speak-test').addEventListener('click', _handleOpenRouterTtsSpeakTest);
         document.getElementById('btn-irodori-test').addEventListener('click', _handleIrodoriTest);
         document.getElementById('btn-irodori-load-voices').addEventListener('click', _handleIrodoriLoadVoices);
         document.getElementById('btn-irodori-speak-test').addEventListener('click', _handleIrodoriSpeakTest);
@@ -3590,6 +3676,16 @@ const UIController = (() => {
         document.getElementById('setting-irodori-seed').value = s.irodoriSeed ?? '';
         document.getElementById('setting-irodori-skip-annotations').checked = s.irodoriSkipAnnotations;
         irodoriStatus.textContent = '';
+        document.getElementById('setting-openrouter-tts-enabled').checked = s.openrouterTtsEnabled;
+        _toggleOpenRouterTtsSettings(s.openrouterTtsEnabled);
+        document.getElementById('setting-openrouter-tts-baseurl').value = s.openrouterTtsBaseUrl;
+        document.getElementById('setting-openrouter-tts-apikey').value = s.openrouterTtsApiKey;
+        document.getElementById('setting-openrouter-tts-model').value = s.openrouterTtsModel;
+        document.getElementById('setting-openrouter-tts-voice').value = s.openrouterTtsVoice;
+        document.getElementById('setting-openrouter-tts-format').value = s.openrouterTtsResponseFormat === 'mp3' ? 'mp3' : 'pcm';
+        document.getElementById('setting-openrouter-tts-speed').value = s.openrouterTtsSpeed;
+        document.getElementById('setting-openrouter-tts-skip-annotations').checked = s.openrouterTtsSkipAnnotations;
+        openrouterTtsStatus.textContent = '';
         document.getElementById('setting-show-borders').checked = s.showBorders;
         document.getElementById('setting-send-timestamp').checked = s.sendTimestamp;
         document.getElementById('setting-scanline').checked = s.scanlineEffect;
@@ -3694,6 +3790,8 @@ const UIController = (() => {
         if (enabled) {
             document.getElementById('setting-irodori-enabled').checked = false;
             _toggleIrodoriSettings(false);
+            document.getElementById('setting-openrouter-tts-enabled').checked = false;
+            _toggleOpenRouterTtsSettings(false);
         }
     }
 
@@ -3798,6 +3896,8 @@ const UIController = (() => {
         if (enabled) {
             document.getElementById('setting-voicevox-enabled').checked = false;
             _toggleVoiceVoxSettings(false);
+            document.getElementById('setting-openrouter-tts-enabled').checked = false;
+            _toggleOpenRouterTtsSettings(false);
         }
     }
 
@@ -3880,6 +3980,53 @@ const UIController = (() => {
         };
     }
 
+    function _handleOpenRouterTtsEnabledChange() {
+        const enabled = document.getElementById('setting-openrouter-tts-enabled').checked;
+        _toggleOpenRouterTtsSettings(enabled);
+        if (enabled) {
+            document.getElementById('setting-voicevox-enabled').checked = false;
+            _toggleVoiceVoxSettings(false);
+            document.getElementById('setting-irodori-enabled').checked = false;
+            _toggleIrodoriSettings(false);
+        }
+    }
+
+    function _toggleOpenRouterTtsSettings(enabled) {
+        document.getElementById('openrouter-tts-settings').classList.toggle('hidden', !enabled);
+    }
+
+    async function _handleOpenRouterTtsSpeakTest() {
+        const s = _getOpenRouterTtsSettingsFromForm(true);
+        if (!s.openrouterTtsApiKey) {
+            openrouterTtsStatus.textContent = Lang.t('speechApiKeyRequired');
+            return;
+        }
+        const text = document.getElementById('setting-openrouter-tts-test-text').value.trim()
+            || (Lang.current() === 'en' ? 'Hello.' : 'こんにちは。');
+        openrouterTtsStatus.textContent = Lang.t('speechSpeakingTest');
+        try {
+            const url = await OpenRouterTtsClient.synthesize(text, s);
+            await SpeechClient.play(url);
+            openrouterTtsStatus.textContent = Lang.t('speechSpeakTestOk');
+        } catch (err) {
+            console.warn('OpenRouter TTS speech test failed:', err);
+            openrouterTtsStatus.textContent = Lang.t('speechSpeakTestNg') + CommunicationError.suffix(err);
+        }
+    }
+
+    function _getOpenRouterTtsSettingsFromForm(forceEnabled = false) {
+        return {
+            openrouterTtsEnabled: forceEnabled || document.getElementById('setting-openrouter-tts-enabled').checked,
+            openrouterTtsBaseUrl: document.getElementById('setting-openrouter-tts-baseurl').value.trim() || 'https://openrouter.ai/api/v1',
+            openrouterTtsApiKey: document.getElementById('setting-openrouter-tts-apikey').value.trim(),
+            openrouterTtsModel: document.getElementById('setting-openrouter-tts-model').value.trim() || 'google/gemini-3.8-flash-tts',
+            openrouterTtsVoice: document.getElementById('setting-openrouter-tts-voice').value.trim() || 'Zephyr',
+            openrouterTtsResponseFormat: document.getElementById('setting-openrouter-tts-format').value || 'pcm',
+            openrouterTtsSpeed: _readNumber('setting-openrouter-tts-speed', 1),
+            openrouterTtsSkipAnnotations: document.getElementById('setting-openrouter-tts-skip-annotations').checked,
+        };
+    }
+
     // HTTPS ページから HTTP API へのアクセスはブラウザにブロックされるため警告
     function _shouldWarnMixedContent(baseUrl) {
         try {
@@ -3929,6 +4076,7 @@ const UIController = (() => {
             ..._getVoiceVoxSettingsFromForm(),
             irodoriVoices: _irodoriVoices,
             ..._getIrodoriSettingsFromForm(),
+            ..._getOpenRouterTtsSettingsFromForm(),
             showBorders: document.getElementById('setting-show-borders').checked,
             sendTimestamp: document.getElementById('setting-send-timestamp').checked,
             scanlineEffect: document.getElementById('setting-scanline').checked,

@@ -265,7 +265,7 @@
               </div>
             </div>
 
-            <div class="settings-note">音声エンジンはどちらか一方を有効にしてください。</div>
+            <div class="settings-note">音声エンジンは一つだけ有効にできます。切り替えても各設定は保持されます。</div>
             <label class="checkbox-row">
               <input type="checkbox" id="setting-irodori-enabled">
               Irodori-TTS音声合成
@@ -314,6 +314,51 @@
               <div class="settings-button-row">
                 <button type="button" id="btn-irodori-speak-test">発話テスト</button>
               </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-openrouter-tts-enabled">
+              OpenRouter TTS音声合成
+            </label>
+
+            <div id="openrouter-tts-settings" class="settings-subsection hidden">
+              <label for="setting-openrouter-tts-baseurl">Base URL</label>
+              <input type="url" id="setting-openrouter-tts-baseurl" placeholder="https://openrouter.ai/api/v1">
+              <div class="settings-note">OpenRouterまたは互換APIのベースURLを入力してください。</div>
+
+              <label for="setting-openrouter-tts-apikey">OpenRouter APIキー</label>
+              <input type="password" id="setting-openrouter-tts-apikey" placeholder="sk-or-..." autocomplete="off">
+              <div class="settings-note">音声合成専用の設定です。チャットと同じキーを使う場合も、ここに入力してください。</div>
+
+              <label for="setting-openrouter-tts-model">音声モデル</label>
+              <input type="text" id="setting-openrouter-tts-model" placeholder="google/gemini-3.8-flash-tts" autocomplete="off">
+
+              <label for="setting-openrouter-tts-voice">話者ID</label>
+              <input type="text" id="setting-openrouter-tts-voice" placeholder="Zephyr" autocomplete="off">
+              <div class="settings-note">使える話者IDはモデルごとに異なります。モデルを変更した場合は、<a href="https://openrouter.ai/collections/text-to-speech-models" target="_blank" rel="noopener noreferrer">モデルのページ</a>で対応する話者を確認してください。</div>
+
+              <label for="setting-openrouter-tts-format">取得形式</label>
+              <select id="setting-openrouter-tts-format">
+                <option value="pcm">PCM（Gemini TTSなど）</option>
+                <option value="mp3">MP3</option>
+              </select>
+              <div class="settings-note">モデルに対応した形式を選んでください。PCMは24kHz・16bit・モノラルとして再生します。</div>
+
+              <label for="setting-openrouter-tts-speed">話速</label>
+              <input type="number" id="setting-openrouter-tts-speed" min="0.25" max="4" step="0.05" value="1">
+              <div class="settings-note">話速の対応範囲はモデルに依存します。非対応のモデルでは無視されます。</div>
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-openrouter-tts-skip-annotations" checked>
+                ルビ・補足を読み上げない
+              </label>
+
+              <label for="setting-openrouter-tts-test-text">テスト用テキスト</label>
+              <textarea id="setting-openrouter-tts-test-text" rows="2" placeholder="こんにちは"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-openrouter-tts-speak-test">発話テスト</button>
+              </div>
+              <div class="settings-note">発話テストもモデルの料金に応じて課金されます。</div>
+              <div id="openrouter-tts-status" class="settings-status" role="status"></div>
             </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>

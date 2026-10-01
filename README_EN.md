@@ -44,6 +44,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
+- **OpenRouter TTS Speech Synthesis** — Read AI replies with OpenRouter or a compatible API, with an editable Base URL, manual model/voice IDs, PCM/MP3 format selection, speed settings, and speech tests.
 - **Irodori-TTS Speech Synthesis** — Connect to [Aratako/Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server) for synchronized speech with reference voices and voice descriptions.
 - **VOICEVOX Speech Synthesis** — Connect to VOICEVOX Engine and synthesize AI responses in the same units as chat bubbles.
 - **Multi-language Support** — Provides Japanese and English interfaces.
@@ -58,6 +59,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 
 - A modern browser (latest version of Chrome, Firefox, Safari, or Edge)
 - An endpoint and API key for an OpenAI-compatible ChatCompletion API (with SSE streaming support)
+- An OpenRouter API key and available quota or credits for your chosen model when using OpenRouter TTS
 - Irodori-TTS-Server running locally or on the same network when using Irodori speech synthesis
 - VOICEVOX Engine running locally or on the same network when using speech synthesis
 
@@ -102,7 +104,13 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | VOICEVOX Speaker | Speaker ID used for synthesis | 3 |
 | VOICEVOX Speech Parameters | Speed, pitch, intonation, volume, pre/post silence | Defaults per field |
 | Skip ruby and notes in speech | Exclude ruby text and notes inside `()` / `（）` from VOICEVOX synthesis | On |
-| Irodori-TTS Speech Synthesis | Read AI responses aloud with Irodori-TTS (exclusive with VOICEVOX) | Off |
+| OpenRouter TTS Speech Synthesis | Read AI responses aloud with OpenRouter (exclusive with other speech engines) | Off |
+| OpenRouter TTS Base URL | Speech API base URL | `https://openrouter.ai/api/v1` |
+| OpenRouter API Key | Speech API key, separate from chat settings | Blank |
+| OpenRouter Speech Model / Voice ID | Enter IDs manually | `google/gemini-3.8-flash-tts` / `Zephyr` |
+| OpenRouter Response Format | PCM or MP3; PCM plays as 24 kHz, 16-bit, mono audio | `pcm` |
+| OpenRouter Speed / Skip ruby and notes | Speed applies only to supported models | 1 / On |
+| Irodori-TTS Speech Synthesis | Read AI responses aloud with Irodori-TTS (exclusive with other speech engines) | Off |
 | Irodori-TTS URL | Server URL; trailing `/v1` is optional | `http://localhost:8088` |
 | Irodori-TTS API Key / Model | Optional server key and model ID | Blank / `irodori-tts` |
 | Irodori-TTS Voice | Server voice ID | `none` (no reference audio) |
@@ -202,7 +210,7 @@ Display and speech chunks never split at periods or line breaks inside full-widt
 
 ## Irodori-TTS Speech Synthesis
 
-Enable **Irodori-TTS Speech Synthesis** in the **Speech** settings tab. Enabling either engine disables the other while keeping both engines' settings. Existing VOICEVOX settings continue to work.
+Enable **Irodori-TTS Speech Synthesis** in the **Speech** settings tab. Enabling a speech engine disables the others while keeping each engine's settings. Existing VOICEVOX settings continue to work.
 
 1. Start [Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server). The default URL is `http://localhost:8088`; a trailing `/v1` is also accepted.
 2. Configure CORS in the server `.env` and restart the server. Use `IRODORI_CORS_ORIGINS=["null"]` for local HTML files. For a page served over HTTP, specify its origin, for example `IRODORI_CORS_ORIGINS=["http://localhost:8000"]`.
@@ -211,6 +219,18 @@ Enable **Irodori-TTS Speech Synthesis** in the **Speech** settings tab. Enabling
 5. Use **Test Speech** with the current form settings, then save. You can set speed (0.25–4), voice/style description, sampling steps, and seed. Descriptions require a compatible model. Blank steps use the server/model default; a blank seed uses random generation.
 
 Like VOICEVOX, synthesis follows bubble boundaries and playback starts with each bubble. Ruby and parenthetical notes are skipped by default without changing display text or history. Silent audio is regenerated up to three times (four attempts including the first). Replies still appear without audio if every attempt is silent or synthesis fails. **Open API Docs** opens the server's `/docs` page.
+
+## OpenRouter TTS Speech Synthesis
+
+Enable **OpenRouter TTS Speech Synthesis** in the **Speech** settings tab. This disables VOICEVOX and Irodori-TTS while preserving their settings.
+
+1. Enter the **Base URL** and **OpenRouter API Key** in the speech settings. The Base URL defaults to `https://openrouter.ai/api/v1` and can point to a compatible API. Requests append `/audio/speech`. Chat URL and key settings are not reused automatically.
+2. Enter the **Speech Model** ID manually. The default is `google/gemini-3.8-flash-tts`. Model discovery is not used.
+3. Enter a supported **Voice ID** (default: `Zephyr`). Voices and speed support vary by model; check the model's page when switching.
+4. Select **PCM** or **MP3** in **Response Format**. Use the default PCM for Gemini TTS. Existing settings without a saved format also default to PCM.
+5. Use **Test Speech** with the current form settings, then save. Speech tests incur the model's usual charges.
+
+Synthesis uses the selected format and follows bubble boundaries, with playback starting alongside each bubble. PCM is wrapped in a WAV header for playback as 24 kHz, 16-bit, little-endian mono audio; MP3 is played directly. Ruby and parenthetical notes are skipped by default. Failed synthesis still allows text to appear, and results discarded after an interruption are not played. The browser connects directly to the configured Base URL. See the [OpenRouter TTS documentation](https://openrouter.ai/docs/guides/overview/multimodal/tts) for the API specification.
 
 ## Text Call Mode
 

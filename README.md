@@ -46,6 +46,7 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 - **文字通話モード** — 通常のチャット画面とは別に、待機画面から「通話を開始」してAIとの文字通話を始められます。
 - **メッセージ編集・削除** — メッセージをタップして再送信、編集、または削除ができます。
 - **タイムスタンプ送信** — AIにメッセージ送信時刻を伝えることで、時間を考慮した応答が可能になります。
+- **OpenRouter TTS音声合成** — OpenRouterや互換APIの音声モデルでAI返答を読み上げます。Base URLの変更、モデル・話者の手入力、取得形式（PCM／MP3）・話速の設定、発話テストに対応します。
 - **Irodori-TTS音声合成** — [Aratako/Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server) と連携し、参照音声や声の説明を使ってAI返答を同期再生できます。
 - **VOICEVOX音声合成** — VOICEVOX Engine と連携し、チャットバブルと同じ単位でAI返答を音声合成・同期再生できます。
 - **多言語対応** — 日本語と英語のインターフェースを提供します。
@@ -60,6 +61,7 @@ AIが一気にまくしたてる、そこに人間が返答すると、またま
 
 - モダンブラウザ（Chrome, Firefox, Safari, Edge の最新版）
 - OpenAI互換の ChatCompletion API（SSEストリーミング対応）のエンドポイントとAPIキー
+- OpenRouter TTS音声合成を使う場合は、OpenRouterのAPIキーと利用する音声モデルの利用枠・残高
 - Irodori-TTS音声合成を使う場合は、ローカルまたは同一ネットワーク上で起動した Irodori-TTS-Server
 - VOICEVOX音声合成を使う場合は、ローカルまたは同一ネットワーク上で起動した VOICEVOX Engine
 
@@ -106,7 +108,13 @@ OpenRouterの`perplexity/sonar-pro`などを使えば、ネット上の情報を
 | VOICEVOX話者 | 音声合成に使う話者ID | 3 |
 | VOICEVOX発話パラメータ | 話速、音高、抑揚、音量、開始/終了無音 | 各項目の既定値 |
 | ルビ・補足を読み上げない | ルビや `()` / `（）` 内の補足をVOICEVOX読み上げから除外 | オン |
-| Irodori-TTS音声合成 | Irodori-TTSによるAI返答の読み上げ（VOICEVOXと排他） | オフ |
+| OpenRouter TTS音声合成 | OpenRouterによるAI返答の読み上げ（他の音声エンジンと排他） | オフ |
+| OpenRouter TTS Base URL | 音声合成APIのベースURL | `https://openrouter.ai/api/v1` |
+| OpenRouter APIキー | 音声合成用のAPIキー（チャット設定とは独立） | 空欄 |
+| OpenRouter音声モデル / 話者ID | IDを手入力 | `google/gemini-3.8-flash-tts` / `Zephyr` |
+| OpenRouter取得形式 | PCM／MP3から選択。PCMは24kHz・16bit・モノラルとして再生 | `pcm` |
+| OpenRouter話速 / ルビ・補足の読み飛ばし | 話速は対応モデルのみ有効 | 1 / オン |
+| Irodori-TTS音声合成 | Irodori-TTSによるAI返答の読み上げ（他の音声エンジンと排他） | オフ |
 | Irodori-TTS接続先URL | Irodori-TTS-Server のURL（末尾の `/v1` は省略可） | `http://localhost:8088` |
 | Irodori-TTS APIキー / モデル名 | サーバーの認証キー（任意）とモデルID | 空欄 / `irodori-tts` |
 | Irodori-TTS話者 | サーバーの話者ID | `none`（参照音声なし） |
@@ -206,7 +214,7 @@ AIの返答がまだ表示途中であっても、テキストを入力して送
 
 ## Irodori-TTS音声合成
 
-設定の「音声合成」タブで **「Irodori-TTS音声合成」** をオンにします。VOICEVOXとは排他で切り替わり、それぞれの設定は保持されます。既存のVOICEVOX設定も引き続き使えます。
+設定の「音声合成」タブで **「Irodori-TTS音声合成」** をオンにします。他の音声エンジンとは排他で切り替わり、それぞれの設定は保持されます。既存のVOICEVOX設定も引き続き使えます。
 
 1. [Irodori-TTS-Server](https://github.com/Aratako/Irodori-TTS-Server) を起動します。接続先URLは既定で `http://localhost:8088` です。`/v1` 付きのURLも指定できます。
 2. サーバーの `.env` でCORSを設定し、サーバーを再起動します。ローカルHTMLから使う場合は `IRODORI_CORS_ORIGINS=["null"]`、HTTPサーバーから使う場合はページのオリジンを指定します（例: `IRODORI_CORS_ORIGINS=["http://localhost:8000"]`）。
@@ -215,6 +223,18 @@ AIの返答がまだ表示途中であっても、テキストを入力して送
 5. **発話テスト** で現在のフォーム設定を確認し、保存します。話速（0.25〜4）、声・話し方の説明、生成ステップ数、シードを設定できます。説明は対応モデルで使用されます。ステップ数は空欄ならサーバー／モデルの既定値、シードは空欄ならランダムです。
 
 VOICEVOXと同様、バブルごとに音声を合成し、表示と再生を同期します。ルビ・補足の読み飛ばしは既定でオンで、画面表示・履歴には影響しません。受信した音声が無音の場合は最大3回再生成します（初回を含め計4回）。再試行しても無音の場合や合成に失敗した場合は、音声なしで返答の表示を続行します。**APIドキュメントを開く** からサーバーの `/docs` を確認できます。
+
+## OpenRouter TTS音声合成
+
+設定の「音声合成」タブで **「OpenRouter TTS音声合成」** をオンにします。VOICEVOX・Irodori-TTSとは排他で、それぞれの設定は保持されます。
+
+1. **Base URL** と **OpenRouter APIキー** を入力します。Base URLの既定は `https://openrouter.ai/api/v1` で、互換APIに変更できます。末尾に `/audio/speech` を付けて接続します。チャット設定のURL・キーは自動では使いません。
+2. **音声モデル** にモデルIDを直接入力します。既定は `google/gemini-3.8-flash-tts` です。モデル一覧の取得は行いません。
+3. モデルに対応する **話者ID** を入力します。既定は `Zephyr` です。モデルごとに話者が異なるため、変更時はモデルのページで確認してください。話速の対応範囲もモデルに依存します。
+4. **取得形式** で **PCM** または **MP3** を選択します。Gemini TTSには既定のPCMを使ってください。取得形式が未保存の既存設定にもPCMを補います。
+5. **発話テスト** で現在のフォーム設定による音声を確認し、保存します。発話テストにも通常のモデル料金が適用されます。
+
+バブルごとに選択した形式の音声を生成し、表示と再生を同期します。PCMは24kHz・16bit・little-endian・モノラルとしてWAVヘッダーを付けて再生し、MP3はそのまま再生します。ルビ・補足の読み飛ばしは既定でオンです。合成失敗時は文字表示を続行し、割り込みで不要になった合成結果は再生しません。ブラウザから指定のBase URLへ直接接続します。API仕様は[OpenRouter TTSドキュメント](https://openrouter.ai/docs/guides/overview/multimodal/tts)を参照してください。
 
 ## 文字通話モード
 

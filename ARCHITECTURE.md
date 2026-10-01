@@ -55,7 +55,7 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
    │  │  └───────────▶ ApiClient         SSE ストリーミング
    │  └──────────────▶ ChatHistory       履歴管理・永続化
    └─────────────────▶ Settings          設定管理・永続化
-                       SpeechClient      音声エンジン選択（VoiceVoxClient / IrodoriClient）
+                       SpeechClient      音声エンジン選択（VoiceVoxClient / IrodoriClient / OpenRouterTtsClient）
                        SpeechAudio       共通の再生・テキスト正規化
                        SimpleMarkdown    Markdown → HTML 変換
                        SystemOneIntent   意図判定とプレビュー
@@ -126,7 +126,7 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `voicevoxPrePhonemeLength` | number | `0.1` | VOICEVOX開始無音 |
 | `voicevoxPostPhonemeLength` | number | `0.1` | VOICEVOX終了無音 |
 | `voicevoxSkipAnnotations` | boolean | `true` | ルビや括弧内補足をVOICEVOX読み上げから除外するか |
-| `irodoriEnabled` | boolean | `false` | Irodori音声合成を有効化（VOICEVOXと排他） |
+| `irodoriEnabled` | boolean | `false` | Irodori音声合成を有効化（他の音声エンジンと排他） |
 | `irodoriUrl` | string | `http://localhost:8088` | サーバーURL（末尾 `/v1` も可） |
 | `irodoriApiKey` | string | `''` | 任意のBearer認証キー |
 | `irodoriModel` | string | `irodori-tts` | サーバーのモデルID |
@@ -137,6 +137,14 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `irodoriNumSteps` | number/null | `null` | 生成ステップ数。nullは送信しない |
 | `irodoriSeed` | number/null | `null` | シード。nullは送信しない（0は有効） |
 | `irodoriSkipAnnotations` | boolean | `true` | ルビ・括弧内補足を読み飛ばす |
+| `openrouterTtsEnabled` | boolean | `false` | OpenRouter音声合成を有効化（他の音声エンジンと排他） |
+| `openrouterTtsBaseUrl` | string | `https://openrouter.ai/api/v1` | 音声合成APIのベースURL（末尾のスラッシュは除去） |
+| `openrouterTtsApiKey` | string | `''` | 音声合成専用のBearer認証キー |
+| `openrouterTtsModel` | string | `google/gemini-3.8-flash-tts` | 手入力の音声モデルID |
+| `openrouterTtsVoice` | string | `Zephyr` | モデルに対応する話者ID |
+| `openrouterTtsResponseFormat` | string | `pcm` | 取得形式（pcm / mp3） |
+| `openrouterTtsSpeed` | number | `1` | 話速（UI範囲0.25〜4、対応はモデルに依存） |
+| `openrouterTtsSkipAnnotations` | boolean | `true` | ルビ・括弧内補足を読み飛ばす |
 | `scanlineEffect` | boolean | `false` | スキャンライン効果 |
 | `scanlineStrength` | number | `2` | スキャンライン強度（%） |
 | `sendTimestamp` | boolean | `false` | タイムスタンプをAPIに送信するか |
@@ -332,7 +340,7 @@ feed(text) → _tryFlush() → _extractNextChunk()
 
 ### 8. 音声合成モジュール
 
-**SpeechClient / SpeechAudio:** `SpeechClient.synthesize(text)` が有効な音声エンジンへ振り分ける。`SpeechAudio` が既存の再生処理と注釈除去を共通化し、`SpeechClient.play(url)` からも利用する。再生終了時にObject URLを解放する。両エンジン無効時は音声を生成しない。
+**SpeechClient / SpeechAudio:** `SpeechClient.synthesize(text)` が有効な音声エンジンへ振り分ける。`SpeechAudio` が既存の再生処理と注釈除去を共通化し、`SpeechClient.play(url)` からも利用する。再生終了時にObject URLを解放する。全エンジン無効時は音声を生成しない。設定の読み込み・保存時にも排他状態を正規化する（競合時はOpenRouter、Irodori、VOICEVOXの順）。
 
 音声設定は既存のチェックボックスとサブセクション表示を踏襲し、一方の有効化で他方を無効化する。保存・復元時も排他を保証し、両方trueの場合はIrodoriを優先する。エンジン固有のパラメータと話者リストは切り替えても保持する。
 
@@ -365,6 +373,16 @@ VOICEVOX Engine への接続、話者取得、音声合成を担当する。
 - 接続先はサーバールート／`/v1` の両方を許容し、プロキシのパス接頭辞を維持する。
 - 発話テストには未保存のフォーム値を渡す。HTTP／通信エラーはVOICEVOXと同じステータス表示を使う。
 - ブラウザーからの接続にはサーバー側の `IRODORI_CORS_ORIGINS` 設定が必要。
+
+#### OpenRouterTtsClient
+
+[OpenRouter TTS API](https://openrouter.ai/docs/guides/overview/multimodal/tts) または指定した互換APIに接続する。
+
+- モデル・話者は手入力のみ。モデル一覧の取得・キャッシュは行わない。
+- `synthesize(text, overrides)` — `{openrouterTtsBaseUrl}/audio/speech` に `model`、`input`、`voice`、選択した `response_format`（pcm / mp3）、`speed` を送り、音声BlobのObject URLを返す。形式の既定はPCM。Base URLの末尾のスラッシュを除去し、パス接頭辞は維持する。専用のURL・APIキーだけを使用する。
+- 生PCMの応答（audio/pcm、audio/l16、audio/x-pcm、またはPCM要求時のapplication/octet-stream）は、24kHz・16bit little-endian・monoのWAVヘッダーを付けて共通の再生処理へ渡す。サンプルのバイト列は変更せず、奇数バイトの不完全なPCMはエラーにする。MP3や既にWAVの応答にはヘッダーを追加しない。[Gemini音声仕様](https://ai.google.dev/gemini-api/docs/speech-generation)に合わせたPCM条件で、異なるサンプルレートやチャンネル数の生PCMには非対応。
+- 非成功HTTP応答・音声以外のContent-Type・空の音声をエラーにする。自動再試行は行わず、チャットでは既存のエラー処理で文字表示を続行する。
+- 発話テストは未保存のフォーム値を使う。通常再生・不要な合成結果の破棄は共通のSpeechClient/TypingSimulator経由で処理する。
 
 ### 9. IntentChoices
 
@@ -585,6 +603,7 @@ assistant メッセージは `_splitIntoChunks()` で分割し、実行時と同
 - `node tests/intent-lifecycle.cjs`：下書き保持、無関係な設定保存、履歴変更時の再判定、タグ付き割り込み連結、タグ境界の保存・復元。
 - `node tests/communication-errors.cjs`：チャット・意図判定（通常入力・編集・送信確認）・VOICEVOXのHTTPステータス／例外メッセージ表示、再試行時の更新、Unicode文字数。
 - `node tests/irodori.cjs`：日英・通常版・配布版でIrodoriのAPI契約、認証、話者手入力、実WAVのデコードによる無音判定・再試行上限、設定保存、排他切り替え、注釈除去、表示同期、合成失敗時の続行、割り込み、VOICEVOX互換性。
+- `node tests/openrouter-tts.cjs`：日英・通常版・配布版でOpenRouterのPCM/MP3選択・保存・キャンセル、WAV化したPCMの実デコード・音声メタデータ・サンプル保持、URL・キー分離、Base URL変更・保存・末尾スラッシュ、モデル手入力・既定値、3エンジンの排他切り替え、注釈除去、HTTP・通信・不正応答、表示同期、失敗時の続行、割り込みを確認。APIと再生タイミングはモックで、課金される実接続・音質確認は含まない。
 - `node tests/background.cjs`、`node tests/floating-icons.cjs`：既存機能の回帰確認。
 
 ブラウザテストはPlaywrightとEdgeを使用し、日英の通常版・単一HTML配布版を確認する。APIはモックのため、Jev実接続での分類精度・Confidenceの評価や、Irodori実サーバーの推論・音質評価は含まない。

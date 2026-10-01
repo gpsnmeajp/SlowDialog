@@ -265,7 +265,7 @@
               </div>
             </div>
 
-            <div class="settings-note">Enable one speech engine at a time.</div>
+            <div class="settings-note">Enable one speech engine at a time. Each engine keeps its settings when you switch.</div>
             <label class="checkbox-row">
               <input type="checkbox" id="setting-irodori-enabled">
               Irodori-TTS Speech Synthesis
@@ -314,6 +314,51 @@
               <div class="settings-button-row">
                 <button type="button" id="btn-irodori-speak-test">Test Speech</button>
               </div>
+            </div>
+
+            <label class="checkbox-row">
+              <input type="checkbox" id="setting-openrouter-tts-enabled">
+              OpenRouter TTS Speech Synthesis
+            </label>
+
+            <div id="openrouter-tts-settings" class="settings-subsection hidden">
+              <label for="setting-openrouter-tts-baseurl">Base URL</label>
+              <input type="url" id="setting-openrouter-tts-baseurl" placeholder="https://openrouter.ai/api/v1">
+              <div class="settings-note">Enter the base URL of OpenRouter or a compatible API.</div>
+
+              <label for="setting-openrouter-tts-apikey">OpenRouter API Key</label>
+              <input type="password" id="setting-openrouter-tts-apikey" placeholder="sk-or-..." autocomplete="off">
+              <div class="settings-note">This key is used for speech synthesis. Enter it here even if you use the same key for chat.</div>
+
+              <label for="setting-openrouter-tts-model">Speech Model</label>
+              <input type="text" id="setting-openrouter-tts-model" placeholder="google/gemini-3.8-flash-tts" autocomplete="off">
+
+              <label for="setting-openrouter-tts-voice">Voice ID</label>
+              <input type="text" id="setting-openrouter-tts-voice" placeholder="Zephyr" autocomplete="off">
+              <div class="settings-note">Voice IDs vary by model. When changing models, check the <a href="https://openrouter.ai/collections/text-to-speech-models" target="_blank" rel="noopener noreferrer">model's page</a> for supported voices.</div>
+
+              <label for="setting-openrouter-tts-format">Response Format</label>
+              <select id="setting-openrouter-tts-format">
+                <option value="pcm">PCM (Gemini TTS, etc.)</option>
+                <option value="mp3">MP3</option>
+              </select>
+              <div class="settings-note">Select a format supported by your model. PCM is played as 24 kHz, 16-bit, mono audio.</div>
+
+              <label for="setting-openrouter-tts-speed">Speed</label>
+              <input type="number" id="setting-openrouter-tts-speed" min="0.25" max="4" step="0.05" value="1">
+              <div class="settings-note">Supported speed ranges depend on the model. Models without speed control ignore this setting.</div>
+              <label class="checkbox-row">
+                <input type="checkbox" id="setting-openrouter-tts-skip-annotations" checked>
+                Skip ruby and notes in speech
+              </label>
+
+              <label for="setting-openrouter-tts-test-text">Test Text</label>
+              <textarea id="setting-openrouter-tts-test-text" rows="2" placeholder="Hello"></textarea>
+              <div class="settings-button-row">
+                <button type="button" id="btn-openrouter-tts-speak-test">Test Speech</button>
+              </div>
+              <div class="settings-note">Speech tests incur the selected model's usual charges.</div>
+              <div id="openrouter-tts-status" class="settings-status" role="status"></div>
             </div>
           </section>
           <section id="settings-panel-conversation" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-conversation" tabindex="0" hidden>
