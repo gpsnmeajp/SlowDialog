@@ -41,6 +41,7 @@ This software was vibe-coded using Google Antigravity and GitHub Copilot.
 - **Quick Responses** — Register common replies for one-click sending. With Intent enabled, review them in a separate send preview first.
 - **Intent Classification** — Review and adjust Jev's prediction before sending an intent tag to the AI.
 - **Mode Tags** — Select tags from dropdowns to append them to your prompt on send. Combined with your system prompt, this lets you switch AI behavior on the fly.
+- **Post Prompt** — Use the checkbox to append configured instructions in `<system>…</system>` to each user message sent to the LLM API. Off by default; disabling keeps the saved prompt. History, displayed messages, and intent classification stay unchanged.
 - **Text Call Mode** — Start an AI text call from a standby screen instead of showing the normal chat UI immediately.
 - **Message Edit & Delete** — Tap messages to resend, edit, or delete them.
 - **Timestamp Sending** — Send message timestamps to the AI for time-aware responses.
@@ -90,6 +91,8 @@ On first launch, an intro dialog will appear, followed by a settings dialog. Ple
 | API Key | API key | — |
 | Model Name | Model identifier to use | `google/gemini-3-flash-preview` |
 | System Prompt | Instructions for the AI | `You are a helpful assistant.` |
+| Enable post prompt | Toggle the checkbox in Setup; disabling keeps the saved prompt | Off |
+| Post Prompt | When enabled and nonempty, appends `<system>…</system>` to each user message only when sending to the LLM API | Blank |
 | Font | Display font | Noto Sans JP |
 | Theme | Color theme | GB Classic |
 | Background image | Select or remove an image in Display. Saved within 4096×4096 pixels and scaled to cover the screen without margins while preserving its aspect ratio. The preview box marks the visible crop | None |

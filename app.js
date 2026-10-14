@@ -279,6 +279,8 @@ const Settings = (() => {
         apiKey: '',
         model: 'google/gemini-3-flash-preview',
         systemPrompt: Lang.t('defaultSystemPrompt'),
+        postPromptEnabled: false,
+        postPrompt: '',
         charDelayMs: 150,
         minDelaySec: 2,
         contextSize: 1000,
@@ -1339,10 +1341,13 @@ const ChatHistory = (() => {
                 const dowEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                 const dow = (Lang.current() === 'en' ? dowEn : dowJa)[d.getDay()];
                 const ts = `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}(${dow}) ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-                msgs.push({ role: m.role, content: content + `<timestamp>${ts}</timestamp>` });
-            } else {
-                msgs.push({ role: m.role, content });
+                content += `<timestamp>${ts}</timestamp>`;
             }
+            // ポストプロンプトは API 用の文字列にだけ付加し、履歴は変更しない。
+            if (m.role === 'user' && s.postPromptEnabled && s.postPrompt) {
+                content += ` <system>${s.postPrompt}</system>`;
+            }
+            msgs.push({ role: m.role, content });
         }
         return msgs;
     }
@@ -4117,6 +4122,8 @@ const UIController = (() => {
         document.getElementById('setting-apikey').value = s.apiKey;
         document.getElementById('setting-model').value = s.model;
         document.getElementById('setting-systemprompt').value = s.systemPrompt;
+        document.getElementById('setting-postprompt-enabled').checked = s.postPromptEnabled;
+        document.getElementById('setting-postprompt').value = s.postPrompt;
         document.getElementById('setting-font').value = s.font;
         document.getElementById('setting-theme').value = s.theme || 'gb';
         document.getElementById('setting-chat-area').value = s.chatAreaOffset;
@@ -4541,6 +4548,8 @@ const UIController = (() => {
             apiKey: document.getElementById('setting-apikey').value.trim(),
             model: document.getElementById('setting-model').value.trim(),
             systemPrompt: document.getElementById('setting-systemprompt').value.trim(),
+            postPromptEnabled: document.getElementById('setting-postprompt-enabled').checked,
+            postPrompt: document.getElementById('setting-postprompt').value.trim(),
             font: document.getElementById('setting-font').value,
             theme: document.getElementById('setting-theme').value,
             chatAreaOffset: Number(document.getElementById('setting-chat-area').value),

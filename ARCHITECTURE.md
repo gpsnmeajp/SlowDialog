@@ -103,6 +103,8 @@ app.js は IIFE パターンで 複数のモジュールに分割されている
 | `apiKey` | string | `""` | API キー |
 | `model` | string | `google/gemini-3-flash-preview` | モデル名 |
 | `systemPrompt` | string | 言語依存 | システムプロンプト |
+| `postPromptEnabled` | boolean | `false` | チェックボックス式のポストプロンプト有効スイッチ |
+| `postPrompt` | string | `""` | LLM API送信時のみ、各ユーザー発言の末尾へsystemタグで囲んで付加する指示 |
 | `charDelayMs` | number | `150` | 1文字あたりの待ち時間(ms) |
 | `minDelaySec` | number | `2` | チャンク間の最小待ち時間（秒） |
 | `contextSize` | number | `20` | API送信する履歴メッセージ数 |
@@ -251,6 +253,8 @@ _messages = [
 **意図タグ:** `content`はタグなしの本文。`intents`は各発言の末尾位置（JavaScript文字列のUTF-16オフセット）とラベルを保持する。API送信時だけ各位置に` [label]`を挿入し、画面ではラベルを時刻の左へ表示する。割り込み時も1件のユーザーメッセージへ連結する。本文の全面置換では既存のタグ境界を破棄する。JSONエクスポート・インポートでも`intents`を保持する。
 
 **タイムスタンプ送信:** `sendTimestamp` が有効な場合、APIに送信するメッセージに `<timestamp>` タグを付与。
+
+**ポストプロンプト:** 「初期設定」タブのチェックボックスで `postPromptEnabled` を切り替える。既定は `false` で、このキーがない旧設定もオフになる。`postPromptEnabled` が有効かつ `postPrompt` が空でなければ、`buildApiMessages()` で各 `user` メッセージの末尾に ` <system>${postPrompt}</system>` を付加する。意図タグ・モードタグ・タイムスタンプより後に追加し、`system` / `assistant` メッセージには追加しない。送信用の文字列だけを加工するため、履歴・表示・JSONエクスポート・意図判定・音声APIには反映されない。通常送信・割り込み・編集・再送信・リトライ・通話開始に共通で適用される。有効状態と設定文はlocalStorageに保存し、保存時に設定文の前後の空白を除く。オフにしても設定文は保持し、空欄では付加しない。
 
 **トリム:** `push()` 時に `contextSize` を超えたら先頭から削除。
 
